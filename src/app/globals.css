@@ -1,4 +1,7 @@
 @import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
   --background: #ffffff;
@@ -20,7 +23,33 @@
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+    background: var(--background);
+    background-image: url('/img/bg-body.png');
+    background-repeat: repeat;
+    background-size: 1200px; /* Ajusta según el tamaño de los elementos */
+    background-position: top left;
+    background-color: #ffffff;
+    color: var(--foreground);
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 15px;
 }
+
+p{
+    /*color: #111;*/
+    font-size: 1 rem;
+}
+
+
+/* Hide native number spinners when desired */
+.no-spinner::-webkit-outer-spin-button,
+.no-spinner::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.no-spinner[type=number] {
+  -moz-appearance: textfield; /* Firefox */
+  appearance: textfield; /* Standard */
+}
+
+
+

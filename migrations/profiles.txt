@@ -1,0 +1,40 @@
+-- PERFIL
+create table if not exists public.profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  name text not null default '',
+  surname text not null default '',
+  accepted_terms boolean not null default false,
+  accepted_marketing boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+alter table public.profiles enable row level security;
+create policy "profiles_select_own" on public.profiles for select using (auth.uid() = id);
+create policy "profiles_upsert_own" on public.profiles for insert with check (auth.uid() = id);
+create policy "profiles_update_own" on public.profiles for update using (auth.uid() = id);
+
+-- DEPORTISTAS (lista del dashboard)
+create table if not exists public.players (
+  id uuid primary key default gen_random_uuid(),
+  owner_id uuid not null references auth.users(id) on delete cascade,
+  full_name text not null,
+  avatar_url text,
+  sports jsonb not null default '[]', -- ej. ["futbol", "baloncesto"]
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+alter table public.players enable row level security;
+create policy "players_select_own" on public.players for select using (auth.uid() = owner_id);
+create policy "players_insert_own" on public.players for insert with check (auth.uid() = owner_id);
+create policy "players_update_own" on public.players for update using (auth.uid() = owner_id);
+create policy "players_delete_own" on public.players for delete using (auth.uid() = owner_id);
+
+-- SUSCRIPCIONES (placeholder para tu pasarela)
+create table if not exists public.user_subscriptions (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  status text not null default 'none' check (status in ('none','active','past_due','canceled')),
+  current_period_end timestamptz
+);
+alter table public.user_subscriptions enable row level security;
+create policy "subs_select_own" on public.user_subscriptions for select using (auth.uid() = user_id);
+-- insert/update vía webhook con service_role en producción
