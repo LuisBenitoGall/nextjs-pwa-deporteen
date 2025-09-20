@@ -191,8 +191,8 @@ export default async function AccountPage() {
         } catch (e) {
             console.error('deleteAccount: signOut error', e);
         }
-        // Redirigimos con flag para que el cliente (Navbar) haga también signOut y limpie su estado local inmediatamente
-        redirect('/?logout=1');
+        // Redirigir al endpoint de logout para que el servidor borre cookies y redirija a '/'
+        redirect('/logout');
     }
 
     return (

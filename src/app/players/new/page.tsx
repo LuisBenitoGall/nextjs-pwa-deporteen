@@ -373,7 +373,7 @@ export default function NewPlayerPage() {
                                             <div className="text-sm">
                                                 {b.avatarFile ? `Seleccionado: ${b.avatarFile.name}` : t('imagen_selec')}
                                             </div>
-                                            <div className="text-xs text-gray-500">Se guarda en el dispositivo. No se sube a la nube.</div>
+                                            <div className="text-xs text-gray-500">{t('imagenes_guarda_local')}</div>
                                         </div>
                                     </label>
                                 </div>

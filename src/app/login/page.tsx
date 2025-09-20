@@ -24,8 +24,13 @@ export default function LoginPage() {
         setBusy(true);
         setErr(null);
         try {
-            const { error } = await supabase.auth.signInWithPassword({ email, password });
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
             if (error) throw error;
+            try {
+              const bc = new BroadcastChannel('auth');
+              bc.postMessage({ type: 'SIGNED_IN', user: data.user });
+              bc.close();
+            } catch {}
             router.replace('/dashboard');
             router.refresh();
         } catch (e: any) {

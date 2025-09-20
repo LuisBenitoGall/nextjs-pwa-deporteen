@@ -58,7 +58,7 @@ export default function ConfirmDeleteButton({ onConfirm, label = 'Cancelar cuent
                                 {t('volver_atras')}
                             </button>
 
-                            <form action={onConfirm} method="post">
+                            <form action={onConfirm}>
                                 <SubmitDanger onDone={close} label={t('cancelacion_confirmar')} />
                             </form>
                         </div>

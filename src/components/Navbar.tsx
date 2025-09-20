@@ -15,21 +15,31 @@ type UserLike = {
     user_metadata?: Record<string, any>;
 } | null;
 
-export default function Navbar() {
+export default function Navbar({ serverUserId }: { serverUserId?: string | null }) {
     const t = useT();
     const { locale, setLocale, locales } = useLocale();
     const BRAND = process.env.NEXT_PUBLIC_PROJECT || 'DeporTeen';
 
-    const [user, setUser] = useState<UserLike>(null);
+    const [user, setUser] = useState<UserLike>(serverUserId ? ({ id: serverUserId } as any) : null);
     const [langOpen, setLangOpen] = useState(false);
     const [userOpen, setUserOpen] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
+    // Marca que ya verificamos el estado de auth en el cliente
+    const [authChecked, setAuthChecked] = useState(false);
 
     const langRef = useRef<HTMLDivElement>(null);
     const userRef = useRef<HTMLDivElement>(null);
-    const router = useRouter();
-    const pathname = usePathname();
+    const loggingOutRef = useRef(false);
+  const router = useRouter();
+  const pathname = usePathname();
+  // Detecta si la ruta es protegida (dashboard, account, players, settings), con o sin prefijo de idioma
+  const pathParts = (pathname || '/').split('?')[0].split('/').filter(Boolean);
+  const maybeLocale = pathParts[0];
+  const hasLocalePrefix = locales?.some?.(l => l.code === maybeLocale) ?? false;
+  const firstSeg = hasLocalePrefix ? (pathParts[1] || '') : (pathParts[0] || '');
+  const isProtectedPath = ['dashboard', 'account', 'players', 'settings'].includes(firstSeg);
+    const hideAuthUI = pathname === '/logout';
 
     // Cierra menús al cambiar de ruta
     useEffect(() => {
@@ -38,45 +48,177 @@ export default function Navbar() {
         setUserOpen(false);
     }, [pathname]);
 
-    // Detecta sesión y suscribe a cambios
+  // Detecta sesión y suscribe a cambios
     useEffect(() => {
         let mounted = true;
 
-        supabase.auth.getSession().then(({ data }) => {
-          if (!mounted) return;
-          setUser((data.session?.user as any) ?? null);
+        // Si llegamos con ?logout=1, no intentes hidratar una sesión inicial
+        try {
+            const url = new URL(window.location.href);
+            if (url.searchParams.get('logout') === '1' || url.pathname === '/logout') {
+                return;
+            }
+        } catch {}
+
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (!mounted) return;
+            if (loggingOutRef.current) return;
+          // Actualiza sólo si hay usuario; no machacar con null estados recientes de login
+          if (session?.user) setUser(session.user as any);
+          setAuthChecked(true);
         });
 
-        const { data: sub } = supabase.auth.onAuthStateChange((_evt, session) => {
-          setUser((session?.user as any) ?? null);
-        });
+    const { data: sub } = supabase.auth.onAuthStateChange((evt, session) => {
+      if (loggingOutRef.current) return;
+      if (session?.user) {
+        setUser(session.user as any);
+      } else if (evt === 'SIGNED_OUT' || evt === 'USER_DELETED') {
+        setUser(null);
+      } // Ignora INITIAL_SESSION vacío para no machacar SSR
+      setAuthChecked(true);
+    });
 
         return () => {
-          mounted = false;
-          sub?.subscription?.unsubscribe?.();
+            mounted = false;
+            sub?.subscription?.unsubscribe?.();
         };
     }, []);
+
+  // Escucha señales de auth (postMessage) para hidratar inmediatamente tras login por password
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof BroadcastChannel === 'undefined') return;
+    const bc = new BroadcastChannel('auth');
+    const onMsg = (ev: MessageEvent) => {
+      const msg = ev.data;
+      if (!msg || typeof msg !== 'object') return;
+      if (msg.type === 'SIGNED_IN' && msg.user) {
+        loggingOutRef.current = false;
+        setUser(msg.user as any);
+        setAuthChecked(true);
+      }
+    };
+    bc.addEventListener('message', onMsg);
+    return () => {
+      try { bc.removeEventListener('message', onMsg); bc.close(); } catch {}
+    };
+  }, []);
+
+  // Re-sincroniza el usuario al cambiar de ruta (evita quedarse con CTAs tras login si el layout no se re-renderiza)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    if (url.pathname === '/logout') return;
+    let cancelled = false;
+    const recheck = async (attempt = 0) => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (cancelled) return;
+      if (loggingOutRef.current) return;
+      if (session?.user) {
+        setUser(session.user as any);
+        setAuthChecked(true);
+        return;
+      }
+      // Si aún no hay sesión, marca authChecked pero sigue intentando unas veces
+      setAuthChecked(true);
+      // Refuerzo: si estamos en ruta protegida, pregunta al servidor (cookies SSR) quién es el usuario
+      try {
+        if (isProtectedPath && attempt === 0) {
+          const r = await fetch('/api/auth/me', { cache: 'no-store' });
+          if (!cancelled && r.ok) {
+            const j = await r.json();
+            if (j?.user) {
+              setUser(j.user as any);
+              return;
+            }
+          }
+        }
+      } catch {}
+      if (attempt < 5) {
+        const delay = Math.min(1600, 100 * Math.pow(2, attempt)); // 100,200,400,800,1600
+        setTimeout(() => { recheck(attempt + 1); }, delay);
+      }
+    };
+    recheck(0);
+    return () => { cancelled = true; };
+  }, [pathname]);
 
     // Marca el componente como montado para evitar desajustes de hidratación con UI dependiente de auth
     useEffect(() => {
         setMounted(true);
     }, []);
 
-    // Si venimos de un redirect con ?logout=1, asegura el signOut del cliente y limpia la URL
+  // Si el servidor ya indicó un usuario, permite mostrar el menú inmediatamente
+  useEffect(() => {
+    if (serverUserId && !authChecked) {
+      setAuthChecked(true);
+    }
+    // sólo interesa en el primer montaje
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Si venimos de un redirect con ?logout=1 o estamos en /logout, asegura el signOut del cliente y pide al servidor borrar cookies, luego vuelve a inicio
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const url = new URL(window.location.href);
+    if (url.searchParams.get('logout') === '1' || url.pathname === '/logout') {
+            (async () => {
+                loggingOutRef.current = true;
+                try {
+                    await supabase.auth.signOut();
+                } catch {}
+                // Limpia cualquier vestigio en localStorage de Supabase (sb-*) y estado local
+                try {
+                    for (let i = localStorage.length - 1; i >= 0; i--) {
+                        const key = localStorage.key(i);
+                        if (key && key.startsWith('sb-')) localStorage.removeItem(key);
+                    }
+                } catch {}
+                setUser(null);
+                setAuthChecked(true);
+        // Enviar al servidor la orden de borrar cookies, sin esperar respuesta, y navegar inmediatamente a inicio
+        try {
+          fetch('/logout', { method: 'POST', cache: 'no-store', keepalive: true }).catch(() => {});
+        } catch {}
+        window.location.replace('/');
+            })();
+        }
+    }, []);
+
+  // Si el servidor dejó la cookie 'client-logout', limpia estado cliente igualmente (por si llegamos a '/' sin query)
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    try {
+      const cookieStr = document.cookie || '';
+      if (cookieStr.includes('client-logout=1')) {
+        (async () => {
+          loggingOutRef.current = true;
+          try { await supabase.auth.signOut(); } catch {}
+          try {
+            for (let i = localStorage.length - 1; i >= 0; i--) {
+              const key = localStorage.key(i);
+              if (key && key.startsWith('sb-')) localStorage.removeItem(key);
+            }
+          } catch {}
+          setUser(null);
+          setAuthChecked(true);
+          // Borra la cookie en cliente
+          try { document.cookie = 'client-logout=; Max-Age=0; path=/'; } catch {}
+          // Vuelve a permitir eventos de auth
+          loggingOutRef.current = false;
+        })();
+      }
+    } catch {}
+  }, []);
+
+  // Al navegar fuera de /logout y sin cookie de cierre, reactivamos los eventos de auth
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const url = new URL(window.location.href);
-    if (url.searchParams.get('logout') === '1') {
-      (async () => {
-        try {
-          await supabase.auth.signOut();
-        } catch {}
-        // Limpia inmediatamente el estado local y fuerza recarga completa
-        setUser(null);
-        window.location.replace('/');
-      })();
+    const hasClientLogout = (typeof document !== 'undefined') && (document.cookie || '').includes('client-logout=1');
+    if (url.pathname !== '/logout' && !hasClientLogout) {
+      loggingOutRef.current = false;
     }
-  }, []);
+  }, [pathname]);
 
     // Click fuera: cerrar dropdowns
     useEffect(() => {
@@ -89,11 +231,25 @@ export default function Navbar() {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    async function handleLogout() {
-        await supabase.auth.signOut();
-        router.replace('/login');
-        router.refresh();
-    }
+  async function handleLogout() {
+    loggingOutRef.current = true;
+    try {
+      await supabase.auth.signOut();
+    } catch {}
+    try {
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('sb-')) localStorage.removeItem(key);
+      }
+    } catch {}
+    setUser(null);
+    setAuthChecked(true);
+    try {
+      fetch('/logout', { method: 'POST', cache: 'no-store', keepalive: true }).catch(() => {});
+    } catch {}
+    router.replace('/');
+    router.refresh();
+  }
 
     const displayName =
         (user as any)?.user_metadata?.name ||
@@ -191,7 +347,15 @@ export default function Navbar() {
         </div>
     );
 
-    return (
+  // Placeholder de menú de usuario (desktop) mientras resolvemos auth en rutas protegidas
+  const UserMenuPlaceholder = (
+    <div className="h-8 w-36 rounded-md bg-gray-200 animate-pulse" aria-hidden="true" />
+  );
+
+  // Mostrar CTAs: en rutas protegidas no mostramos CTAs aunque aún no se haya resuelto user
+  const showCTAs = mounted && !isProtectedPath && ((hideAuthUI) ? true : (authChecked && !user));
+
+  return (
         <nav className="fixed left-0 right-0 top-0 z-50 border-b border-gray-200 bg-gray-50/95 backdrop-blur supports-[backdrop-filter]:bg-gray-50/80">
             <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:h-16 sm:px-6 lg:px-8">
                 {/* Brand */}
@@ -211,11 +375,13 @@ export default function Navbar() {
 
           {LangSelectorDesktop}
 
-          {/* Menú de usuario agrupado (solo tras mount para evitar hydration mismatch) */}
-          {mounted && UserMenuDesktop}
+          {/* Menú de usuario: en rutas protegidas, muestra placeholder mientras no haya user; si hay user, muestra el menú real */}
+          {mounted && !hideAuthUI && (
+            user ? UserMenuDesktop : (isProtectedPath ? UserMenuPlaceholder : null)
+          )}
 
-          {/* CTA login/registro solo tras mount */}
-          {mounted && !user && (
+          {/* CTA login/registro solo tras mount y authChecked */}
+      {showCTAs && (
                         <div className="flex items-center gap-3">
                             <Link
                                 href="/login"
@@ -278,7 +444,7 @@ export default function Navbar() {
                         <div className="flex h-[calc(100%-3.25rem)] flex-col justify-between">
                             <ul className="bg-white space-y-0 px-2 py-3">
                                 {/* Saludo */}
-                {mounted && user && (
+                {mounted && !hideAuthUI && authChecked && user && (
                                     <>
                                         <li className="pt-2">
                                             <span className="block select-none px-3 py-2 text-sm font-semibold text-gray-900">
@@ -312,7 +478,7 @@ export default function Navbar() {
 
                                 {/* Saludo y opciones personales (enlazadas como <li> individuales).
                                 Solo si hay usuario, y el saludo va el primero de todos. */}
-                                {mounted && user && (
+                                {mounted && !hideAuthUI && authChecked && user && (
                                     <>
                                         <li>
                                           <Link
@@ -349,7 +515,7 @@ export default function Navbar() {
                                 )}
 
                                 {/* Si no hay sesión, CTA como siempre */}
-                                {mounted && !user && (
+                                {showCTAs && (
                                     <>
                                         <li className="pt-2">
                                           <Link
