@@ -49,9 +49,14 @@ export default async function AccountPage() {
     // locale del usuario (si no tiene, 'es')
     const { data: me } = await supabase
     .from('users')
-    .select('locale, name, surname, phone, created_at')
+    .select('locale, name, surname, phone, created_at, status')
     .eq('id', userId)
     .maybeSingle();
+
+    const statusVal = (me as any)?.status;
+    if (me && (statusVal === false || String(statusVal).toLowerCase() === 'inactive')) {
+        redirect('/logout');
+    }
 
     const { t } = await tServer(me?.locale || undefined);
 
@@ -164,11 +169,50 @@ export default async function AccountPage() {
 
     const nowIso = new Date().toISOString();
         // Actualiza users por id (uuid de Auth)
-        const { error: uErr } = await admin
+        // 1) Desactivar por boolean (si la columna es booleana)
+        const { data: updUser, error: uErr } = await admin
             .from('users')
             .update({ deleted_at: nowIso, status: false })
-            .eq('id', user_id);
-        if (uErr) console.error('deleteAccount: users update error', uErr);
+            .eq('id', user_id)
+            .select('id, status')
+            .maybeSingle();
+        if (uErr) {
+            console.error('deleteAccount: users boolean status update error', uErr);
+        } else {
+            console.log('deleteAccount: users updated (bool status try)', updUser);
+        }
+
+        // 2) Si status sigue "true" o no cambió, intenta con esquema string 'inactive'
+        try {
+            const needsString = !updUser || (updUser as any)?.status === true || (updUser as any)?.status === 'active';
+            if (needsString) {
+                const { data: updStr, error: uErr2 } = await admin
+                    .from('users')
+                    .update({ status: 'inactive' as any })
+                    .eq('id', user_id)
+                    .select('id, status')
+                    .maybeSingle();
+                if (uErr2) {
+                    console.error('deleteAccount: users string status update error', uErr2);
+                } else {
+                    console.log('deleteAccount: users updated (string status try)', updStr);
+                }
+            }
+        } catch (e) {
+            console.error('deleteAccount: fallback string status failed', e);
+        }
+
+        // 3) Opcional: si existe columna 'active' (boolean), intenta marcarla a false en llamada separada
+        try {
+            const { error: uActiveErr } = await admin
+                .from('users')
+                .update({ active: false as any })
+                .eq('id', user_id);
+            if (uActiveErr) {
+                // Puede fallar si la columna no existe; lo ignoramos.
+                console.warn('deleteAccount: users active=false optional update error (ignorable)', uActiveErr?.message || uActiveErr);
+            }
+        } catch {}
 
         // Actualiza players vinculados al mismo id
         const { error: pErr } = await admin
@@ -205,7 +249,7 @@ export default async function AccountPage() {
                     <h2 className="text-base font-semibold text-gray-800">{t('datos_personales')}</h2>
 
                     <Link
-                        href="/settings/profile"
+                        href="/account/edit"
                         className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-2 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50"
                     >
                         {/* icono lápiz simple */}

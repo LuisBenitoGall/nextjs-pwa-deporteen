@@ -26,9 +26,16 @@ export default async function DashboardPage() {
     // locale del usuario (si no tiene, 'es')
     const { data: me } = await supabase
     .from('users')
-    .select('locale')
+    .select('locale, status')
     .eq('id', userId)
     .maybeSingle();
+
+    // Si el usuario está desactivado, forzar salida
+    const statusVal = (me as any)?.status;
+    const isDisabled = statusVal === false || String(statusVal).toLowerCase() === 'inactive';
+    if (me && isDisabled) {
+        redirect('/logout');
+    }
 
     const { t } = await tServer(me?.locale || undefined);
     //const locale = (me?.locale as 'es' | 'en') || 'es';

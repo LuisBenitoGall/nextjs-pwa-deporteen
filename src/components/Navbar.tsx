@@ -72,7 +72,7 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
       if (loggingOutRef.current) return;
       if (session?.user) {
         setUser(session.user as any);
-      } else if (evt === 'SIGNED_OUT' || evt === 'USER_DELETED') {
+  } else if (evt === 'SIGNED_OUT') {
         setUser(null);
       } // Ignora INITIAL_SESSION vacío para no machacar SSR
       setAuthChecked(true);
