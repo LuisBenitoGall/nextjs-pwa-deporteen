@@ -40,11 +40,11 @@ const profileSchema = z.object({
 type ProfileForm = z.infer<typeof profileSchema>;
 
 const passwordSchema = z.object({
-  new_password: z.string().min(8, 'Mínimo 8 caracteres'),
-  confirm_password: z.string().min(8, 'Mínimo 8 caracteres'),
+    new_password: z.string().min(8, 'Mínimo 8 caracteres'),
+    confirm_password: z.string().min(8, 'Mínimo 8 caracteres'),
 }).refine(d => d.new_password === d.confirm_password, {
-  message: 'Las contraseñas no coinciden',
-  path: ['confirm_password'],
+    message: 'Las contraseñas no coinciden',
+    path: ['confirm_password'],
 });
 type PasswordForm = z.infer<typeof passwordSchema>;
 
