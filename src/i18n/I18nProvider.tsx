@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { I18N_DEFAULTS } from '@/config/constants';
 import {
   SUPPORTED_LOCALES,
   DEFAULT_LOCALE,
@@ -15,7 +16,7 @@ type Messages = Record<string, any>;
 type I18nCtx = {
   locale: Locale;
   setLocale: (locale: Locale) => void;
-  t: (key: string) => string;
+  t: (key: string, vars?: Record<string, any>) => string;
   locales: { code: Locale; label: string; disabled?: boolean }[];
 };
 
@@ -68,7 +69,10 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     setLocaleState(newLocale);
   };
 
-  const t = useMemo(() => makeT(dict), [dict]);
+  const t = useMemo(() => {
+    const base = makeT(dict);
+    return (key: string, vars?: Record<string, any>) => base(key, { ...I18N_DEFAULTS, ...vars });
+  }, [dict]);
 
   const locales = useMemo(
     () => SUPPORTED_LOCALES.map(code => ({ code, label: LOCALE_LABELS[code] })),

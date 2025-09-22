@@ -54,7 +54,8 @@ export default async function AccountPage() {
     .maybeSingle();
 
     const statusVal = (me as any)?.status;
-    if (me && (statusVal === false || String(statusVal).toLowerCase() === 'inactive')) {
+    const normalized = typeof statusVal === 'string' ? statusVal.toLowerCase() : statusVal;
+    if (me && (normalized === false || normalized === 'inactive' || normalized === 'false')) {
         redirect('/logout');
     }
 
@@ -72,7 +73,7 @@ export default async function AccountPage() {
 
     const { data: playersRaw, error: playersErr } = await supabase
         .from('players')
-        .select('id, full_name, sports, created_at')
+        .select('id, full_name, created_at')
         .eq('user_id', userId)
         .order('created_at', { ascending: false }) as unknown as { data: RawPlayer[] | null; error: any };
 
@@ -98,7 +99,7 @@ export default async function AccountPage() {
     type RawSub = {
         id: string;
         status: string | null;
-        amount?: number | null; // en céntimos
+        amount?: string | number | null;   // <- puede venir string si es int8. En céntimos.
         currency?: string | null;
         start_date?: string | null;
         end_date?: string | null;
@@ -106,6 +107,7 @@ export default async function AccountPage() {
         current_period_end?: string | null;
         created_at?: string | null;
         canceled_at?: string | null;
+        seats?: number | null;
     };
 
     const { data: subsRaw, error: subsErr } = await supabase
@@ -122,27 +124,35 @@ export default async function AccountPage() {
         'current_period_end',
         'created_at',
         'canceled_at',
+        'seats'
       ].join(',')
     )
     .eq('user_id', userId)
     .order('start_date', { ascending: false }) as unknown as { data: RawSub[] | null; error: any };
+
+    //Suscripciones activas:
+    const hasActiveSubscription = (subsRaw || []).some((s: any) => s?.status === true);
 
     // if (subsErr) {
     //     // No rompemos la página por un error de suscripciones
     //     console.error('subscriptions error', subsErr);
     // }
 
-        const now = new Date();
-        const subs = (subsRaw || []).map((s) => {
+    const now = new Date();
+    const subs = (subsRaw || []).map((s) => {
         const start = s.start_date || s.current_period_start || s.created_at || null;
         const end = s.end_date || s.current_period_end || s.canceled_at || null;
         const active =
         s.status === 'active' ||
         (start ? new Date(start) <= now : false) && (end ? new Date(end) >= now : true);
+
+        //Convierte céntimos a number
+        const amountCents = s.amount == null ? null : Number(typeof s.amount === 'string' ? s.amount : s.amount);
+
         return {
             id: s.id,
             status: s.status || (active ? 'active' : 'inactive'),
-            amount: s.amount ?? null,
+            amount: amountCents,
             currency: s.currency || 'EUR',
             start,
             end,
@@ -150,8 +160,47 @@ export default async function AccountPage() {
         };
     });
 
+    const nowIso = new Date().toISOString();
+
+    // 2.1) Filtra suscripciones activas POR FECHA y POR STATUS
+    const activeSubs = (subsRaw || []).filter((s: any) => {
+        const statusTrue = s?.status === true || String(s?.status || '').toLowerCase() === 'active';
+        const ends = s?.current_period_end ? new Date(s.current_period_end) : null;
+        return statusTrue && ends != null && ends > new Date();
+    });
+
+    // si no hay suscripciones activas, no hay plazas ni pendientes
+    let pendingPlayers = 0;
+    if (activeSubs.length > 0) {
+        const activeSubIds = activeSubs.map((s: any) => s.id);
+        const totalSeats = activeSubs.reduce((acc: number, s: any) => acc + (Number(s.seats) || 1), 0);
+
+        // 2.2) Cuenta vínculos activos en subscription_players
+        const { count: assignedActiveCount, error: spErr } = await supabase
+        .from('subscription_players')
+        .select('*', { count: 'exact', head: true })
+        .in('subscription_id', activeSubIds)
+        .is('unlinked_at', null);
+
+        if (spErr) {
+            console.error('subscription_players count error', spErr);
+        }
+
+        const assigned = Number(assignedActiveCount || 0);
+        pendingPlayers = Math.max(0, totalSeats - assigned);
+    }
+    
+
+    const hasActiveSeats = activeSubs.reduce((acc, s: any) => acc + (Number(s.seats) || 1), 0) > 0;
+
+    //
+
     const locale = me?.locale || 'es-ES';
     const currentSubId = subs.find((s) => s.active)?.id || null;
+
+    // Créditos pendientes de usar
+    const activeSeats = subs.filter((s) => s.active).length;
+    //const pendingPlayers = Math.max(0, activeSeats - players.length);
 
     // Server Action: borrado lógico + invalidación global de sesiones + signOut + redirect
     async function deleteAccount(_formData: FormData) {
@@ -221,7 +270,7 @@ export default async function AccountPage() {
             .eq('user_id', user_id);
         if (pErr) console.error('deleteAccount: players update error', pErr);
 
-        // TODO: añade aquí otras tablas relacionadas (teams, user_accounts/subscriptions, media, etc.)
+        // TODO: añade aquí otras tablas relacionadas (teams, subscriptions, media, etc.)
 
         // Invalidación global de sesiones (Admin API; requiere SERVICE_ROLE)
         // Invalida todas las sesiones si el SDK lo soporta; si no, continúa.
@@ -238,6 +287,70 @@ export default async function AccountPage() {
         // Redirigir al endpoint de logout para que el servidor borre cookies y redirija a '/'
         redirect('/logout');
     }
+
+    // --- PENDIENTES DE REGISTRAR (códigos sin canjear) ---
+    async function countUnredeemedCodes() {
+        const tryTables = ['access_codes'] as const;
+
+        for (const table of tryTables) {
+            // campos típicos: user_id, redeemed_at, player_id, expires_at, seats opcional
+            const { data, error } = await supabase
+              .from(table)
+              .select('id, code, player_id')
+              .eq('user_id', userId)
+              .is('redeemed_at', null);
+
+            // si la tabla no existe, Postgres devuelve 42P01; probamos la siguiente
+            const tableMissing = (error && (error.code === '42P01' || /relation .* does not exist/i.test(error.message)));
+            if (tableMissing) continue;
+            if (error) {
+                console.error(`${table} error`, error);
+                continue;
+            }
+            // cuenta códigos que realmente no estén ligados a jugador
+            const unredeemed = (data || []).filter((r: any) => !r.player_id && !r.redeemed_at).length;
+            return unredeemed;
+        }
+        return null; // no hay tablas de códigos; dejaremos que el plan B se encargue
+    }
+
+    // 1) prueba con códigos sin canjear
+    const unredeemed = await countUnredeemedCodes();
+    if (typeof unredeemed === 'number') {
+        pendingPlayers = unredeemed;
+    } else {
+        // 2) plan B: plazas activas por suscripción menos jugadores creados
+        const now = new Date();
+        const activeSeats = (subsRaw || []).reduce((acc, s: any) => {
+            const status = String(s.status || '').toLowerCase();
+            const statusOk = ['active','trialing','past_due'].includes(status);
+            const startIso = s.start_date || s.current_period_start || s.created_at;
+            const endIso   = s.end_date   || s.current_period_end   || s.canceled_at;
+            const startOk = startIso ? new Date(startIso) <= now : true;
+            const endOk   = endIso   ? new Date(endIso)   >= now : true;
+            if (statusOk && startOk && endOk) {
+              const seats = Number.isFinite((s as any).seats) ? Number((s as any).seats) : 1;
+              return acc + seats;
+            }
+            return acc;
+        }, 0);
+
+        const usedSeats = (playersRaw || []).length;
+        pendingPlayers = Math.max(0, activeSeats - usedSeats);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     return (
         <div className="max-w-xl mx-auto">
@@ -360,21 +473,42 @@ export default async function AccountPage() {
             <section className="mt-8 rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm">
                 <div className="flex items-center justify-between">
                     <h2 className="text-base font-semibold text-gray-800">{t('deportistas') || 'Deportistas'}</h2>
-
-                    <Link 
-                        href="/players/new" 
-                        className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-2 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                    >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                            <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" />
-                        </svg>
-                        <span>{t('deportista_agregar') || 'Añadir deportista'}</span>
-                    </Link>
+                    {pendingPlayers > 0 && (
+                        <Link 
+                            href="/players/new" 
+                            className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-2 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                        >
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" />
+                            </svg>
+                            <span>{t('deportista_agregar') || 'Añadir deportista'}</span>
+                        </Link>
+                    )}
                 </div>
 
                 <div className="mt-4">
                     {players.length === 0 ? (
-                        <p className="text-sm text-gray-500">{t('sin_deportistas') || 'Todavía no has registrado deportistas.'}</p>
+                        <div className="text-sm">
+                            <p className="text-sm text-gray-500">{t('sin_deportistas') || 'Todavía no has registrado deportistas.'}</p>
+
+                            {pendingPlayers > 0 && (
+                                <p className="ml-4 text-gray-700">
+                                    {t('tienes')} <span className="font-semibold text-gray-900">{pendingPlayers}</span>{' '}
+                                    {pendingPlayers === 1 ? t('deportista') : t('deportistas')} {t('pendientes_alta')}.
+                                </p>
+                            )}
+
+                            {!hasActiveSubscription && (
+                                <div className="mt-6">
+                                    <p className="text-amber-700 font-bold">{t('suscripcion_necesaria') || 'Debes contratar un plan de suscripción para crear deportistas.'}</p>
+                                    <p className="mt-1">
+                                        <Link href="/subscription" className="text-amber-800 underline hover:text-amber-900">
+                                            {t('suscribirme') || 'Ir a suscripción'}
+                                        </Link>
+                                    </p>
+                                </div>
+                            )}
+                        </div>
                     ) : (
                         <ul className="divide-y divide-gray-100">
                             {players.map(p => (
@@ -392,12 +526,12 @@ export default async function AccountPage() {
             </section>
 
             {/* Extras de cuenta, opcional: accesos a facturas, portal de pago, etc. */}
-            <section className="mt-8 text-xs text-gray-500">
+            {/*<section className="mt-8 text-xs text-gray-500">
                 <p>
                     ¿Necesitas descargar facturas o cambiar el método de pago? Ir a{' '}
-                    <Link href="/billing" className="underline">facturación</Link>."cuenta_cancelar":
+                    <Link href="/billing" className="underline">facturación</Link>.
                 </p>
-            </section>
+            </section>*/}
 
             {/* Cancelación de cuenta (borrado lógico) */}
             <section className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:p-6 shadow-sm">
@@ -413,4 +547,4 @@ export default async function AccountPage() {
     );
 }
 
-// TODO: Re-definir modelo de suscripciones (o `user_accounts`) y desglose de IVA una vez cerremos el flujo de pagos.
+// TODO: Re-definir modelo de suscripciones y desglose de IVA una vez cerremos el flujo de pagos.

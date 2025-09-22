@@ -32,7 +32,8 @@ export default async function DashboardPage() {
 
     // Si el usuario está desactivado, forzar salida
     const statusVal = (me as any)?.status;
-    const isDisabled = statusVal === false || String(statusVal).toLowerCase() === 'inactive';
+    const normalized = typeof statusVal === 'string' ? statusVal.toLowerCase() : statusVal;
+    const isDisabled = normalized === false || normalized === 'inactive' || normalized === 'false';
     if (me && isDisabled) {
         redirect('/logout');
     }

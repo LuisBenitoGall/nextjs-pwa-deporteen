@@ -15,9 +15,18 @@ export async function getDictionary(locale?: string): Promise<{ locale: Locale; 
   }
 }
 
+function interpolate(template: string, vars?: Record<string, any>): string {
+  if (!vars) return template;
+  return template.replace(/\{([A-Z0-9_\.\-]+)\}/g, (_, k: string) => {
+    const v = vars[k];
+    return v == null ? `{${k}}` : String(v);
+  });
+}
+
 export function makeT(dict: Dict) {
-  return (key: string): string => {
+  return (key: string, vars?: Record<string, any>): string => {
     const val = key.split('.').reduce<any>((acc, k) => (acc == null ? acc : acc[k]), dict);
-    return (typeof val === 'string' ? val : key) as string;
+    if (typeof val === 'string') return interpolate(val, vars);
+    return key;
   };
 }

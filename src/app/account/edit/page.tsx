@@ -278,7 +278,9 @@ export default function AccountEditPage() {
                         {...register('name')}
                         placeholder={t('nombre')}
                         label={t('nombre')}
+                        maxLength={50}
                         error={errors.name?.message}
+                        required
                     />
               
                     <Input
@@ -286,7 +288,9 @@ export default function AccountEditPage() {
                         {...register('surname')}
                         placeholder={t('apellidos')}
                         label={t('apellidos')}
+                        maxLength={100}
                         error={errors.surname?.message}
+                        required
                     />
           
                     <Input
@@ -294,6 +298,7 @@ export default function AccountEditPage() {
                         {...register('email')}
                         placeholder={t('email')}
                         label={t('email')}
+                        maxLength={80}
                         error={errors.email?.message}
                         required
                     />
@@ -303,6 +308,7 @@ export default function AccountEditPage() {
                         {...register('phone')}
                         placeholder={t('telf') ?? 'Teléfono'}
                         label={t('telf') ?? 'Teléfono'}
+                        maxLength={15}
                         error={errors.phone?.message}
                     />
 

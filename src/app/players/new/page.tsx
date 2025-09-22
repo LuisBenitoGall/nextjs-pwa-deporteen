@@ -14,10 +14,11 @@ import Submit from '../../../components/Submit';
 import TitleH1 from '../../../components/TitleH1';
 
 type Sport = { id: string; name: string; slug: string; active?: boolean | null };
-type Category = { id: string; name: string; sport_id: string };
+type Category = { id: string; name: string; sport_id: string; gender?: 'masculino' | 'femenino' | 'mixto' | null; };
 
 type MembershipBlock = {
     sportId: string;
+    competitionName: string;
     clubName: string;
     teamName: string;
     categoryIds: string[];
@@ -43,10 +44,13 @@ export default function NewPlayerPage() {
     const [sports, setSports] = useState<Sport[]>([]);
     const [categoriesBySport, setCategoriesBySport] = useState<Record<string, Category[]>>({});
     const [blocks, setBlocks] = useState<MembershipBlock[]>([
-        { sportId: '', clubName: '', teamName: '', categoryIds: [], avatarFile: null, avatarPath: null },
+        { sportId: '', competitionName: '', clubName: '', teamName: '', categoryIds: [], avatarFile: null, avatarPath: null },
     ]);
     const codeFromUrl = params.get('code') || '';
     const [pendingCode, setPendingCode] = useState<string>('');
+
+    const MAX_BLOCKS = 5;
+    const canAddMore = (n: number) => n < MAX_BLOCKS;
 
     // ---------- helpers de temporada ----------
     function currentSeasonKeyFor(date: Date) {
@@ -54,6 +58,16 @@ export default function NewPlayerPage() {
         const aug1 = new Date(y, 7, 1); // 1 agosto
         if (date >= aug1) return `${y}-${y + 1}`;
         return `${y - 1}-${y}`;
+    }
+
+    // --------------- Categoría y género -----------
+    function labelWithGender(c: Category) {
+        switch (c.gender) {
+            case 'masculino': return `${c.name} (Masculino)`;
+            case 'femenino':  return `${c.name} (Femenino)`;
+            case 'mixto':     return `${c.name} (Mixto)`;
+            default:          return `${c.name} (Mixto)`; // por si viene nulo o raro
+        }
     }
 
     // ---------- cargar catálogo ----------
@@ -74,8 +88,9 @@ export default function NewPlayerPage() {
             // categorías por deporte
             const { data: cats, error: e2 } = await supabase
             .from('sport_categories')
-            .select('id, name, sport_id')
-            .order('name', { ascending: true });
+            .select('id, name, gender, sport_id')
+            .order('name', { ascending: true })
+            .order('gender', { ascending: true });
             if (e2) { setErr(e2.message); return; }
 
             const group: Record<string, Category[]> = {};
@@ -94,7 +109,15 @@ export default function NewPlayerPage() {
 
     // ---------- UI handlers de bloques ----------
     const addBlock = () => {
-        setBlocks((b) => [...b, { sportId: '', clubName: '', teamName: '', categoryIds: [], avatarFile: null, avatarPath: null }]);
+        setErr(null);
+        setInfo(null);
+        setBlocks((b) => {
+            if (b.length >= MAX_BLOCKS) {
+            setErr(`Máximo ${MAX_BLOCKS} participaciones por deportista.`);
+            return b;
+        }
+        return [...b, { sportId: '', competitionName: '', clubName: '', teamName: '', categoryIds: [], avatarFile: null, avatarPath: null }];
+        });
     };
     const removeBlock = (idx: number) => {
         setBlocks((b) => b.filter((_, i) => i !== idx));
@@ -136,6 +159,10 @@ export default function NewPlayerPage() {
     // ---------- crear jugador + memberships + canjear código ----------
     const createOne = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (blocks.length > MAX_BLOCKS) {
+            setErr(`Máximo ${MAX_BLOCKS} participaciones por deportista.`);
+            return;
+        }
         setErr(null);
         setInfo(null);
 
@@ -252,7 +279,7 @@ export default function NewPlayerPage() {
         // 6) siguiente o fin
         setCreated((c) => c + 1);
         setName('');
-        setBlocks([{ sportId: '', clubName: '', teamName: '', categoryIds: [], avatarFile: null, avatarPath: null }]);
+    setBlocks([{ sportId: '', competitionName: '', clubName: '', teamName: '', categoryIds: [], avatarFile: null, avatarPath: null }]);
 
         if (created + 1 >= total) {
             router.replace(`/players/${playerId}`); // te llevo al último creado
@@ -265,6 +292,12 @@ export default function NewPlayerPage() {
     };
 
     const remaining = total - created;
+
+    const GENDER_ORDER: Record<NonNullable<Category['gender']>, number> = {
+        masculino: 0,
+        femenino: 1,
+        mixto: 2,
+    };
 
     return (
         <div className="max-w-xl mx-auto">
@@ -321,6 +354,17 @@ export default function NewPlayerPage() {
                                     />
                                 </div>
 
+                                {/* Competición */}
+                                <div>
+                                    <Input
+                                        value={b.competitionName}
+                                        onChange={(e: any) => setBlock(i, 'competitionName', e.target.value)}
+                                        label={t('competicion')}
+                                        placeholder={t('competicion_nombre')}
+                                    />
+                                    <small>{t('competicion_nombre_info')}</small>
+                                </div>
+
                                 {/* Categoría */}
                                 <div>
                                     <Select
@@ -334,7 +378,14 @@ export default function NewPlayerPage() {
                                                 Array.from(e.target.selectedOptions).map((o) => o.value)
                                             )
                                         }
-                                        options={sportCats.map((c) => ({ value: c.id, label: c.name }))}
+                                        options={[...sportCats]
+                                        .sort((a, b) => {
+                                            if (a.name !== b.name) return a.name.localeCompare(b.name, 'es');
+                                            const ga = a.gender ?? 'mixto';
+                                            const gb = b.gender ?? 'mixto';
+                                            return GENDER_ORDER[ga] - GENDER_ORDER[gb];
+                                        })
+                                        .map((c) => ({ value: c.id, label: labelWithGender(c) }))}
                                         placeholder={sportCats.length === 0 ? t('deporte_selec_primero') : t('categoria_selec') }
                                         fontSize="sm"
                                     />
@@ -356,37 +407,40 @@ export default function NewPlayerPage() {
                                     placeholder={t('equipo_nombre')}
                                 />
 
-                                {/* 2) Avatar por temporada */}
-                                <div>
-                                    <label className="text-sm font-medium block mb-1 text-gray-700">{t('avatar')} <small>({t('avatar_temporada')})</small></label>
-                                    <label className="flex items-center justify-center border-2 border-dashed rounded-lg p-6 bg-white cursor-pointer hover:bg-gray-100">
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            className="hidden"
-                                            onChange={(e) => {
-                                                const f = e.target.files?.[0] || null;
-                                                setBlock(i, 'avatarFile', f);
-                                            }}
-                                        />
-                                        <div className="text-center">
-                                            <div className="text-sm">
-                                                {b.avatarFile ? `Seleccionado: ${b.avatarFile.name}` : t('imagen_selec')}
+                                {/* 2) Avatar por temporada: solo en la primera participación */}
+                                { i === 0 && (
+                                    <div>
+                                        <label className="text-sm font-medium block mb-1 text-gray-700">{t('avatar')} <small>({t('avatar_temporada')})</small></label>
+                                        <label className="flex items-center justify-center border-2 border-dashed rounded-lg p-6 bg-white cursor-pointer hover:bg-gray-100">
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={(e) => {
+                                                    const f = e.target.files?.[0] || null;
+                                                    setBlock(i, 'avatarFile', f);
+                                                }}
+                                            />
+                                            <div className="text-center">
+                                                <div className="text-sm">
+                                                    {b.avatarFile ? `Seleccionado: ${b.avatarFile.name}` : t('imagen_selec')}
+                                                </div>
+                                                <div className="text-xs text-gray-500">{t('imagenes_guarda_local')}</div>
                                             </div>
-                                            <div className="text-xs text-gray-500">{t('imagenes_guarda_local')}</div>
-                                        </div>
-                                    </label>
-                                </div>
+                                        </label>
+                                    </div>
+                                )}
                             </div>
                         );
                     })}
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="grid grid-cols-2 gap-3 mt-4">
                     <button
                         type="button"
                         onClick={addBlock}
-                        className="px-3 py-2 rounded bg-white border hover:bg-gray-50 text-sm"
+                        disabled={!canAddMore(blocks.length)}
+                        className={`h-12 w-full rounded-lg border text-sm font-medium ${canAddMore(blocks.length) ? 'bg-white hover:bg-gray-50' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
                     >
                         + {t('participacion_add')}
                     </button>
@@ -395,6 +449,7 @@ export default function NewPlayerPage() {
                         text={t('guardar')}
                         loadingText={t('procesando') ?? t('guardar')}
                         disabled={busy}
+                        className="h-12 w-full"
                     />
                 </div>
             </form>

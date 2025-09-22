@@ -31,6 +31,9 @@ export default function SubscriptionPage() {
     // Plan (si tienes varios activos, podrías cargarlos; aquí dejamos uno fijo por simplicidad)
     const [planId, setPlanId] = useState<string>('');
 
+    // Plan gratuito
+    const [freePlanId, setFreePlanId] = useState<string>('');
+
     // Carga mínima (usuario y plan opcional)
     useEffect(() => {
         let mounted = true;
@@ -89,10 +92,46 @@ export default function SubscriptionPage() {
         if (units !== 1) { setError('El código solo aplica a 1 deportista.'); return; }
 
         try {
-            localStorage.setItem('pending_access_code', trimmed);
-            sessionStorage.setItem('pending_access_code', trimmed);
-        } catch {}
-        router.replace(`/players/new?via=code&code=${encodeURIComponent(trimmed)}`);
+            // Resuelve plan gratuito activo si no está fijado
+            let planToUse = planId;
+            if (!planToUse) {
+                const { data: plan, error: planErr } = await supabase
+                  .from('subscription_plans')
+                  .select('id, days, active, free')
+                  .eq('free', true)
+                  .eq('active', true)
+                  .limit(1)
+                  .maybeSingle();
+
+                if (planErr) { setError(planErr.message); return; }
+                if (!plan?.id) { setError('No hay plan gratuito activo configurado.'); return; }
+                planToUse = plan.id;
+                setFreePlanId(plan.id);
+            }
+
+            // 1) valida y registra la suscripción por código en BD
+            const { data, error: rpcErr } = await supabase.rpc('create_code_subscription', {
+                p_code: trimmed,
+                p_plan_id: planToUse
+            });
+            if (rpcErr) throw rpcErr;
+
+            const res = Array.isArray(data) ? data[0] : data;
+            if (!res?.ok) {
+                setError(res?.message || 'No se pudo registrar la suscripción con código.');
+                return;
+            }
+
+            // 2) guarda el código para el canje en el jugador y redirige
+            try {
+                localStorage.setItem('pending_access_code', trimmed);
+                sessionStorage.setItem('pending_access_code', trimmed);
+            } catch {}
+
+            router.replace(`/players/new?via=code&code=${encodeURIComponent(trimmed)}`);
+        } catch (e: any) {
+            setError(e?.message ?? 'Error al registrar la suscripción con código.');
+        }
     };
 
     if (loading) return <div className="p-6">{t('cargando')}</div>;
