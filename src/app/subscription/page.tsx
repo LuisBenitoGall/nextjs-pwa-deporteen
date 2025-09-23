@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { useRouter } from 'next/navigation';
-import { useT, useLocale } from '@/i18n/I18nProvider';
+import { useT } from '@/i18n/I18nProvider';
 
 //Components
 import Input from '../../components/Input';
@@ -32,7 +32,7 @@ export default function SubscriptionPage() {
     const [planId, setPlanId] = useState<string>('');
 
     // Plan gratuito
-    const [freePlanId, setFreePlanId] = useState<string>('');
+    // const [freePlanId, setFreePlanId] = useState<string>('');
 
     // Carga mínima (usuario y plan opcional)
     useEffect(() => {
@@ -50,7 +50,7 @@ export default function SubscriptionPage() {
             setLoading(false);
         })();
         return () => { mounted = false; };
-    }, [supabase]);
+    }, [supabase, t]);
 
     // Acción: Stripe
     const goStripe = async () => {
@@ -106,7 +106,6 @@ export default function SubscriptionPage() {
                 if (planErr) { setError(planErr.message); return; }
                 if (!plan?.id) { setError('No hay plan gratuito activo configurado.'); return; }
                 planToUse = plan.id;
-                setFreePlanId(plan.id);
             }
 
             // 1) valida y registra la suscripción por código en BD

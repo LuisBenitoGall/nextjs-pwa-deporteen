@@ -14,13 +14,11 @@ const SupportFormComponent = ({ sessionUser, onSuccess }: { sessionUser: Session
     const t = useT();
     const [submitting, setSubmitting] = React.useState(false);
     // Nota: el mensaje de éxito se muestra en la página padre vía onSuccess
-    const [ok, setOk] = React.useState<null | string>(null);
     const [err, setErr] = React.useState<null | string>(null);
 
     async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
         setSubmitting(true);
-        setOk(null);
         setErr(null);
 
         const form = e.currentTarget;
@@ -41,8 +39,7 @@ const SupportFormComponent = ({ sessionUser, onSuccess }: { sessionUser: Session
             const json = await res.json();
             if (!res.ok) throw new Error(json.message || 'Error');
             form.reset();
-            setOk(null); // no mostramos mensaje local
-            onSuccess && onSuccess();
+            if (onSuccess) onSuccess();
         } catch (e: any) {
             setErr(e.message || t('mensaje_no_enviado'));
         } finally {

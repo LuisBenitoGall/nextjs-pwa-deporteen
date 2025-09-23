@@ -7,7 +7,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 // Cache instance across HMR in dev
 declare global {
-  // eslint-disable-next-line no-var
+   
   var __supabase_admin__: SupabaseClient | undefined;
 }
 

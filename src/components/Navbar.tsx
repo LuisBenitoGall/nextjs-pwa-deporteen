@@ -46,7 +46,7 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
         setMobileOpen(false);
         setLangOpen(false);
         setUserOpen(false);
-    }, [pathname]);
+    }, [pathname, isProtectedPath]);
 
   // Detecta sesión y suscribe a cambios
     useEffect(() => {
@@ -140,7 +140,7 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
     };
     recheck(0);
     return () => { cancelled = true; };
-  }, [pathname]);
+  }, [pathname, isProtectedPath]);
 
     // Marca el componente como montado para evitar desajustes de hidratación con UI dependiente de auth
     useEffect(() => {

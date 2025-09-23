@@ -1,6 +1,7 @@
 'use client';
 import { useT } from '@/i18n/I18nProvider';
 import Link from 'next/link'
+import Image from 'next/image';
 
 export default function HeroSection() {
     const t = useT();
@@ -36,10 +37,13 @@ export default function HeroSection() {
 
                 {/* Imagen ilustrativa */}
                 <div className="flex justify-center md:justify-end">
-                    <img
-                        src="img/balls.jpg"
-                        alt={t('alt_hero_image')}
-                        className="w-full max-w-md rounded-xl shadow-lg"
+                    <Image
+                        src="/img/balls.jpg"
+                        alt={t('alt_hero_image') || 'Hero'}
+                        width={640}
+                        height={480}
+                        className="w-full max-w-md rounded-xl shadow-lg h-auto"
+                        priority
                     />
                 </div>
             </div>

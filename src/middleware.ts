@@ -15,9 +15,14 @@ export async function middleware(req: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get: (name: string) => req.cookies.get(name)?.value,
-        set: (name: string, value: string, options: any) => res.cookies.set({ name, value, ...options }),
-        remove: (name: string, options: any) => res.cookies.set({ name, value: '', ...options, maxAge: 0 }),
+        getAll() {
+          return req.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            res.cookies.set({ name, value, ...options });
+          });
+        },
       },
     }
   );
@@ -71,7 +76,10 @@ export async function middleware(req: NextRequest) {
   res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.headers.set('X-Content-Type-Options', 'nosniff');
   res.headers.set('X-Frame-Options', 'SAMEORIGIN');
-  res.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  // Allow camera/microphone/geolocation for same-origin so getUserMedia works
+  // Note: syntax varies by browser; the modern form is `Permissions-Policy`, older is `Feature-Policy`.
+  // Here we allow on self. Adjust if you need to allow specific origins: e.g. camera=(self "https://example.com")
+  res.headers.set('Permissions-Policy', 'camera=(self), microphone=(self), geolocation=(self)');
 
   return res;
 }

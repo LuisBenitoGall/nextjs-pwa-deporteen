@@ -1,0 +1,11 @@
+{
+  "$schema": "https://deno.land/x/deno/cli/schemas/config-file.v1.json",
+  "unstable": true,
+  "lint": true,
+  "fmt": true,
+  "compilerOptions": {
+    "types": [
+      "jsr:@supabase/functions-js/edge-runtime.d.ts"
+    ]
+  }
+}

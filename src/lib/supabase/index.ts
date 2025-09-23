@@ -3,7 +3,7 @@
 // para evitar que "use client" se cuele en módulos de servidor.
 // En componentes cliente importa SIEMPRE desde './client' directamente.
 
-export { createClient as createSupabaseServerClient } from './server';
+export { createSupabaseServerClient } from './server';
 export { getSupabaseAdmin, supabaseAdmin } from './admin';
 
 // Tipos útiles (opcionales; no arrastran cliente)

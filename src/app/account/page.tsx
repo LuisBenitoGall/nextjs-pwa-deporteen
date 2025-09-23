@@ -110,7 +110,7 @@ export default async function AccountPage() {
         seats?: number | null;
     };
 
-    const { data: subsRaw, error: subsErr } = await supabase
+    const { data: subsRaw } = await supabase
     .from('subscriptions')
     .select(
       [
@@ -160,7 +160,7 @@ export default async function AccountPage() {
         };
     });
 
-    const nowIso = new Date().toISOString();
+    // const nowIso = new Date().toISOString();
 
     // 2.1) Filtra suscripciones activas POR FECHA y POR STATUS
     const activeSubs = (subsRaw || []).filter((s: any) => {
@@ -191,7 +191,7 @@ export default async function AccountPage() {
     }
     
 
-    const hasActiveSeats = activeSubs.reduce((acc, s: any) => acc + (Number(s.seats) || 1), 0) > 0;
+    // const hasActiveSeats = activeSubs.reduce((acc, s: any) => acc + (Number(s.seats) || 1), 0) > 0;
 
     //
 
@@ -199,11 +199,11 @@ export default async function AccountPage() {
     const currentSubId = subs.find((s) => s.active)?.id || null;
 
     // Créditos pendientes de usar
-    const activeSeats = subs.filter((s) => s.active).length;
+    // const activeSeats = subs.filter((s) => s.active).length;
     //const pendingPlayers = Math.max(0, activeSeats - players.length);
 
     // Server Action: borrado lógico + invalidación global de sesiones + signOut + redirect
-    async function deleteAccount(_formData: FormData) {
+    async function deleteAccount() {
         'use server';
 
         const supabase = await createSupabaseServerClient();

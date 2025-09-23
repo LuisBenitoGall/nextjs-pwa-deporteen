@@ -2,12 +2,10 @@
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, ChangeEvent } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
-import { supabase } from '@/lib/supabase/client';
 import { getCurrentSeasonId } from '@/lib/seasons';
-import { useT, useLocale } from '@/i18n/I18nProvider';
+import { useT } from '@/i18n/I18nProvider';
 
 // Components
-import Checkbox from '../../../components/Checkbox';
 import Input from '../../../components/Input';
 import Select from '../../../components/Select';
 import Submit from '../../../components/Submit';
@@ -51,14 +49,6 @@ export default function NewPlayerPage() {
 
     const MAX_BLOCKS = 5;
     const canAddMore = (n: number) => n < MAX_BLOCKS;
-
-    // ---------- helpers de temporada ----------
-    function currentSeasonKeyFor(date: Date) {
-        const y = date.getFullYear();
-        const aug1 = new Date(y, 7, 1); // 1 agosto
-        if (date >= aug1) return `${y}-${y + 1}`;
-        return `${y - 1}-${y}`;
-    }
 
     // --------------- Categoría y género -----------
     function labelWithGender(c: Category) {
@@ -135,9 +125,9 @@ export default function NewPlayerPage() {
         // Intento con File System Access API
         try {
             // pide guardar con nombre sugerido
-            // @ts-ignore
+            // @ts-expect-error: File System Access API is not in TS lib for all targets
             if (window.showSaveFilePicker) {
-                // @ts-ignore
+                // @ts-expect-error: File System Access API is not in TS lib for all targets
                 const handle = await window.showSaveFilePicker({
                     suggestedName: `${playerId}-${seasonId}-${file.name}`,
                     types: [{ description: 'Imagen', accept: { [file.type || 'image/*']: ['.jpg', '.jpeg', '.png', '.webp'] } }],

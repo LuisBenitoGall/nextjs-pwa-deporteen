@@ -1,5 +1,4 @@
 import HeroSection from '@/components/HeroSection';
-import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 export default function Home() {
     return (

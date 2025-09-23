@@ -1,6 +1,7 @@
 'use client';
 import { supabase } from '@/lib/supabase/client';
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useT, useLocale } from '@/i18n/I18nProvider';
 import Link from 'next/link';
@@ -76,7 +77,7 @@ export default function RegistroPage() {
         setErrorMsg(null);
         try {
             // Alta en Auth con metadatos
-            const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+            const { error: signUpError } = await supabase.auth.signUp({
                 email: data.email,
                 password: data.password,
                 options: {
@@ -148,7 +149,7 @@ export default function RegistroPage() {
                 onClick={handleGoogle}
                 className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 text-gray-700 font-medium py-3 rounded-lg shadow-sm hover:bg-gray-50 mb-6"
             >
-                <img src="/icons/icon-google.svg" alt="Google" className="h-5 w-5" />
+                <Image src="/icons/icon-google.svg" alt="Google" width={20} height={20} />
                 <span>{t('registrate_google')}</span>
             </button>
 

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { supabase } from '@/lib/supabase/client';
 import { useT } from '@/i18n/I18nProvider';
 
@@ -87,7 +88,7 @@ export default function LoginPage() {
                 onClick={handleGoogle}
                 className="mb-6 flex w-full items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white py-3 font-medium text-gray-700 shadow-sm hover:bg-gray-50"
             >
-                <img src="/icons/icon-google.svg" alt="Google" className="h-5 w-5" />
+                <Image src="/icons/icon-google.svg" alt="Google" width={20} height={20} />
                 <span>{t('login')} Google</span>
             </button>
 

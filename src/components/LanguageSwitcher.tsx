@@ -2,20 +2,14 @@
 import { useLocale } from '@/i18n/I18nProvider';
 
 export default function LanguageSwitcher() {
-  const { locale, setLocale } = useLocale();
-
-  const languages = [
-    { code: 'es', label: 'Español' },
-    { code: 'en', label: 'English' },
-    { code: 'ca', label: 'Català' }
-  ];
+  const { locale, setLocale, locales } = useLocale();
 
   return (
     <div className="mt-8 flex justify-center gap-3">
-      {languages.map(({ code, label, disabled }) => (
+      {locales.map(({ code, label, disabled }) => (
         <button
           key={code}
-          onClick={() => !disabled && setLocale(code as any)}
+          onClick={() => !disabled && setLocale(code)}
           disabled={disabled || locale === code}
           className={`px-4 py-2 rounded-full text-sm font-medium transition ${
             locale === code

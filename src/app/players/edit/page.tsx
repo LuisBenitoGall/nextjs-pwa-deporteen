@@ -1,13 +1,8 @@
 'use client';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState, ChangeEvent } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
-import { supabase } from '@/lib/supabase/client';
-import { getCurrentSeasonId } from '@/lib/seasons';
-import { useT, useLocale } from '@/i18n/I18nProvider';
+import { ChangeEvent, FormEvent, useState } from 'react';
+import { useT } from '@/i18n/I18nProvider';
 
 // Components
-import Checkbox from '../../../components/Checkbox';
 import Input from '../../../components/Input';
 import Select from '../../../components/Select';
 import Submit from '../../../components/Submit';
@@ -27,19 +22,43 @@ type MembershipBlock = {
 
 export default function EditPlayerPage() {
     const t = useT();
-    const router = useRouter();
-    const params = useSearchParams();
-    const supabase = useMemo(() => createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!, 
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    ), []);
+    const [name, setName] = useState('');
+    const [blocks, setBlocks] = useState<MembershipBlock[]>([
+      { sportId: '', clubName: '', teamName: '', categoryIds: [] }
+    ]);
+    const [info, setInfo] = useState<string | null>(null);
+    const [err, setErr] = useState<string | null>(null);
+    const [busy, setBusy] = useState(false);
 
+    const sports: Sport[] = [];
+    const categoriesBySport: Record<string, Category[]> = {};
 
+    function setBlock<T extends keyof MembershipBlock>(index: number, key: T, value: MembershipBlock[T]) {
+      setBlocks(prev => prev.map((b, i) => i === index ? { ...b, [key]: value } : b));
+    }
 
+    function removeBlock(index: number) {
+      setBlocks(prev => prev.length > 1 ? prev.filter((_, i) => i !== index) : prev);
+    }
 
+    function addBlock() {
+      setBlocks(prev => [...prev, { sportId: '', clubName: '', teamName: '', categoryIds: [] }]);
+    }
 
-
-
+    async function createOne(e: FormEvent<HTMLFormElement>) {
+      e.preventDefault();
+      try {
+        setBusy(true);
+        setInfo(null);
+        setErr(null);
+        // TODO: Implement create logic
+        setInfo(t('guardado') ?? 'Guardado.');
+      } catch (error: any) {
+        setErr(error?.message ?? 'Error');
+      } finally {
+        setBusy(false);
+      }
+    }
 
 
 

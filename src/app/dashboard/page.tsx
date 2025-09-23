@@ -5,7 +5,6 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { tServer } from '@/i18n/server';
 
 //Components
-import CodeRedeemBanner from '@/components/CodeRedeemBanner';
 import TitleH1 from '../../components/TitleH1';
 
 type Player = {

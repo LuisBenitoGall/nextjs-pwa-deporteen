@@ -6,6 +6,7 @@ import Link from 'next/link';
 
 import { supabase } from '@/lib/supabase/client';
 import { useT, useLocale } from '@/i18n/I18nProvider'; // ajusta la ruta si difiere en tu proyecto
+import { isSupportedLocale } from '@/i18n/config';
 
 // Components (mismos que en Registro)
 import Input from '@/components/Input';
@@ -82,7 +83,6 @@ export default function AccountEditPage() {
     reset,
     formState: { errors, isSubmitting: submittingProfile },
     watch,
-    setValue,
     } = useForm<ProfileForm>({
         resolver: zodResolver(profileSchema),
         defaultValues: {
@@ -100,14 +100,12 @@ export default function AccountEditPage() {
         handleSubmit: handleSubmitPwd,
         reset: resetPwd,
         formState: { errors: errorsPwd, isSubmitting: submittingPwd },
-        watch: watchPwd,
     } = useForm<PasswordForm>({
         resolver: zodResolver(passwordSchema),
         defaultValues: { new_password: '', confirm_password: '' },
     });
 
     const watchLocale = watch('locale');
-    const watchNewPwd = watchPwd('new_password');
 
     // Carga inicial: Auth + public.users
     useEffect(() => {
@@ -182,7 +180,9 @@ export default function AccountEditPage() {
         }
 
         // 3) Sincroniza el contexto de idioma si cambió
-        if (values.locale && values.locale !== locale) setLocale(values.locale);
+        if (values.locale && values.locale !== locale && isSupportedLocale(values.locale)) {
+          setLocale(values.locale);
+        }
 
         setProfileMsg(
             wantsEmailChange

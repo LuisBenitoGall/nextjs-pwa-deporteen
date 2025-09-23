@@ -59,7 +59,7 @@ export default function ConfirmDeleteButton({ onConfirm, label = 'Cancelar cuent
                             </button>
 
                             <form action={onConfirm}>
-                                <SubmitDanger onDone={close} label={t('cancelacion_confirmar')} />
+                                <SubmitDanger label={t('cancelacion_confirmar')} />
                             </form>
                         </div>
                     </div>
@@ -69,7 +69,7 @@ export default function ConfirmDeleteButton({ onConfirm, label = 'Cancelar cuent
     );
 }
 
-function SubmitDanger({ onDone, label }: { onDone: () => void; label: string }) {
+function SubmitDanger({ label }: { label: string }) {
     const { pending } = useFormStatus();
     // No cerramos el modal en onClick; dejamos que la Server Action haga redirect('/').
     // Como fallback, si no hay redirect, cerramos cuando deje de estar pending.
