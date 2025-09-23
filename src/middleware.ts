@@ -65,6 +65,7 @@ export async function middleware(req: NextRequest) {
     `script-src ${scriptSrc}`,
     `style-src 'self' 'unsafe-inline' https:`,
     `img-src 'self' data: blob: https:`,
+    `media-src 'self' blob: data: https:`,
     `font-src 'self' https: data:`,
     `connect-src 'self' https://*.supabase.co https://*.supabase.in https://js.stripe.com https://api.stripe.com https://*.stripe.com https: wss:`,
     `frame-src https://js.stripe.com https://hooks.stripe.com`,
