@@ -2,8 +2,11 @@ import './globals.css';
 import { headers } from 'next/headers';
 import Script from 'next/script';
 import { I18nProvider } from '@/i18n/I18nProvider';
+import { getServerUser, createSupabaseServerClient } from '@/lib/supabase/server';
+
+//Components
 import Navbar from '@/components/Navbar';
-import { getServerUser } from '@/lib/supabase/server';
+import Footer from '@/components/Footer';
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
     const { user } = await getServerUser();
@@ -14,17 +17,21 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
     return (
         <html lang="es">
-            <body>
+            <body className="min-h-screen flex flex-col">
                 <I18nProvider>
                     <Navbar serverUserId={user?.id ?? null} />
 
-                    <main className="mx-auto max-w-5xl px-6 py-10 mt-10">
-                        {children}
+                    <main className="mx-auto w-full max-w-5xl px-6 py-10 mt-10 flex-1">
+                        <div className="mx-auto w-full max-w-3xl">
+                            {children}
+                        </div>
 
                         <Script id="metrics-inline" nonce={nonce}>
                             {`window.__metrics = window.__metrics || {};`}
                         </Script>
                     </main>
+
+                    <Footer />
                 </I18nProvider>
             </body>
         </html>

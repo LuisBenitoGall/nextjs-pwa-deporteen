@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { tServer } from '@/i18n/server';
+import { getSeatStatus } from '@/lib/seats';
 
 // Components
 import ConfirmDeleteButton from '../../components/ConfirmDeleteButton';
@@ -46,6 +47,10 @@ export default async function AccountPage() {
     if (!user) redirect('/login');
     const userId = user.id;
 
+    //Asientos pendientes:
+    const { remaining: pendingPlayers } = await getSeatStatus(userId);
+    const canAddPlayers = pendingPlayers > 0;
+
     // locale del usuario (si no tiene, 'es')
     const { data: me } = await supabase
     .from('users')
@@ -64,10 +69,7 @@ export default async function AccountPage() {
     // --- Jugadores del usuario (listado ligero) ---
     type RawPlayer = {
         id: string;
-        name?: string | null;
-        surname?: string | null;
-        nickname?: string | null;
-        sport?: string | null;
+        full_name?: string | null;
         created_at?: string | null;
     };
 
@@ -83,8 +85,7 @@ export default async function AccountPage() {
 
     const players = (playersRaw || []).map(p => ({
         id: p.id,
-        display: [p.name, p.surname].filter(Boolean).join(' ') || p.nickname || 'Sin nombre',
-        sport: p.sport || null,
+        display: p.full_name?.trim() || 'Sin nombre',
         created_at: p.created_at || null,
     }));
 
@@ -98,7 +99,7 @@ export default async function AccountPage() {
     // Suscripciones del usuario. Ajusta los campos a tu esquema real.
     type RawSub = {
         id: string;
-        status: string | null;
+        status: boolean | string | null;
         amount?: string | number | null;   // <- puede venir string si es int8. En céntimos.
         currency?: string | null;
         start_date?: string | null;
@@ -107,6 +108,7 @@ export default async function AccountPage() {
         current_period_end?: string | null;
         created_at?: string | null;
         canceled_at?: string | null;
+        cancel_at_period_end?: boolean | null;
         seats?: number | null;
     };
 
@@ -118,17 +120,14 @@ export default async function AccountPage() {
         'status',
         'amount', // céntimos
         'currency',
-        'start_date',
-        'end_date',
-        'current_period_start',
         'current_period_end',
         'created_at',
-        'canceled_at',
+        'cancel_at_period_end',
         'seats'
       ].join(',')
     )
     .eq('user_id', userId)
-    .order('start_date', { ascending: false }) as unknown as { data: RawSub[] | null; error: any };
+    .order('created_at', { ascending: false }) as unknown as { data: RawSub[] | null; error: any };
 
     //Suscripciones activas:
     const hasActiveSubscription = (subsRaw || []).some((s: any) => s?.status === true);
@@ -137,28 +136,34 @@ export default async function AccountPage() {
     //     // No rompemos la página por un error de suscripciones
     //     console.error('subscriptions error', subsErr);
     // }
-
     const now = new Date();
     const subs = (subsRaw || []).map((s) => {
-        const start = s.start_date || s.current_period_start || s.created_at || null;
-        const end = s.end_date || s.current_period_end || s.canceled_at || null;
-        const active =
-        s.status === 'active' ||
-        (start ? new Date(start) <= now : false) && (end ? new Date(end) >= now : true);
+        const start = s.created_at || null;
+        const end = s.current_period_end || null;
 
-        //Convierte céntimos a number
-        const amountCents = s.amount == null ? null : Number(typeof s.amount === 'string' ? s.amount : s.amount);
+        // status activo si: status === true (o "active") y no ha pasado la fecha de fin
+        const statusBool = s?.status === true || String(s?.status || '').toLowerCase() === 'active';
+        const activeByDate = end ? new Date(end) >= now : true;
+        const active = statusBool && activeByDate;
+
+        // amount en céntimos -> number
+        const amountCents = s.amount == null
+        ? null
+        : Number(typeof s.amount === 'string' ? s.amount : s.amount);
 
         return {
             id: s.id,
-            status: s.status || (active ? 'active' : 'inactive'),
-            amount: amountCents,
-            currency: s.currency || 'EUR',
+            status: active ? t('activo') : t('inactivo'),     // para la píldora de estado
+            amount: amountCents,                         // en céntimos
+            currency: 'EUR',                             // tu tabla no tiene currency; forzamos EUR
             start,
             end,
             active,
+            cancelAtPeriodEnd: (s as any).cancel_at_period_end === true
         };
     });
+
+    const currentSubId = subs.find((s) => s.active)?.id || null;
 
     const nowIso = new Date().toISOString();
 
@@ -170,7 +175,6 @@ export default async function AccountPage() {
     });
 
     // si no hay suscripciones activas, no hay plazas ni pendientes
-    let pendingPlayers = 0;
     if (activeSubs.length > 0) {
         const activeSubIds = activeSubs.map((s: any) => s.id);
         const totalSeats = activeSubs.reduce((acc: number, s: any) => acc + (Number(s.seats) || 1), 0);
@@ -187,20 +191,14 @@ export default async function AccountPage() {
         }
 
         const assigned = Number(assignedActiveCount || 0);
-        pendingPlayers = Math.max(0, totalSeats - assigned);
     }
-    
 
     const hasActiveSeats = activeSubs.reduce((acc, s: any) => acc + (Number(s.seats) || 1), 0) > 0;
 
-    //
-
     const locale = me?.locale || 'es-ES';
-    const currentSubId = subs.find((s) => s.active)?.id || null;
 
     // Créditos pendientes de usar
     const activeSeats = subs.filter((s) => s.active).length;
-    //const pendingPlayers = Math.max(0, activeSeats - players.length);
 
     // Server Action: borrado lógico + invalidación global de sesiones + signOut + redirect
     async function deleteAccount(_formData: FormData) {
@@ -216,7 +214,7 @@ export default async function AccountPage() {
         const { getSupabaseAdmin } = await import('@/lib/supabase/admin');
         const admin = getSupabaseAdmin();
 
-    const nowIso = new Date().toISOString();
+        const nowIso = new Date().toISOString();
         // Actualiza users por id (uuid de Auth)
         // 1) Desactivar por boolean (si la columna es booleana)
         const { data: updUser, error: uErr } = await admin
@@ -288,72 +286,8 @@ export default async function AccountPage() {
         redirect('/logout');
     }
 
-    // --- PENDIENTES DE REGISTRAR (códigos sin canjear) ---
-    async function countUnredeemedCodes() {
-        const tryTables = ['access_codes'] as const;
-
-        for (const table of tryTables) {
-            // campos típicos: user_id, redeemed_at, player_id, expires_at, seats opcional
-            const { data, error } = await supabase
-              .from(table)
-              .select('id, code, player_id')
-              .eq('user_id', userId)
-              .is('redeemed_at', null);
-
-            // si la tabla no existe, Postgres devuelve 42P01; probamos la siguiente
-            const tableMissing = (error && (error.code === '42P01' || /relation .* does not exist/i.test(error.message)));
-            if (tableMissing) continue;
-            if (error) {
-                console.error(`${table} error`, error);
-                continue;
-            }
-            // cuenta códigos que realmente no estén ligados a jugador
-            const unredeemed = (data || []).filter((r: any) => !r.player_id && !r.redeemed_at).length;
-            return unredeemed;
-        }
-        return null; // no hay tablas de códigos; dejaremos que el plan B se encargue
-    }
-
-    // 1) prueba con códigos sin canjear
-    const unredeemed = await countUnredeemedCodes();
-    if (typeof unredeemed === 'number') {
-        pendingPlayers = unredeemed;
-    } else {
-        // 2) plan B: plazas activas por suscripción menos jugadores creados
-        const now = new Date();
-        const activeSeats = (subsRaw || []).reduce((acc, s: any) => {
-            const status = String(s.status || '').toLowerCase();
-            const statusOk = ['active','trialing','past_due'].includes(status);
-            const startIso = s.start_date || s.current_period_start || s.created_at;
-            const endIso   = s.end_date   || s.current_period_end   || s.canceled_at;
-            const startOk = startIso ? new Date(startIso) <= now : true;
-            const endOk   = endIso   ? new Date(endIso)   >= now : true;
-            if (statusOk && startOk && endOk) {
-              const seats = Number.isFinite((s as any).seats) ? Number((s as any).seats) : 1;
-              return acc + seats;
-            }
-            return acc;
-        }, 0);
-
-        const usedSeats = (playersRaw || []).length;
-        pendingPlayers = Math.max(0, activeSeats - usedSeats);
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     return (
-        <div className="max-w-xl mx-auto">
+        <div>
             <TitleH1>{t('cuenta_mi')}</TitleH1>
 
             {/* Tarjeta de datos personales */}
@@ -399,7 +333,7 @@ export default async function AccountPage() {
                 <div className="flex items-center justify-between">
                     <h2 className="text-base font-semibold text-gray-800">{t('suscripciones')}</h2>
           
-                    {currentSubId && (
+                    {/*{currentSubId && (
                         <form action={renewSubscription}>
                             <input type="hidden" name="subId" value={currentSubId} />
                             <button
@@ -410,7 +344,7 @@ export default async function AccountPage() {
                                 {t('renovar_ahora')}
                             </button>
                         </form>
-                    )}
+                    )}*/}
                 </div>
 
                 <div className="mt-4 overflow-x-auto">
@@ -422,10 +356,10 @@ export default async function AccountPage() {
                             <thead>
                                 <tr className="text-left text-gray-500">
                                     <th className="py-2 pr-4">{t('estado')}</th>
-                                    <th className="py-2 pr-4">{t('importe')}</th>
-                                    <th className="py-2 pr-4">{t('inicio')}</th>
-                                    <th className="py-2 pr-4">{t('fin')}</th>
-                                    <th className="py-2 pr-4">{t('acciones')}</th>
+                                    <th className="py-2 pr-4 text-center">{t('importe')}</th>
+                                    <th className="py-2 pr-4 text-center">{t('inicio')}</th>
+                                    <th className="py-2 pr-4 text-center">{t('fin')}</th>
+                                    <th className="py-2 pr-4 text-center">{t('acciones')}</th>
                                 </tr>
                             </thead>
 
@@ -434,32 +368,36 @@ export default async function AccountPage() {
                                     <tr key={s.id} className="border-t border-gray-100">
                                         <td className="py-3 pr-4">
                                             <span
-                                                className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${s.active
-                                                ? 'bg-green-100 text-green-800'
-                                                : 'bg-gray-100 text-gray-700'
+                                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                                                s.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                                                 }`}
                                             >
-                                                {s.status}
-                                            </span>
+                                                {s.active ? t('activo') : t('inactivo')}
+                                            </span>    
                                         </td>
 
-                                        <td className="py-3 pr-4">{formatAmount(s.amount ?? null, s.currency || 'EUR', locale)} <span className="text-gray-400">(IVA incl.)</span></td>
-                                        <td className="py-3 pr-4">{formatDate(s.start, locale)}</td>
-                                        <td className="py-3 pr-4">{formatDate(s.end, locale)}</td>
-                                        <td className="py-3 pr-4">
-                                            {s.active ? (
-                                                <form action={renewSubscription}>
-                                                    <input type="hidden" name="subId" value={s.id} />
-                                                    <button
-                                                        type="submit"
-                                                        className="rounded-lg border border-gray-300 px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
-                                                    >
-                                                        {t('renovar')}
-                                                    </button>
-                                                </form>
-                                            ) : (
-                                              <span className="text-gray-400">—</span>
-                                            )}
+                                        <td className="py-3 pr-4 text-center">
+                                            {s.amount == null || s.amount === 0
+                                            ? <span className="text-gray-900 font-medium">Free</span>
+                                            : <>
+                                                {formatAmount(s.amount, s.currency || 'EUR', locale)}{' '}
+                                                <span className="text-gray-400">(IVA incl.)</span>
+                                            </>
+                                            }
+                                        </td>
+                                        <td className="py-3 pr-4 text-right">{formatDate(s.start, locale)}</td>
+                                        <td className="py-3 pr-4 text-right">{formatDate(s.end, locale)}</td>
+                                        {/* Renovar */}
+                                        <td className="py-3 pr-4 text-right">
+                                            <form action={renewSubscription}>
+                                                <input type="hidden" name="subId" value={s.id} />
+                                                <button
+                                                    type="submit"
+                                                    className="rounded-xl border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                                                >
+                                                    {t('renovar')}
+                                                </button>
+                                            </form>
                                         </td>
                                     </tr>
                                 ))}
@@ -467,60 +405,77 @@ export default async function AccountPage() {
                         </table>
                     )}
                 </div>
+
+                <p className="mt-3 text-xs text-gray-500">
+                    {t('recibos_ver_question')}{' '}
+                    <Link href="/billing/receipts" className="underline">{t('historial_completo_ver')}</Link>.
+                </p>
             </section>
 
             {/* Jugadores registrados */}
             <section className="mt-8 rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm">
                 <div className="flex items-center justify-between">
                     <h2 className="text-base font-semibold text-gray-800">{t('deportistas') || 'Deportistas'}</h2>
+
                     {pendingPlayers > 0 && (
-                        <Link 
-                            href="/players/new" 
+                        <Link
+                            href="/players/new"
                             className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-2 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50"
                         >
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" />
+                              <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" />
                             </svg>
                             <span>{t('deportista_agregar') || 'Añadir deportista'}</span>
                         </Link>
                     )}
                 </div>
 
-                <div className="mt-4">
+                <div className="mt-4 overflow-x-auto">
                     {players.length === 0 ? (
                         <div className="text-sm">
-                            <p className="text-sm text-gray-500">{t('sin_deportistas') || 'Todavía no has registrado deportistas.'}</p>
-
-                            {pendingPlayers > 0 && (
-                                <p className="ml-4 text-gray-700">
-                                    {t('tienes')} <span className="font-semibold text-gray-900">{pendingPlayers}</span>{' '}
-                                    {pendingPlayers === 1 ? t('deportista') : t('deportistas')} {t('pendientes_alta')}.
+                            {!pendingPlayers && (
+                                <p className="text-sm text-gray-500">
+                                    {t('sin_deportistas') || 'Todavía no has registrado deportistas.'}
                                 </p>
                             )}
-
-                            {!hasActiveSubscription && (
-                                <div className="mt-6">
-                                    <p className="text-amber-700 font-bold">{t('suscripcion_necesaria') || 'Debes contratar un plan de suscripción para crear deportistas.'}</p>
-                                    <p className="mt-1">
-                                        <Link href="/subscription" className="text-amber-800 underline hover:text-amber-900">
-                                            {t('suscribirme') || 'Ir a suscripción'}
-                                        </Link>
-                                    </p>
-                                </div>
+                            {pendingPlayers > 0 && (
+                                <p className="text-gray-700">
+                                    {t('tienes')} <span className="font-semibold text-gray-900">{pendingPlayers}</span>{' '}
+                                    {pendingPlayers === 1 ? t('deportista_pendiente') : t('deportistas_pendientes')} {t('pendientes_alta')}.
+                                </p>
                             )}
                         </div>
                     ) : (
-                        <ul className="divide-y divide-gray-100">
-                            {players.map(p => (
-                                <li key={p.id} className="py-3 flex items-center justify-between">
-                                    <div>
-                                        <div className="font-medium text-gray-900">{p.display}</div>
-                                        {p.sport && <div className="text-xs text-gray-500">{p.sport}</div>}
-                                    </div>
-                                    <Link href={`/players/${p.id}`} className="text-sm text-blue-600 hover:underline">{t('ver_detalle') || 'Ver detalle'}</Link>
-                                </li>
-                            ))}
-                        </ul>
+                        <table className="min-w-full text-sm">
+                            <thead>
+                                <tr className="text-left text-gray-500">
+                                    <th className="py-2 pr-4">{t('nombre') || 'Nombre'}</th>
+                                    <th className="py-2 pr-4 text-center">{t('fecha_alta') || 'Fecha de alta'}</th>
+                                    <th className="py-2 pr-4 text-center">{t('acciones') || 'Acciones'}</th>
+                                </tr>
+                            </thead>
+        
+                            <tbody>
+                                {players.map((p) => (
+                                    <tr key={p.id} className="border-t border-gray-100">
+                                        <td className="py-3 pr-4">
+                                            <span className="font-medium text-gray-900">{p.display}</span>
+                                        </td>
+                                        <td className="py-3 pr-4 text-center">
+                                            {formatDate(p.created_at, me?.locale || 'es-ES')}
+                                        </td>
+                                        <td className="py-3 pr-4 text-right">
+                                            <Link
+                                                href={`/players/${p.id}`}
+                                                className="rounded-xl border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                                            >
+                                                {t('detalle_ver') || 'Ver detalle'}
+                                            </Link>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     )}
                 </div>
             </section>

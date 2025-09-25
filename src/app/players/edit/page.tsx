@@ -34,15 +34,6 @@ export default function EditPlayerPage() {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     ), []);
 
-
-
-
-
-
-
-
-
-
     return (
         <div className="max-w-xl mx-auto">
             <TitleH1>{t('editar')}</TitleH1>

@@ -134,10 +134,10 @@ export default function SubscriptionPage() {
         }
     };
 
-    if (loading) return <div className="p-6">{t('cargando')}</div>;
+    // if (loading) return <div className="p-6">{t('cargando')}</div>;
 
     return (
-        <div className="max-w-xl mx-auto">
+        <div>
             <TitleH1>{t('suscripcion')}</TitleH1>
 
             <div className="p-4 space-y-4">

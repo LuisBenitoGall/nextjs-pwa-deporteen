@@ -66,7 +66,7 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="mx-auto max-w-xl">
+        <div>
             <TitleH1>{t('login')}</TitleH1>
 
             {err && (
