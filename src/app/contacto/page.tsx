@@ -37,7 +37,7 @@ export default function ContactoPage() {
     || (sessionUser?.email ? sessionUser.email.split('@')[0] : undefined);
 
     return (
-        <div className="max-w-xl mx-auto">
+        <div>
             <TitleH1>{t('contacto')}</TitleH1>
 
             {/* Mensaje de éxito bajo el H1 */}

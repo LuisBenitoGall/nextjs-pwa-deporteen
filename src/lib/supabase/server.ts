@@ -5,14 +5,28 @@
 
 import 'server-only';
 import { createClient as createPublicClient, type SupabaseClient } from '@supabase/supabase-js';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 if (!URL) throw new Error('[Supabase Server] Falta NEXT_PUBLIC_SUPABASE_URL');
 if (!ANON) throw new Error('[Supabase Server] Falta NEXT_PUBLIC_SUPABASE_ANON_KEY');
+
+// Cliente SOLO-LECTURA para usar en Server Components (layouts, páginas, loaders).
+export async function createSupabaseServerClientReadOnly(): Promise<SupabaseClient> {
+  const jar = await cookies(); // Next.js 15: async
+  return createServerClient(URL!, ANON!, {
+    cookies: {
+      get(name: string) {
+        return jar.get(name)?.value;
+      },
+      set() {},     // no-op: prohibido escribir cookies en render
+      remove() {},  // no-op
+    },
+  });
+}
 
 /**
  * Crea un Supabase client "consciente" de cookies de sesión en SSR.
@@ -51,10 +65,9 @@ export function getServerAnon(): SupabaseClient {
 
 /** Helper opcional: obtener el usuario actual en servidor. */
 export async function getServerUser() {
-  const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.auth.getUser();
-  if (error) return { user: null, error };
-  return { user: data.user, error: null };
+  const supabase = await createSupabaseServerClientReadOnly(); // ← aquí el cambio
+  const { data: { user }, error } = await supabase.auth.getUser();
+  return { user: error ? null : user };
 }
 
 export type { SupabaseClient };

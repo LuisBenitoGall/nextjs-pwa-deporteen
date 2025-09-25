@@ -11,19 +11,19 @@ let _client: SupabaseClient | null = null;
  * Solo usar en componentes cliente.
  */
 export function supabaseBrowser(): SupabaseClient {
-  if (_client) return _client;
+    if (_client) return _client;
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (!url) {
-    throw new Error('[Supabase Browser] Falta NEXT_PUBLIC_SUPABASE_URL');
-  }
-  if (!anon) {
-    throw new Error('[Supabase Browser] Falta NEXT_PUBLIC_SUPABASE_ANON_KEY');
-  }
+    if (!url) {
+        throw new Error('[Supabase Browser] Falta NEXT_PUBLIC_SUPABASE_URL');
+    }
+    if (!anon) {
+        throw new Error('[Supabase Browser] Falta NEXT_PUBLIC_SUPABASE_ANON_KEY');
+    }
 
-  _client = createBrowserClient(url, anon, {
+    _client = createBrowserClient(url, anon, {
     cookies: {
       get(name: string) {
         if (typeof document === 'undefined') return undefined;
