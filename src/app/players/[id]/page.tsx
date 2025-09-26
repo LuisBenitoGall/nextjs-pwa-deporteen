@@ -307,7 +307,7 @@ export default async function PlayerDetailPage({
 
                                             {/* Ver partidos */}
                                             <Link
-                                                href={`/players/${player.id}/add-match?competition_id=${c.id}`}
+                                                href={`/players/${player.id}/competitions/${c.id}/matches`}
                                                 className="rounded-xl border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 ml-2"
                                             >
                                                 {t('partidos_ver')}

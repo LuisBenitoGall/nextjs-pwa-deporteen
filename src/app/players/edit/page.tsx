@@ -50,7 +50,6 @@ export default function EditPlayerPage() {
                     placeholder={t('nombre')} 
                 />
 
-
                 {/* 2–7) Bloques replicables */}
                 <div className="space-y-6">
                     {blocks.map((b, i) => {
