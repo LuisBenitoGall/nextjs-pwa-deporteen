@@ -259,7 +259,7 @@ export default function AccountEditPage() {
                 </button>
             </div>
 
-            {/*Panels*/}
+            {/* Panels */}
             {tab === 'profile' ? (
                 <form onSubmit={onSubmitProfile} className="space-y-4">
                     {profileErr && (
