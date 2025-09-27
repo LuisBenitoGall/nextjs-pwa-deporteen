@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import NewPlayerForm from './NewPlayerForm';
 
-export default async function Page({ searchParams }: { searchParams?: Record<string,string> }) {
+export default async function Page({ searchParams }: { searchParams?: Promise<Record<string, string>> }) {
     const supabase = await createSupabaseServerClient();
 
     // Seguro: en servidor usa getUser(), no getSession()
@@ -16,7 +16,8 @@ export default async function Page({ searchParams }: { searchParams?: Record<str
         remaining = typeof data === 'number' ? data : (data?.remaining ?? data?.seats ?? 0);
     } catch { /* si peta, remaining=0 y bloqueamos alta */ }
 
-    const hasCode = !!searchParams?.code;
+    const resolvedSearchParams = await searchParams;
+    const hasCode = !!resolvedSearchParams?.code;
     if (remaining <= 0 && !hasCode) {
         redirect('/dashboard?no-seats=1');
     }
@@ -24,7 +25,7 @@ export default async function Page({ searchParams }: { searchParams?: Record<str
     return (
         <NewPlayerForm
             initialSeats={remaining}
-            initialCode={searchParams?.code ?? ''}
+            initialCode={resolvedSearchParams?.code ?? ''}
         />
     );
 }

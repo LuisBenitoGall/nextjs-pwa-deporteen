@@ -47,7 +47,7 @@ export const runtime = 'nodejs';
 export default async function ReceiptsPage({
     searchParams,
 }: {
-    searchParams?: { sid?: string };
+    searchParams?: Promise<{ sid?: string }>;
 }) {
     const supabase = await createSupabaseServerClient();
 
@@ -69,7 +69,8 @@ export default async function ReceiptsPage({
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) redirect('/login');
 
-    const sid = searchParams?.sid || null;
+    const resolvedSearchParams = await searchParams;
+    const sid = resolvedSearchParams?.sid || null;
 
     // Traer recibos del usuario (opcionalmente filtrados por suscripción)
     const q = supabase

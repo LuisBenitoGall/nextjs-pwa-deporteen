@@ -28,7 +28,7 @@ export default async function DashboardPage() {
     const canAddPlayers = pendingPlayers > 0;
 
     // Usuario para locale/estado
-    const { data: me, error: meErr } = await supabase
+    const { data: me } = await supabase
     .from('users')
     .select('locale, status')
     .eq('id', userId)
@@ -45,7 +45,7 @@ export default async function DashboardPage() {
     // 1) Suscripciones: varias filas posibles
     // Regla: existe suscripción si hay >= 1 fila; está "activa" si la última no ha vencido aún,
     // independientemente del booleano status.
-    const { data: subs, error: subsErr } = await supabase
+    const { data: subs } = await supabase
     .from('subscriptions')
     .select('current_period_end, status')
     .eq('user_id', userId)
@@ -59,19 +59,12 @@ export default async function DashboardPage() {
     const isActiveByDate = latest ? (latest.current_period_end && latest.current_period_end > nowIso) : false;
 
     // 2) Seats restantes (para el botón Agregar)
-    let seatsRemaining: number | null = null;
     let seatsErrMsg: string | null = null;
     try {
         // Reutilizamos el RPC que usas en otras vistas
-        const { data: seatsData, error: seatsErr } = await supabase.rpc('seats_remaining', { p_user_id: userId });
+        const { error: seatsErr } = await supabase.rpc('seats_remaining', { p_user_id: userId });
         if (seatsErr) throw seatsErr;
-        // seats_remaining puede devolver null/number/objeto; normalizo a number
-        seatsRemaining = typeof seatsData === 'number'
-        ? seatsData
-        : (seatsData && typeof seatsData.remaining === 'number'
-          ? seatsData.remaining
-          : null);
-    } catch (e: any) {
+    } catch {
         seatsErrMsg = t('error_asientos_indisponibles'); // añade esta clave
     }
 

@@ -5,12 +5,11 @@ import { useT } from '@/i18n/I18nProvider';
 
 // Components
 import Input from '@/components/Input';
-import Submit from '@/components/Submit';
 
 export default function EditPlayerNameModal({
     playerId,
     currentName,
-    buttonLabel = t('editar'),
+    buttonLabel: buttonLabelProp,
 }: {
     playerId: string;
     currentName: string;
@@ -61,7 +60,7 @@ export default function EditPlayerNameModal({
         }
     };
 
-    const btnText = buttonLabel ?? t('editar');
+    const btnText = buttonLabelProp ?? t('editar');
 
     return (
         <>

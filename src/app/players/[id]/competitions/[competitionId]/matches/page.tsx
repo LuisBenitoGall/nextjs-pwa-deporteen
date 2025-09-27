@@ -35,7 +35,6 @@ type Competition = {
 };
 type Season = { id: string; year_start: number | null; year_end: number | null };
 type Sport = { id: string; name: string | null; stats: any | null };
-type Team = { id: string; name: string | null };
 
 export default function MatchesByCompetitionPage() {
     const t = useT();
@@ -47,7 +46,6 @@ export default function MatchesByCompetitionPage() {
     const [error, setError] = useState<string | null>(null);
 
     const [competition, setCompetition] = useState<Competition | null>(null);
-    const [team, setTeam] = useState<Team | null>(null);
     const [matches, setMatches] = useState<MatchRow[]>([]);
     const [season, setSeason] = useState<Season | null>(null);
     const [sport, setSport] = useState<Sport | null>(null);
@@ -101,18 +99,6 @@ export default function MatchesByCompetitionPage() {
             if (cErr) { setError(cErr.message); setLoading(false); return; }
             setCompetition(comp as Competition);
 
-            // 2) Equipo del jugador (opcional)
-            const teamId = (comp as Competition)?.team_id;
-            if (teamId) {
-                const { data: teamRow } = await supabase
-                .from('teams')
-                .select('id, name')
-                .eq('id', teamId)
-                .maybeSingle();
-                if (!mounted) return;
-                setTeam((teamRow as Team) || null);
-            }
-
             // 3) Temporada (opcional)
             const compSeasonId = (comp as Competition)?.season_id ?? null;
             if (compSeasonId) {
@@ -162,20 +148,12 @@ export default function MatchesByCompetitionPage() {
     if (loading) return <div className="p-6">{t('cargando') || 'Cargando…'}</div>;
     if (error) return <div className="p-6 text-red-600">{error}</div>;
 
-    const myTeamName = team?.name || (t('mi_equipo') || 'Mi equipo');
-
     const seasonLabel =
     season?.year_start && season?.year_end
     ? `${season.year_start}-${season.year_end}`
     : null;
 
     // 4.a) Serie de marcador por fecha
-    const scoreSeries = matches.map(m => ({
-        date: new Date(m.date_at).toLocaleDateString(),
-        aFavor: Number(m.my_score ?? 0),
-        enContra: Number(m.rival_score ?? 0),
-    }));
-
     // 4.b) Detectar métricas numéricas desde sport.stats y matches.stats
     function normalizeType(t: any): 'number'|'text'|'boolean' {
         const v = String(t||'').toLowerCase();
@@ -221,13 +199,6 @@ export default function MatchesByCompetitionPage() {
     })();
 
     // 4.c) Dataset para barras por partido con esas métricas
-    const statSeries = matches.map(m => {
-        const row: any = { date: new Date(m.date_at).toLocaleDateString() };
-        const s = (m.stats as Record<string, any>) || {};
-        for (const k of statKeys) row[k] = typeof s[k] === 'number' ? s[k] : 0;
-        return row;
-    });
-
     // Partidos jugados
     const matchesPlayed = matches.length || 0;
 
@@ -277,13 +248,6 @@ if (scoringKey) {
 // Pastel: contribución del jugador vs total del equipo (PF)
 const teamTotalForPie = pfTotal || 0;
 const otherTeam = Math.max(0, teamTotalForPie - playerScoringTotal);
-const pieData = [
-  { name: t('jugador') || 'Jugador', value: playerScoringTotal },
-  { name: t('resto_equipo') || 'Resto del equipo', value: otherTeam },
-];
-// Colores (dos, que no vamos a montar un arcoíris)
-const PIE_COLORS = ['#22c55e', '#e5e7eb'];
-
 
 
 
@@ -491,11 +455,19 @@ const PIE_COLORS = ['#22c55e', '#e5e7eb'];
             <PieChart>
               <Tooltip />
               <Legend />
-              <Pie data={pieData} dataKey="value" nameKey="name" innerRadius="55%" outerRadius="80%">
-  {pieData.map((_, i) => (
-    <Cell key={`slice-${i}`} fill={i === 0 ? WIN_COLOR : '#e5e7eb'} />
-  ))}
-</Pie>
+              <Pie
+                data={[
+                  { name: t('jugador') || 'Jugador', value: playerScoringTotal },
+                  { name: t('resto_equipo') || 'Resto del equipo', value: otherTeam },
+                ]}
+                dataKey="value"
+                nameKey="name"
+                innerRadius="55%"
+                outerRadius="80%"
+              >
+                <Cell fill={WIN_COLOR} />
+                <Cell fill="#e5e7eb" />
+              </Pie>
 
             </PieChart>
           </ResponsiveContainer>

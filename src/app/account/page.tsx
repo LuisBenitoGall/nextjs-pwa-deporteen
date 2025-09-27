@@ -49,7 +49,6 @@ export default async function AccountPage() {
 
     //Asientos pendientes:
     const { remaining: pendingPlayers } = await getSeatStatus(userId);
-    const canAddPlayers = pendingPlayers > 0;
 
     // locale del usuario (si no tiene, 'es')
     const { data: me } = await supabase
@@ -129,8 +128,9 @@ export default async function AccountPage() {
     .eq('user_id', userId)
     .order('created_at', { ascending: false }) as unknown as { data: RawSub[] | null; error: any };
 
-    //Suscripciones activas:
-    const hasActiveSubscription = (subsRaw || []).some((s: any) => s?.status === true);
+    if (subsErr) {
+        console.error('subscriptions error', subsErr);
+    }
 
     // if (subsErr) {
     //     // No rompemos la página por un error de suscripciones
@@ -163,45 +163,10 @@ export default async function AccountPage() {
         };
     });
 
-    const currentSubId = subs.find((s) => s.active)?.id || null;
-
-    const nowIso = new Date().toISOString();
-
-    // 2.1) Filtra suscripciones activas POR FECHA y POR STATUS
-    const activeSubs = (subsRaw || []).filter((s: any) => {
-        const statusTrue = s?.status === true || String(s?.status || '').toLowerCase() === 'active';
-        const ends = s?.current_period_end ? new Date(s.current_period_end) : null;
-        return statusTrue && ends != null && ends > new Date();
-    });
-
-    // si no hay suscripciones activas, no hay plazas ni pendientes
-    if (activeSubs.length > 0) {
-        const activeSubIds = activeSubs.map((s: any) => s.id);
-        const totalSeats = activeSubs.reduce((acc: number, s: any) => acc + (Number(s.seats) || 1), 0);
-
-        // 2.2) Cuenta vínculos activos en subscription_players
-        const { count: assignedActiveCount, error: spErr } = await supabase
-        .from('subscription_players')
-        .select('*', { count: 'exact', head: true })
-        .in('subscription_id', activeSubIds)
-        .is('unlinked_at', null);
-
-        if (spErr) {
-            console.error('subscription_players count error', spErr);
-        }
-
-        const assigned = Number(assignedActiveCount || 0);
-    }
-
-    const hasActiveSeats = activeSubs.reduce((acc, s: any) => acc + (Number(s.seats) || 1), 0) > 0;
-
     const locale = me?.locale || 'es-ES';
 
-    // Créditos pendientes de usar
-    const activeSeats = subs.filter((s) => s.active).length;
-
     // Server Action: borrado lógico + invalidación global de sesiones + signOut + redirect
-    async function deleteAccount(_formData: FormData) {
+    async function deleteAccount() {
         'use server';
 
         const supabase = await createSupabaseServerClient();
