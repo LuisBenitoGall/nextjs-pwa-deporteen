@@ -8,8 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "types": "tsc --noEmit",
-    "approve-builds": "next build && next export && cp -r public out && cp -r _redirects out/_redirects"
+    "types": "tsc --noEmit"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",
