@@ -6,9 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useT } from '@/i18n/I18nProvider';
 
 // Components de tu proyecto
-import Checkbox from '@/components/Checkbox';
 import Input from '@/components/Input';
-import Select from '@/components/Select';
 import Submit from '@/components/Submit';
 import Textarea from '@/components/Textarea';
 import TitleH1 from '@/components/TitleH1';
@@ -78,10 +76,6 @@ export default function NewMatchEmbedded({ playerId }: Props) {
     const [awayScore, setAwayScore] = useState<number | ''>('');
     const [notes, setNotes] = useState<string>('');
 
-    // Stats dinámicas
-    const [statSchema, setStatSchema] = useState<any>(null);
-    const [customStats, setCustomStats] = useState<Record<string, any>>({});
-
     // Soporte a ?competition_id=... por si se usa el componente fuera
     const preCompetition = searchParams.get('competition_id') || '';
 
@@ -125,8 +119,6 @@ export default function NewMatchEmbedded({ playerId }: Props) {
                     setCompetitionId(current.id);
                     setSportId(current.sport_id);
                     setSeasonId(current.season_id || '');
-                    const sp = sportsData?.find(s => s.id === current.sport_id);
-                    if (sp) setStatSchema(sp.stats || null);
                 }
             }
       
@@ -139,55 +131,6 @@ export default function NewMatchEmbedded({ playerId }: Props) {
     }, [supabase, preCompetition, playerId, t]);
 
     // actualiza esquema stats cuando cambie sportId
-    useEffect(() => {
-        if (!sportId) {
-          setStatSchema(null);
-          setCustomStats({});
-          return;
-        }
-        const sp = sports.find(s => s.id === sportId);
-        setStatSchema(sp?.stats || null);
-        setCustomStats({});
-    }, [sportId, sports]);
-
-    // helpers de stats
-    function normalizeType(tpe: any): string {
-        const v = String(tpe || '').toLowerCase();
-        if (v.includes('bool')) return 'boolean';
-        if (v.includes('int') || v.includes('number') || v.includes('float')) return 'number';
-        return 'text';
-    }
-    const parsedStatFields = (() => {
-        const out: Array<{ key: string; label: string; type: string }> = [];
-        if (!statSchema) return out;
-        if (Array.isArray(statSchema)) {
-            for (const item of statSchema) {
-                const key = item?.key ?? item?.name ?? item?.id;
-                if (!key) continue;
-                out.push({ key, label: item.label ?? key, type: normalizeType(item.type) });
-            }
-        } else if (typeof statSchema === 'object') {
-            for (const key of Object.keys(statSchema)) {
-                const def = statSchema[key] || {};
-                out.push({ key, label: def.label ?? key, type: normalizeType(def.type) });
-            }
-        }
-        return out;
-    })();
-
-    function onChangeStat(key: string, type: string, value: any) {
-        setCustomStats(prev => {
-            let v: any = value;
-            if (type === 'number') {
-                v = value === '' ? null : Number(value);
-                if (Number.isNaN(v)) v = null;
-            } else if (type === 'boolean') {
-                v = !!value;
-            }
-            return { ...prev, [key]: v };
-        });
-    }
-
     // opciones de competición
     const compOptions = competitions.map(c => ({ value: c.id, label: c.name }));
 
@@ -234,7 +177,7 @@ export default function NewMatchEmbedded({ playerId }: Props) {
             away_score: awayScore === '' ? null : Number(awayScore),
             notes: notes || null,
             player_id: playerId, // fijo y obligatorio
-            stats: Object.keys(customStats).length ? customStats : null,
+            stats: null,
           };
 
           const { data, error: iErr } = await supabase

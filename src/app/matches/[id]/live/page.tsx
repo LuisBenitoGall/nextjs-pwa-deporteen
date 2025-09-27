@@ -7,7 +7,7 @@
 
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabaseBrowser } from '../../../../lib/supabase/client';
 import { useParams } from 'next/navigation';
 import { getCurrentSeasonId } from '@/lib/seasons';
@@ -62,8 +62,27 @@ export default function LiveMatchPage() {
     const [notes, setNotes] = useState<string>('');
     const [stats, setStats] = useState<Record<string, any>>({});
 
-    const draftKey = `match:${matchId}:draft`;
+    const draftKey = useMemo(() => `match:${matchId}:draft`, [matchId]);
     const savingRef = useRef<NodeJS.Timeout | null>(null);
+
+    const scheduleSave = useCallback(() => {
+        const draft = { my_score: myScore, rival_score: rivalScore, notes, stats };
+        try { localStorage.setItem(draftKey, JSON.stringify(draft)); } catch {}
+
+        if (!navigator.onLine) return;
+        if (savingRef.current) clearTimeout(savingRef.current);
+        savingRef.current = setTimeout(async () => {
+            await supabase
+            .from('matches')
+            .update({
+              my_score: myScore,
+              rival_score: rivalScore,
+              notes,
+              stats: Object.keys(stats || {}).length ? stats : null,
+            })
+            .eq('id', matchId);
+        }, 800);
+    }, [draftKey, matchId, myScore, notes, rivalScore, stats, supabase]);
 
     useEffect(() => {
         let mounted = true;
@@ -134,44 +153,50 @@ export default function LiveMatchPage() {
                 const draft = localStorage.getItem(draftKey);
                 if (draft) {
                     const d = JSON.parse(draft);
-                    if (typeof d.my_score === 'number') setMyScore(d.my_score);
-                    if (typeof d.rival_score === 'number') setRivalScore(d.rival_score);
-                    if (typeof d.notes === 'string') setNotes(d.notes);
-                    if (d.stats && typeof d.stats === 'object') setStats(d.stats);
+                    if (typeof d.my_score === 'number') {
+                        setMyScore(d.my_score);
+                    }
+                    if (typeof d.rival_score === 'number') {
+                        setRivalScore(d.rival_score);
+                    }
+                    if (typeof d.notes === 'string') {
+                        setNotes(d.notes);
+                    }
+                    if (d.stats && typeof d.stats === 'object') {
+                        setStats(d.stats);
+                    }
                 }
-            } catch {}
+            } catch (err) {
+                if (err instanceof Error) {
+                    setError(err.message);
+                }
+            }
 
             setLoading(false);
         })();
 
         return () => { mounted = false; };
-    }, [supabase, matchId]);
-
-    function scheduleSave() {
-        // Guarda siempre draft local
-        const draft = { my_score: myScore, rival_score: rivalScore, notes, stats };
-        try { localStorage.setItem(draftKey, JSON.stringify(draft)); } catch {}
-
-        // Si estamos online, hacer UPDATE con debounce
-        if (!navigator.onLine) return;
-        if (savingRef.current) clearTimeout(savingRef.current);
-        savingRef.current = setTimeout(async () => {
-            await supabase
-            .from('matches')
-            .update({
-              my_score: myScore,
-              rival_score: rivalScore,
-              notes,
-              stats: Object.keys(stats || {}).length ? stats : null,
-            })
-            .eq('id', matchId);
-        }, 800);
-    }
+    }, [draftKey, matchId, supabase]);
 
     // Autosave en cambios
-    useEffect(() => { if (!loading) scheduleSave(); }, [myScore, rivalScore, notes, stats]);
+    useEffect(() => {
+        if (loading) return;
+        scheduleSave();
+        return () => {
+            if (savingRef.current) {
+                clearTimeout(savingRef.current);
+            }
+        };
+    }, [loading, myScore, notes, rivalScore, scheduleSave, stats]);
 
     if (loading) return <div className="p-6">{t('cargando') || 'Cargando…'}</div>;
+    if (error) {
+        return (
+            <div className="p-6 text-red-600">
+                {error}
+            </div>
+        );
+    }
     if (!match) return <div className="p-6">{t('no_encontrado') || 'No encontrado'}</div>;
 
     // Local SIEMPRE a la izquierda, visitante a la derecha
@@ -197,10 +222,34 @@ export default function LiveMatchPage() {
     const rightScore = leftIsHome ? rivalScore : myScore;
 
     // Handlers para botones ± respetando el mapeo izquierda/local
-    function incLeft()  { leftIsHome ? setMyScore(myScore + 1) : setRivalScore(rivalScore + 1); }
-    function decLeft()  { leftIsHome ? setMyScore(Math.max(0, myScore - 1)) : setRivalScore(Math.max(0, rivalScore - 1)); }
-    function incRight() { leftIsHome ? setRivalScore(rivalScore + 1) : setMyScore(myScore + 1); }
-    function decRight() { leftIsHome ? setRivalScore(Math.max(0, rivalScore - 1)) : setMyScore(Math.max(0, myScore - 1)); }
+    function incLeft() {
+        if (leftIsHome) {
+            setMyScore((prev) => prev + 1);
+        } else {
+            setRivalScore((prev) => prev + 1);
+        }
+    }
+    function decLeft() {
+        if (leftIsHome) {
+            setMyScore((prev) => Math.max(0, prev - 1));
+        } else {
+            setRivalScore((prev) => Math.max(0, prev - 1));
+        }
+    }
+    function incRight() {
+        if (leftIsHome) {
+            setRivalScore((prev) => prev + 1);
+        } else {
+            setMyScore((prev) => prev + 1);
+        }
+    }
+    function decRight() {
+        if (leftIsHome) {
+            setRivalScore((prev) => Math.max(0, prev - 1));
+        } else {
+            setMyScore((prev) => Math.max(0, prev - 1));
+        }
+    }
 
     // Definición de stats dinámicas desde sports.stats
     const statDefs: Array<{ key: string; label: string; type: 'number'|'text'|'boolean' }> = (() => {

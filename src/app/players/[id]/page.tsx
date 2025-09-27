@@ -9,7 +9,6 @@ import { tServer } from '@/i18n/server';
 import EditPlayerNameModal from '@/components/EditPlayerNameModal';
 import TitleH1 from '@/components/TitleH1';
 
-type PageProps = { params: { id: string } };
 type PageParams = { id: string };
 
 export default async function PlayerDetailPage({
@@ -129,7 +128,7 @@ export default async function PlayerDetailPage({
     row?.s ? `${row.s.year_start}-${row.s.year_end}` : String(row?.season_id ?? '—');
 
     // Conteo de partidos por competición en la temporada vigente
-    let matchesCountByComp = new Map<string, number>();
+    const matchesCountByComp = new Map<string, number>();
 
     if (currentSeasonId && competitions.length > 0) {
         const compIds = competitions.map((c: any) => c.id);

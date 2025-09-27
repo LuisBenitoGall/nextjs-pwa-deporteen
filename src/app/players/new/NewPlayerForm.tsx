@@ -161,9 +161,9 @@ export default function NewPlayerForm({
     // Guardado local de avatar
     async function saveAvatarLocally(file: File, playerId: string, seasonId: string) {
         try {
-            // @ts-ignore
+            // @ts-expect-error experimental API
             if (window.showSaveFilePicker) {
-                // @ts-ignore
+                // @ts-expect-error experimental API
                 const handle = await window.showSaveFilePicker({
                     suggestedName: `${playerId}-${seasonId}-${file.name}`,
                     types: [{ description: 'Imagen', accept: { [file.type || 'image/*']: ['.jpg', '.jpeg', '.png', '.webp'] } }],

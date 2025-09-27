@@ -18,7 +18,6 @@ export default function SubscriptionPage() {
     );
 
     // Estado
-    const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     //const [activeUntil, setActiveUntil] = useState<Date | null>(null);
 
@@ -42,12 +41,10 @@ export default function SubscriptionPage() {
             if (!mounted) return;
             if (!user) {
                 setError(t('sesion_iniciar_aviso'));
-                setLoading(false);
                 return;
             }
             // Si quieres, puedes precargar un plan activo; por ahora lo dejamos vacío
             setPlanId(process.env.NEXT_PUBLIC_DEFAULT_PLAN_ID || '');
-            setLoading(false);
         })();
         return () => { mounted = false; };
     }, [supabase, t]);

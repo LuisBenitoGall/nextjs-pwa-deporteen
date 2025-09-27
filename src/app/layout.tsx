@@ -2,7 +2,7 @@ import './globals.css';
 import { headers } from 'next/headers';
 import Script from 'next/script';
 import { I18nProvider } from '@/i18n/I18nProvider';
-import { getServerUser, createSupabaseServerClient } from '@/lib/supabase/server';
+import { getServerUser } from '@/lib/supabase/server';
 
 //Components
 import Navbar from '@/components/Navbar';
