@@ -1,3 +1,32 @@
+
+
+
+## QUERIES:
+	- Truncate de tablas:
+	BEGIN;
+	TRUNCATE TABLE
+	  public.competitions,
+	  public.teams,
+	  public.clubs,
+	  public.player_seasons,
+	  public.players,
+	  public.access_code_usages,
+	  public.subscriptions
+	RESTART IDENTITY CASCADE;
+	COMMIT;
+
+
+
+
+
+
+
+
+
+
+
+
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started

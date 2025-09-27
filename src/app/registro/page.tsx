@@ -135,7 +135,7 @@ export default function RegistroPage() {
     };
 
     return (
-        <div className="max-w-xl mx-auto">
+        <div>
             <TitleH1>{t('registro_h1')}</TitleH1>
 
             <div className="text-center text-sm text-gray-500 mb-6">
