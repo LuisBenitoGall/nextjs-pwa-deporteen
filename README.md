@@ -49,6 +49,20 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Configuración de Stripe
+
+Para que el panel de administración pueda crear y gestionar cupones, precios, enlaces de pago e invoices en Stripe, debes definir las siguientes variables en tu `.env` (o en el proveedor de despliegue) **con tus propios valores**:
+
+```bash
+STRIPE_SECRET_KEY=sk_live_o_test_...
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_o_test_...
+```
+
+- **`STRIPE_SECRET_KEY`** se usa únicamente en el backend de Next.js para llamar a la API de Stripe.
+- **`NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`** se expone en el cliente para las integraciones que lo requieran.
+
+Solo las cuentas con rol de administrador acceden a las rutas de gestión de Stripe (`/admin/stripe/...`). Asegúrate de mantener las claves fuera del control de versiones y de almacenarlas en un gestor seguro.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

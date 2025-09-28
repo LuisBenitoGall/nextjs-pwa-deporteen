@@ -60,10 +60,10 @@ export default function CreateCouponForm() {
         duration_in_months:
           duration === 'repeating' && parsedDurationInMonths && !Number.isNaN(parsedDurationInMonths)
             ? parsedDurationInMonths
-            : null,
+            : undefined,
         max_redemptions:
-          parsedMaxRedemptions && !Number.isNaN(parsedMaxRedemptions) ? parsedMaxRedemptions : null,
-        redeem_by: redeemBy ? redeemBy.toISOString() : null,
+          parsedMaxRedemptions && !Number.isNaN(parsedMaxRedemptions) ? parsedMaxRedemptions : undefined,
+        redeem_by: redeemBy ? redeemBy.toISOString() : undefined,
       };
 
       const response = await fetch('/api/stripe/coupons', {

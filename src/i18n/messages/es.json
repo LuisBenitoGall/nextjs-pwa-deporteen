@@ -413,5 +413,17 @@
   "stripe_coupons_create_dialog_description": "Crear un nuevo cupón para tus clientes",
   "stripe_coupons_create_coupon_description": "Descripción",
   "stripe_coupons_create_success_description": "El cupón ha sido creado con éxito.",
-  "stripe_coupons_create_description": "Crear un nuevo cupón para tus clientes"
+  "stripe_coupons_create_description": "Crear un nuevo cupón para tus clientes",
+  "stripe_coupons_edit_open": "Editar",
+  "stripe_coupons_edit_title": "Editar cupón",
+  "stripe_coupons_edit_name": "Nombre",
+  "stripe_coupons_edit_redeem_by": "Válido hasta",
+  "stripe_coupons_edit_max_redemptions": "Límite de canjes",
+  "stripe_coupons_edit_metadata": "Metadatos (JSON opcional)",
+  "stripe_coupons_edit_metadata_hint": "Proporciona un objeto JSON con pares clave-valor.",
+  "stripe_coupons_edit_submit": "Guardar cambios",
+  "stripe_coupons_edit_cancel": "Cancelar",
+  "stripe_coupons_edit_success": "Cupón actualizado correctamente.",
+  "stripe_coupons_edit_error": "No se pudo actualizar el cupón.",
+  "stripe_coupons_column_metadata": "Metadatos"
 }

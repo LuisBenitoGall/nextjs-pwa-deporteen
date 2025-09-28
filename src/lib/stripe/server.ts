@@ -9,7 +9,6 @@ export function getStripe(): Stripe {
       throw new Error('[Stripe] STRIPE_SECRET_KEY is not defined.');
     }
     stripeSingleton = new Stripe(secret, {
-      apiVersion: '2025-08-27.basil',
       appInfo: {
         name: 'DeporTeen Admin',
       },

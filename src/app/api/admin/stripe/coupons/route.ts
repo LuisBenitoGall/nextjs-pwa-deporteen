@@ -130,30 +130,6 @@ export async function PATCH(req: NextRequest) {
       params.name = typeof body.name === 'string' && body.name.trim() !== '' ? body.name.trim() : null;
     }
 
-    if (body?.redeemBy !== undefined) {
-      if (body.redeemBy === null || body.redeemBy === '') {
-        params.redeem_by = null;
-      } else {
-        const redeemByUnix = parseDateToUnix(body.redeemBy);
-        if (redeemByUnix === undefined) {
-          return NextResponse.json({ error: 'redeemBy must be a valid date' }, { status: 400 });
-        }
-        params.redeem_by = redeemByUnix;
-      }
-    }
-
-    if (body?.maxRedemptions !== undefined) {
-      if (body.maxRedemptions === null || body.maxRedemptions === '') {
-        params.max_redemptions = null;
-      } else {
-        const maxRedeemNumber = Number(body.maxRedemptions);
-        if (!Number.isFinite(maxRedeemNumber) || maxRedeemNumber <= 0) {
-          return NextResponse.json({ error: 'maxRedemptions must be a positive number' }, { status: 400 });
-        }
-        params.max_redemptions = Math.floor(maxRedeemNumber);
-      }
-    }
-
     if (body?.metadata !== undefined) {
       if (body.metadata === null || body.metadata === '') {
         params.metadata = {};
