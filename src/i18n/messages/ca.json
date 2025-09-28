@@ -378,6 +378,7 @@
   "stripe_coupons_edit_success": "Cupó actualitzat correctament.",
   "stripe_coupons_edit_error": "No s'ha pogut actualitzar el cupó.",
   "stripe_coupons_column_metadata": "Metadades",
+  "stripe_add_product_button": "Afegir producte",
   "admin_access_denied_title": "Accés restringit",
   "admin_access_denied_message": "El teu compte no té permisos d'administració. Contacta amb el responsable del projecte si creus que és un error.",
   "admin_access_denied_link": "Tornar a l'inici",
