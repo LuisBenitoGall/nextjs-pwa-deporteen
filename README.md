@@ -56,10 +56,12 @@ Para que el panel de administración pueda crear y gestionar cupones, precios, e
 ```bash
 STRIPE_SECRET_KEY=sk_live_o_test_...
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_o_test_...
+NEXT_PUBLIC_ADMIN_EMAILS=admin@tu-dominio.com,otro@tu-dominio.com
 ```
 
 - **`STRIPE_SECRET_KEY`** se usa únicamente en el backend de Next.js para llamar a la API de Stripe.
 - **`NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`** se expone en el cliente para las integraciones que lo requieran.
+- **`NEXT_PUBLIC_ADMIN_EMAILS`** es una lista separada por comas con los correos que tendrán acceso a la administración de Stripe.
 
 Solo las cuentas con rol de administrador acceden a las rutas de gestión de Stripe (`/admin/stripe/...`). Asegúrate de mantener las claves fuera del control de versiones y de almacenarlas en un gestor seguro.
 
