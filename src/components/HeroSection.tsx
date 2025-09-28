@@ -1,10 +1,36 @@
 'use client';
-import { useT } from '@/i18n/I18nProvider';
-import Link from 'next/link'
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import Image from 'next/image';
+import { useT } from '@/i18n/I18nProvider';
+import { supabase } from '@/lib/supabase/client';
+
+import type { Session } from '@supabase/supabase-js';
 
 export default function HeroSection() {
     const t = useT();
+    const [session, setSession] = useState<Session | null>(null);
+    const [authChecked, setAuthChecked] = useState(false);
+
+    useEffect(() => {
+        let mounted = true;
+
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (!mounted) return;
+            setSession(session ?? null);
+            setAuthChecked(true);
+        });
+
+        const { data: listener } = supabase.auth.onAuthStateChange((_, nextSession) => {
+            setSession(nextSession ?? null);
+            setAuthChecked(true);
+        });
+
+        return () => {
+            mounted = false;
+            listener.subscription.unsubscribe();
+        };
+    }, []);
 
     return (
         <section className="px-6 pb-20 pt-8">
@@ -20,19 +46,21 @@ export default function HeroSection() {
                     <p className="mt-6 text-lg text-gray-600">
                         {t('descripcion')}
                     </p>
-                    <div className="mt-8 flex flex-col sm:flex-row justify-center md:justify-start gap-4">
-                        <Link href="/registro">
-                            <button className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg shadow transition">
-                            {t('registrate')}
-                            </button>
-                        </Link>
+                    {authChecked && !session && (
+                        <div className="mt-8 flex flex-col sm:flex-row justify-center md:justify-start gap-4">
+                            <Link href="/registro">
+                                <button className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg shadow transition">
+                                    {t('registrate')}
+                                </button>
+                            </Link>
 
-                        <Link href="/login">
-                            <button className="border border-green-600 text-green-600 hover:bg-green-50 font-semibold px-6 py-3 rounded-lg transition">
-                                {t('login')}
-                            </button>
-                        </Link>
-                    </div>
+                            <Link href="/login">
+                                <button className="border border-green-600 text-green-600 hover:bg-green-50 font-semibold px-6 py-3 rounded-lg transition">
+                                    {t('login')}
+                                </button>
+                            </Link>
+                        </div>
+                    )}
                 </div>
 
                 {/* Imagen ilustrativa */}

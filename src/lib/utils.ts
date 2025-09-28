@@ -14,6 +14,17 @@ export function formatDate(input: string | number): string {
   })
 }
 
+export function formatCurrency(amount: number, currency = 'usd', locale = 'es-ES') {
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency: currency.toUpperCase(),
+    }).format(amount)
+  } catch {
+    return `${amount} ${currency}`
+  }
+}
+
 export function absoluteUrl(path: string) {
   return `${process.env.NEXT_PUBLIC_APP_URL || ""}${path}`
 }
