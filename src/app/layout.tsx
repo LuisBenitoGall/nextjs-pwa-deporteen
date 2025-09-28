@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import Script from 'next/script';
 import { I18nProvider } from '@/i18n/I18nProvider';
 import { getServerUser } from '@/lib/supabase/server';
+import { ToastProvider } from '@/components/ui/toast';
 
 //Components
 import Navbar from '@/components/Navbar';
@@ -19,24 +20,24 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <html lang="es">
             <body className="min-h-screen flex flex-col">
                 <I18nProvider>
-                    <Navbar serverUserId={user?.id ?? null} />
+                    <ToastProvider>
+                        <Navbar serverUserId={user?.id ?? null} />
+                        <main className="mx-auto w-full max-w-5xl px-6 py-10 mt-10 flex-1">
+                            <div className="mx-auto w-full max-w-3xl">
+                                {children}
+                            </div>
 
-                    <main className="mx-auto w-full max-w-5xl px-6 py-10 mt-10 flex-1">
-                        <div className="mx-auto w-full max-w-3xl">
-                            {children}
-                        </div>
+                            <Script id="metrics-inline" nonce={nonce}>
+                                {`window.__metrics = window.__metrics || {};`}
+                            </Script>
+                        </main>
 
-                        <Script id="metrics-inline" nonce={nonce}>
-                            {`window.__metrics = window.__metrics || {};`}
-                        </Script>
-                    </main>
-
-                    <Footer />
+                        <Footer />
+                    </ToastProvider>
                 </I18nProvider>
             </body>
         </html>
     );
 }
-
 
  

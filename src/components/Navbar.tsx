@@ -3,8 +3,24 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
+import {
+    CreditCard,
+    LayoutDashboard,
+    LogOut,
+    PackageSearch,
+    Receipt,
+    ShieldCheck,
+    ShoppingCart,
+    Tag,
+    Ticket,
+    type LucideIcon,
+    UserCircle2,
+    UserCog,
+} from 'lucide-react';
+import type { User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase/client';
 import { useLocale, useT } from '@/i18n/I18nProvider';
+import { isAdminUser } from '@/lib/auth/roles';
 
 // Components
 import Select from '@/components/Select';
@@ -23,6 +39,7 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
     const [user, setUser] = useState<UserLike>(serverUserId ? ({ id: serverUserId } as any) : null);
     const [langOpen, setLangOpen] = useState(false);
     const [userOpen, setUserOpen] = useState(false);
+    const [adminOpen, setAdminOpen] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
     // Marca que ya verificamos el estado de auth en el cliente
@@ -30,6 +47,7 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
 
     const langRef = useRef<HTMLDivElement>(null);
     const userRef = useRef<HTMLDivElement>(null);
+    const adminRef = useRef<HTMLDivElement>(null);
     const loggingOutRef = useRef(false);
   const router = useRouter();
   const pathname = usePathname();
@@ -226,6 +244,7 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
           const target = e.target as Node;
           if (langRef.current && !langRef.current.contains(target)) setLangOpen(false);
           if (userRef.current && !userRef.current.contains(target)) setUserOpen(false);
+          if (adminRef.current && !adminRef.current.contains(target)) setAdminOpen(false);
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -259,12 +278,46 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
         t('usuario') ||
         'usuario';
 
+    const supabaseUser = (user ?? null) as unknown as User | null;
+    const isAdmin = isAdminUser(supabaseUser);
+
+    const navLinks = [
+        { href: '/', label: t('inicio') || 'Inicio' },
+        { href: '/contacto', label: t('contacto') || 'Contacto' },
+    ];
+
+    const adminMenuItems: { href: string; label: string; Icon: LucideIcon }[] = isAdmin
+        ? [
+            { href: '/admin/stripe', label: t('stripe_admin_dashboard') || 'Panel general', Icon: ShieldCheck },
+            { href: '/admin/stripe/products', label: t('stripe_admin_products') || 'Productos', Icon: PackageSearch },
+            { href: '/admin/stripe/prices', label: t('stripe_admin_prices') || 'Planes y precios', Icon: Tag },
+            { href: '/admin/stripe/payment-links', label: t('stripe_admin_payments') || 'Pagos únicos', Icon: ShoppingCart },
+            { href: '/admin/stripe/subscriptions', label: t('stripe_admin_subscriptions') || 'Suscripciones', Icon: CreditCard },
+            { href: '/admin/stripe/coupons', label: t('stripe_admin_coupons') || 'Cupones', Icon: Ticket },
+            { href: '/admin/stripe/invoices', label: t('stripe_admin_invoices') || 'Facturas', Icon: Receipt },
+        ]
+        : [];
+
+    const userMenuItems: { href: string; label: string; Icon: LucideIcon }[] = [
+        { href: '/dashboard', label: t('mi_panel') || 'Mi Panel', Icon: LayoutDashboard },
+        { href: '/account', label: t('cuenta_mi') || 'Mi Cuenta', Icon: UserCog },
+    ];
+
+    const pathnameClean = (pathname || '/').split('?')[0];
+
+    const desktopLinkClasses = (active: boolean) => [
+        'rounded-lg px-3 py-2 text-sm font-semibold transition-colors',
+        active
+            ? 'bg-emerald-500/15 text-emerald-600 shadow-sm dark:bg-emerald-400/20 dark:text-emerald-300'
+            : 'text-slate-100 hover:text-white hover:bg-emerald-500/10 dark:text-zinc-200 dark:hover:text-white'
+    ].join(' ');
+
     // Selector de idioma (desktop)
     const LangSelectorDesktop = (
         <div className="relative" ref={langRef}>
           <button
             onClick={() => setLangOpen(o => !o)}
-            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm hover:text-green-600"
+            className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-slate-100 transition-colors hover:text-white hover:bg-emerald-500/10"
             aria-haspopup="listbox"
             aria-expanded={langOpen}
           >
@@ -275,7 +328,7 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
           </button>
 
           {langOpen && (
-            <div className="absolute right-0 z-50 mt-2 w-44 rounded-md border border-gray-200 bg-white shadow-md">
+            <div className="absolute right-0 z-50 mt-2 w-44 rounded-md border border-slate-700 bg-slate-800/95 text-slate-100 shadow-lg shadow-emerald-500/10">
               {locales.map(({ code, label, disabled }) => (
                 <button
                   key={code}
@@ -287,9 +340,11 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
                   }}
                   disabled={disabled}
                   className={[
-                    'block w-full px-3 py-2 text-left text-sm',
-                    disabled ? 'cursor-not-allowed text-gray-400' : 'hover:bg-green-50 text-gray-700',
-                    locale === code ? 'bg-green-100 font-semibold' : '',
+                    'block w-full px-3 py-2 text-left text-sm font-medium rounded-md',
+                    disabled
+                      ? 'cursor-not-allowed text-slate-500'
+                      : 'text-slate-100 transition-colors hover:bg-emerald-500/15',
+                    locale === code ? 'bg-emerald-500/25 text-white' : '',
                   ].join(' ')}
                 >
                   {label}
@@ -305,10 +360,11 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
         <div className="relative" ref={userRef}>
             <button
                 onClick={() => setUserOpen(o => !o)}
-                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm font-medium text-gray-700 hover:text-green-600"
+                className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-slate-100 transition-colors hover:text-white hover:bg-emerald-500/10"
                 aria-haspopup="menu"
                 aria-expanded={userOpen}
             >
+                <UserCircle2 className="h-4 w-4" aria-hidden="true" />
                 {t('hola') || 'Hola'}, {displayName}
                 <svg width="14" height="14" viewBox="0 0 20 20" aria-hidden="true">
                     <path d="M5 7l5 6 5-6H5z" fill="currentColor" />
@@ -316,30 +372,29 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
             </button>
 
             {userOpen && (
-                <div className="absolute right-0 z-50 mt-2 w-48 rounded-md border border-gray-200 bg-white shadow-md">
-                    <Link
-                    href="/dashboard"
-                    onClick={() => setUserOpen(false)}
-                    className="block px-3 py-2 text-sm text-gray-700 hover:bg-green-50"
-                    >
-                        {t('mi_panel') || 'Mi Panel'}
-                    </Link>
-                  
-                    <Link
-                        href="/account"
-                        onClick={() => setUserOpen(false)}
-                        className="block px-3 py-2 text-sm text-gray-700 hover:bg-green-50"
-                    >
-                        {t('cuenta_mi') || 'Mi Cuenta'}
-                    </Link>
-                  
+                <div className="absolute right-0 z-50 mt-2 w-48 rounded-md border border-slate-700 bg-slate-800/95 text-slate-100 shadow-lg shadow-emerald-500/10">
+                    <div className="space-y-1 px-1 py-1">
+                        {userMenuItems.map(item => (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                onClick={() => setUserOpen(false)}
+                                className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-slate-100 transition-colors hover:bg-emerald-500/15"
+                            >
+                                <item.Icon className="h-4 w-4" aria-hidden="true" />
+                                {item.label}
+                            </Link>
+                        ))}
+                    </div>
+
                     <button
                         onClick={async () => {
                           await handleLogout();
                           setUserOpen(false);
                         }}
-                        className="block w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-green-50"
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium text-slate-100 transition-colors hover:bg-emerald-500/15"
                     >
+                        <LogOut className="h-4 w-4" aria-hidden="true" />
                         {t('logout') || 'Salir'}
                     </button>
                 </div>
@@ -349,29 +404,70 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
 
   // Placeholder de menú de usuario (desktop) mientras resolvemos auth en rutas protegidas
   const UserMenuPlaceholder = (
-    <div className="h-8 w-36 rounded-md bg-gray-200 animate-pulse" aria-hidden="true" />
+    <div className="h-8 w-36 rounded-md bg-slate-700/60 animate-pulse" aria-hidden="true" />
+  );
+
+  const AdminMenuDesktop = isAdmin && (
+    <div className="relative" ref={adminRef}>
+      <button
+        onClick={() => setAdminOpen(o => !o)}
+        className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-slate-100 transition-colors hover:text-white hover:bg-emerald-500/10"
+        aria-haspopup="menu"
+        aria-expanded={adminOpen}
+      >
+        {t('stripe_admin_menu') || 'Administración Stripe'}
+        <svg width="14" height="14" viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M5 7l5 6 5-6H5z" fill="currentColor" />
+        </svg>
+      </button>
+
+      {adminOpen && (
+        <div className="absolute right-0 z-50 mt-2 w-56 rounded-md border border-slate-700 bg-slate-800/95 text-slate-100 shadow-lg shadow-emerald-500/10">
+          <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+            {t('stripe_admin_manage') || 'Gestionar Stripe'}
+          </div>
+          <div className="space-y-1 px-2 pb-2">
+            {adminMenuItems.map(item => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setAdminOpen(false)}
+                className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-emerald-500/15"
+              >
+                <item.Icon className="h-4 w-4" aria-hidden="true" />
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 
   // Mostrar CTAs: en rutas protegidas no mostramos CTAs aunque aún no se haya resuelto user
   const showCTAs = mounted && !isProtectedPath && ((hideAuthUI) ? true : (authChecked && !user));
 
   return (
-        <nav className="fixed left-0 right-0 top-0 z-50 border-b border-gray-200 bg-gray-50/95 backdrop-blur supports-[backdrop-filter]:bg-gray-50/80">
+        <nav className="fixed left-0 right-0 top-0 z-50 border-b border-slate-700 bg-slate-900/95 text-slate-100 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-slate-900/80 dark:border-zinc-700 dark:bg-zinc-950/80">
             <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:h-16 sm:px-6 lg:px-8">
                 {/* Brand */}
-                <div className="text-lg font-semibold text-green-700">
+                <div className="text-lg font-bold text-emerald-500">
                     <Link href="/">{BRAND}</Link>
                 </div>
 
                 {/* Desktop nav */}
                 <div className="hidden items-center gap-6 md:flex">
-                    <Link href="/" className="text-sm font-medium text-gray-700 hover:text-green-600">
-                        {t('inicio') || 'Inicio'}
-                    </Link>
+                    {navLinks.map(({ href, label }) => (
+                        <Link
+                            key={href}
+                            href={href}
+                            className={desktopLinkClasses(pathnameClean === href)}
+                        >
+                            {label}
+                        </Link>
+                    ))}
 
-                    <Link href="/contacto" className="text-sm font-medium text-gray-700 hover:text-green-600">
-                        {t('contacto') || 'Contacto'}
-                    </Link>
+          {AdminMenuDesktop}
 
           {LangSelectorDesktop}
 
@@ -385,13 +481,13 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
                         <div className="flex items-center gap-3">
                             <Link
                                 href="/login"
-                                className="rounded-md px-3 py-1.5 text-sm font-medium text-gray-700 hover:text-green-600"
+                                className="rounded-md px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:text-green-600 dark:text-zinc-200 dark:hover:text-emerald-300"
                             >
                                 {t('login') || 'Entrar'}
                             </Link>
                             <Link
                                 href="/registro"
-                                className="rounded-md bg-green-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-green-700"
+                                className="rounded-md bg-green-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-green-700 dark:bg-emerald-500 dark:hover:bg-emerald-400"
                             >
                                 {t('registrate') || 'Registrarse'}
                             </Link>
@@ -401,7 +497,7 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
 
                 {/* Mobile: hamburger */}
                 <button
-                  className="inline-flex items-center justify-center rounded-md p-2 text-gray-700 hover:bg-gray-100 md:hidden"
+                  className="inline-flex items-center justify-center rounded-md p-2 text-gray-700 transition-colors hover:bg-gray-100 dark:text-zinc-200 dark:hover:bg-zinc-800 md:hidden"
                   aria-label="Open menu"
                   onClick={() => setMobileOpen(true)}
                 >
@@ -421,17 +517,17 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
 
                     <div
                         className={[
-                          'fixed right-0 top-0 z-[70] h-full w-80 translate-x-0 transform bg-white',
+                          'fixed right-0 top-0 z-[70] h-full w-80 translate-x-0 transform bg-white dark:bg-zinc-950',
                           'shadow-2xl drop-shadow-2xl ring-1 ring-black/10 transition-transform md:hidden',
                           'shadow-[-10px_0_30px_rgba(0,0,0,0.25)]',
                         ].join(' ')}
                         role="dialog"
                         aria-modal="true"
                     >
-                        <div className="flex bg-white items-center justify-between px-4 py-3">
-                            <span className="text-base font-semibold text-green-700">{BRAND}</span>
+                        <div className="flex items-center justify-between bg-white px-4 py-3 dark:bg-zinc-950">
+                            <span className="text-base font-semibold text-green-700 dark:text-emerald-300">{BRAND}</span>
                             <button
-                                className="rounded-md p-2 text-gray-700 hover:bg-gray-100"
+                                className="rounded-md p-2 text-gray-700 transition-colors hover:bg-gray-100 dark:text-zinc-200 dark:hover:bg-zinc-800"
                                 aria-label="Close menu"
                                 onClick={() => setMobileOpen(false)}
                             >
@@ -442,12 +538,12 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
                         </div>
 
                         <div className="flex h-[calc(100%-3.25rem)] flex-col justify-between">
-                            <ul className="bg-white space-y-0 px-2 py-3">
+                            <ul className="space-y-0 bg-white px-2 py-3 dark:bg-zinc-950">
                                 {/* Saludo */}
                 {mounted && !hideAuthUI && authChecked && user && (
                                     <>
                                         <li className="pt-2">
-                                            <span className="block select-none px-3 py-2 text-sm font-semibold text-gray-900">
+                                            <span className="block select-none px-3 py-2 text-sm font-semibold text-gray-900 dark:text-zinc-100">
                                                 {(t('hola') || 'Hola') + ', ' + displayName}
                                             </span>
                                         </li>
@@ -457,9 +553,9 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
                                 {/* Inicio */}
                                 <li>
                                     <Link
-                                    href="/"
-                                    className="block rounded-md px-3 py-2 text-sm font-medium text-gray-800 hover:bg-green-50"
-                                    onClick={() => setMobileOpen(false)}
+                                        href="/"
+                                        className="block rounded-md px-3 py-2 text-sm font-medium text-gray-800 transition-colors hover:bg-green-50 dark:text-zinc-200 dark:hover:bg-emerald-900/30"
+                                        onClick={() => setMobileOpen(false)}
                                     >
                                         {t('inicio') || 'Inicio'}
                                     </Link>
@@ -469,36 +565,50 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
                                 <li>
                                     <Link
                                         href="/contacto"
-                                        className="block rounded-md px-3 py-2 text-sm font-medium text-gray-800 hover:bg-green-50"
+                                        className="block rounded-md px-3 py-2 text-sm font-medium text-gray-800 transition-colors hover:bg-green-50 dark:text-zinc-200 dark:hover:bg-emerald-900/30"
                                         onClick={() => setMobileOpen(false)}
                                     >
                                         {t('contacto') || 'Contacto'}
                                     </Link>
                                 </li>
 
-                                {/* Saludo y opciones personales (enlazadas como <li> individuales).
-                                Solo si hay usuario, y el saludo va el primero de todos. */}
+                                {isAdmin && (
+                                    <li className="pt-2 mt-2 border-t border-slate-700">
+                                        <span className="block px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                            {t('stripe_admin_manage') || 'Administración Stripe'}
+                                        </span>
+                                        <ul className="space-y-1">
+                                            {adminMenuItems.map(item => (
+                                                <li key={item.href}>
+                                                    <Link
+                                                        href={item.href}
+                                                        onClick={() => setMobileOpen(false)}
+                                                        className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-gray-100 transition-colors hover:bg-emerald-500/10 dark:text-zinc-200 dark:hover:bg-emerald-900/30"
+                                                    >
+                                                        <item.Icon className="h-4 w-4" aria-hidden="true" />
+                                                        {item.label}
+                                                    </Link>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </li>
+                                )}
+
+                                {/* Saludo y opciones personales solo cuando hay usuario */}
                                 {mounted && !hideAuthUI && authChecked && user && (
                                     <>
-                                        <li>
-                                          <Link
-                                            href="/dashboard"
-                                            onClick={() => setMobileOpen(false)}
-                                            className="block rounded-md px-3 py-2 text-sm font-medium text-gray-800 hover:bg-green-50"
-                                          >
-                                            {t('mi_panel') || 'Mi Panel'}
-                                          </Link>
-                                        </li>
-
-                                        <li>
-                                          <Link
-                                            href="/account"
-                                            onClick={() => setMobileOpen(false)}
-                                            className="block rounded-md px-3 py-2 text-sm font-medium text-gray-800 hover:bg-green-50"
-                                          >
-                                            {t('cuenta_mi') || 'Mi Cuenta'}
-                                          </Link>
-                                        </li>
+                                        {userMenuItems.map(item => (
+                                          <li key={item.href}>
+                                            <Link
+                                              href={item.href}
+                                              onClick={() => setMobileOpen(false)}
+                                              className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-gray-100 transition-colors hover:bg-emerald-500/10 dark:text-zinc-200 dark:hover:bg-emerald-900/30"
+                                            >
+                                              <item.Icon className="h-4 w-4" aria-hidden="true" />
+                                              {item.label}
+                                            </Link>
+                                          </li>
+                                        ))}
 
                                         <li>
                                           <button
@@ -506,8 +616,9 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
                                               await handleLogout();
                                               setMobileOpen(false);
                                             }}
-                                            className="block w-full rounded-md px-3 py-2 text-left text-sm font-medium text-gray-800 hover:bg-green-50"
+                                            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-gray-100 transition-colors hover:bg-emerald-500/10 dark:text-zinc-200 dark:hover:bg-emerald-900/30"
                                           >
+                                            <LogOut className="h-4 w-4" aria-hidden="true" />
                                             {t('logout') || 'Salir'}
                                           </button>
                                         </li>
@@ -521,7 +632,7 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
                                           <Link
                                             href="/login"
                                             onClick={() => setMobileOpen(false)}
-                                            className="block rounded-md px-3 py-2 text-sm font-medium text-gray-800 hover:bg-green-50"
+                                            className="block rounded-md px-3 py-2 text-sm font-medium text-gray-100 transition-colors hover:bg-emerald-500/10 dark:text-zinc-200 dark:hover:bg-emerald-900/30"
                                           >
                                             {t('login') || 'Entrar'}
                                           </Link>
@@ -530,7 +641,7 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
                                           <Link
                                             href="/registro"
                                             onClick={() => setMobileOpen(false)}
-                                            className="block rounded-md px-3 py-2 text-sm font-medium text-gray-800 hover:bg-green-50"
+                                            className="block rounded-md px-3 py-2 text-sm font-medium text-gray-100 transition-colors hover:bg-emerald-500/10 dark:text-zinc-200 dark:hover:bg-emerald-900/30"
                                           >
                                             {t('registrate') || 'Registrarse'}
                                           </Link>
