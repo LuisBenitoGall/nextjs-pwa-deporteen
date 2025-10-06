@@ -246,71 +246,89 @@ export default async function PlayerDetailPage({
 
             {/* Competiciones actuales */}
             <section className="mt-8 rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm">
-                <div className="flex items-center justify-between">
-                    <h2 className="mb-3 text-lg font-semibold">
-                        {t('competiciones')}.
-                        <span className="text-gray-500 ml-3">
-                            {t('temporada')}{' '}
-                            <b>
-                                {currentSeason
-                                ? `${currentSeason.year_start}-${currentSeason.year_end}`
-                                : `${startYear}-${endYear}`}
-                            </b>
-                        </span>
-                    </h2>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <h2 className="text-lg font-semibold">
+                  {t('competiciones')}.
+                  <span className="text-gray-500 ml-3 align-baseline">
+                    {t('temporada')}{' '}
+                    <b>{currentSeason ? `${currentSeason.year_start}-${currentSeason.year_end}` : `${startYear}-${endYear}`}</b>
+                  </span>
+                </h2>
+
+                {currentSeasonId && (
+                  <Link
+                    href={`/players/${player.id}/competitions/new?season=${currentSeasonId}`}
+                    className="self-start sm:self-auto inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
+                    <span className="whitespace-nowrap">{t('competicion_nueva') || 'Nueva competición'}</span>
+                  </Link>
+                )}
                 </div>
-                
-                <div className="mt-4 overflow-x-auto">
+
+                {/* Contenedor con scroll horizontal en móvil, suave en desktop, inercia iOS */}
+                <div
+                className="relative -mx-4 sm:mx-0 mt-4 overflow-x-auto md:overflow-visible px-4 sm:px-0 md:scroll-smooth"
+                aria-label={t('tabla_desplazar_horizontal') || 'Desplaza horizontalmente para ver la tabla completa'}
+                style={{
+                  WebkitOverflowScrolling: 'touch',
+                  WebkitMaskImage:
+                    'linear-gradient(to right, transparent 0, black 16px, black calc(100% - 16px), transparent 100%)'
+                }}
+                >
                     {competitions.length === 0 ? (
-                        <p className="text-sm text-gray-500">
-                            {t('sin_competiciones_actuales')}
-                        </p>
+                        <p className="text-sm text-gray-500">{t('sin_competiciones_actuales')}</p>
                     ) : (
-                    
-                        <table className="min-w-full text-sm">
+                        <table className="min-w-[760px] md:min-w-full text-sm">
                             <thead>
                                 <tr className="text-left text-gray-500">
-                                    <th className="py-2">{t('nombre') || 'Competición'}</th>
-                                    <th className="py-2">{t('deporte') || 'Deporte'}</th>
-                                    <th className="py-2">{t('club') || 'Club'}</th>
-                                    <th className="py-2">{t('equipo') || 'Equipo'}</th>
+                                    {/* th pegajoso en móvil */}
+                                    <th className="py-2 pr-4 sticky left-0 z-10 bg-white">{t('nombre') || 'Competición'}</th>
+                                    <th className="py-2 pr-4">{t('deporte') || 'Deporte'}</th>
+                                    <th className="py-2 pr-4">{t('club') || 'Club'}</th>
+                                    <th className="py-2 pr-4">{t('equipo') || 'Equipo'}</th>
                                     <th className="py-2 text-center">{t('partidos') || 'Partidos'}</th>
                                     <th className="py-2 text-center">{t('acciones') || 'Acciones'}</th>
                                 </tr>
                             </thead>
-                        
+
                             <tbody>
                                 {competitions.map((c: any) => (
                                     <tr key={c.id} className="border-t border-gray-100">
-                                        <td className="py-3 pr-4">
-                                            <div className="font-medium text-gray-900">{c.name || t('no_definida')}</div>
-                                            {/*<div className="text-xs text-gray-500">
-                                                {t('creado_el', { date: formatDate(c.created_at, locale) })}
-                                            </div>*/}
+                                        {/* td pegajoso en móvil con leve sombra lateral para separar */}
+                                        <td
+                                            className="py-3 pr-4 sticky left-0 z-10 bg-white"
+                                            style={{ boxShadow: 'inset -8px 0 8px -8px rgba(0,0,0,0.08)' }}
+                                        >
+                                            <div className="font-medium text-gray-900 break-words">
+                                              {c.name || t('no_definida')}
+                                            </div>
                                         </td>
                                         <td className="py-3 pr-4">{c?.sport?.name || '—'}</td>
                                         <td className="py-3 pr-4">{c?.club?.name || '—'}</td>
                                         <td className="py-3 pr-4">{c?.team?.name || '—'}</td>
-                                        <td className="py-3 pr-4 text-right">
+                                        <td className="py-3 pr-2 text-center tabular-nums">
                                             {matchesCountByComp.get(c.id) ?? 0}
                                         </td>
-                                        <td className="py-3 pr-4 text-right">
-                                            {/* Nuevo partido */}
-                                            <Link
-                                                href={`/players/${player.id}/matches/new`}
-
-                                                className="rounded-xl border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
-                                            >
+                                        <td className="py-3 pr-4">
+                                            <div className="flex flex-wrap justify-end gap-2">
+                                              {/* Nuevo partido con competition en query */}
+                                              <Link
+                                                href={`/players/${player.id}/matches/new?competition=${c.id}`}
+                                                className="inline-flex items-center rounded-xl border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 whitespace-nowrap min-h-9"
+                                              >
                                                 {t('partido_nuevo')}
-                                            </Link>
+                                              </Link>
 
-                                            {/* Ver partidos */}
-                                            <Link
+                                              <Link
                                                 href={`/players/${player.id}/competitions/${c.id}/matches`}
-                                                className="rounded-xl border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 ml-2"
-                                            >
+                                                className="inline-flex items-center rounded-xl border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 whitespace-nowrap min-h-9"
+                                              >
                                                 {t('partidos_ver')}
-                                            </Link>
+                                              </Link>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}

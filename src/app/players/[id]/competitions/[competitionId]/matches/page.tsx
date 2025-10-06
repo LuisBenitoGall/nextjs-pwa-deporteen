@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import { supabaseBrowser } from '../../../../../../lib/supabase/client';
@@ -58,7 +58,7 @@ export default function MatchesByCompetitionPage() {
     const PF_COLOR   = WIN_COLOR;  // PF en verde
     const PC_COLOR   = LOSS_COLOR; // PC en rojo
 
-    // Helpers para colorear por nombre (respetan i18n básico)
+    // Helpers para colorear por nombre (respetan i18n bÃ¡sico)
     const colorForWLD = (name: string) => {
       const n = name.toLowerCase();
       if (n.includes('gan')) return WIN_COLOR;     // Ganados
@@ -79,16 +79,16 @@ export default function MatchesByCompetitionPage() {
             setLoading(true);
             setError(null);
 
-            // 0) Validación de params
+            // 0) ValidaciÃ³n de params
             if (!playerId || !competitionId) {
                 if (mounted) {
-                    setError('Faltan parámetros de ruta (playerId o competitionId).');
+                    setError('Faltan parÃ¡metros de ruta (playerId o competitionId).');
                     setLoading(false);
                 }
                 return;
             }
 
-            // 1) Competición
+            // 1) CompeticiÃ³n
             const { data: comp, error: cErr } = await supabase
             .from('competitions')
             .select('id, name, sport_id, season_id, team_id')
@@ -123,7 +123,7 @@ export default function MatchesByCompetitionPage() {
                 setSport((sportRow as Sport) || null);
             }
 
-            // 5) Partidos del jugador en esta competición (+ temporada si existe)
+            // 5) Partidos del jugador en esta competiciÃ³n (+ temporada si existe)
             let q = supabase
             .from('matches')
             .select('id, date_at, place, is_home, rival_team_name, my_score, rival_score, competition_id, season_id, player_id, stats')
@@ -145,7 +145,7 @@ export default function MatchesByCompetitionPage() {
         return () => { mounted = false; };
     }, [supabase, playerId, competitionId]);
 
-    if (loading) return <div className="p-6">{t('cargando') || 'Cargando…'}</div>;
+    if (loading) return <div className="p-6">{t('cargando') || 'Cargandoâ€¦'}</div>;
     if (error) return <div className="p-6 text-red-600">{error}</div>;
 
     const seasonLabel =
@@ -154,7 +154,7 @@ export default function MatchesByCompetitionPage() {
     : null;
 
     // 4.a) Serie de marcador por fecha
-    // 4.b) Detectar métricas numéricas desde sport.stats y matches.stats
+    // 4.b) Detectar mÃ©tricas numÃ©ricas desde sport.stats y matches.stats
     function normalizeType(t: any): 'number'|'text'|'boolean' {
         const v = String(t||'').toLowerCase();
         if (v.includes('bool')) return 'boolean';
@@ -162,45 +162,82 @@ export default function MatchesByCompetitionPage() {
         return 'text';
     }
 
-    const statKeys: string[] = (() => {
-        const keys: string[] = [];
+    const statDefs = (() => {
+        const defs: Array<{ key: string; label: string; type: 'number'|'text'|'boolean' }> = [];
+        const seen = new Set<string>();
         const schema = sport?.stats;
-        // 1) Preferimos lo que diga el schema
+
+        const pushField = (field: any, fallbackKey?: string) => {
+            const key = typeof fallbackKey === 'string' && fallbackKey.trim().length > 0
+                ? fallbackKey
+                : field?.key ?? field?.name ?? field?.id;
+            if (!key || seen.has(key)) return;
+            seen.add(key);
+            const label = typeof field?.label === 'string' && field.label.trim().length > 0 ? field.label : key;
+            const type = normalizeType(field?.type);
+            defs.push({ key, label, type });
+        };
+
         if (schema) {
+            const maybeFields = (schema as any)?.fields;
+            if (Array.isArray(maybeFields)) {
+                for (const field of maybeFields) pushField(field);
+            }
             if (Array.isArray(schema)) {
-                for (const it of schema) {
-                    const key = it?.key ?? it?.name ?? it?.id;
-                    if (key && normalizeType(it?.type) === 'number') keys.push(key);
-                }
+                for (const field of schema) pushField(field);
             } else if (typeof schema === 'object') {
-                for (const k of Object.keys(schema)) {
-                    const def = schema[k] || {};
-                    if (normalizeType(def?.type) === 'number') keys.push(k);
+                for (const [key, value] of Object.entries(schema as Record<string, any>)) {
+                    if (key === 'fields') continue;
+                    pushField(value, key);
                 }
             }
         }
-        // 2) Si el schema está vacío, inferimos de los stats reales
-        if (keys.length === 0) {
-            const seen = new Map<string, number>();
-            for (const m of matches) {
-                const s = (m.stats as Record<string, any>) || {};
-                for (const k of Object.keys(s)) {
-                    const v = s[k];
-                    if (typeof v === 'number' && Number.isFinite(v)) {
-                        seen.set(k, (seen.get(k) || 0) + 1);
+
+        if (defs.length === 0) {
+            for (const match of matches) {
+                const stats = (match.stats as Record<string, any>) || {};
+                for (const [key, value] of Object.entries(stats)) {
+                    if (typeof value === 'number' && Number.isFinite(value)) {
+                        pushField({ label: key, type: 'number' }, key);
                     }
                 }
             }
-            // Top 3 por presencia
-            return Array.from(seen.entries()).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k])=>k);
         }
-        // Nos quedamos con 1–3 para no ensuciar
-        return keys.slice(0,3);
+
+        return defs;
     })();
 
-    // 4.c) Dataset para barras por partido con esas métricas
+    const numericStatDefs = statDefs.filter(def => def.type === 'number');
+    const statKeys = numericStatDefs.map(def => def.key);
+
+    const statSummaries = numericStatDefs.map(def => {
+        let total = 0;
+        let count = 0;
+        for (const match of matches) {
+            const stats = (match.stats as Record<string, any>) || {};
+            const value = stats?.[def.key];
+            if (typeof value === 'number' && Number.isFinite(value)) {
+                total += value;
+                count += 1;
+            }
+        }
+        const average = count ? total / count : 0;
+        return {
+            ...def,
+            total,
+            count,
+            average,
+        };
+    });
+    const formatNumber = (value: number) =>
+        Number.isFinite(value) ? value.toLocaleString(undefined, { maximumFractionDigits: 2 }) : '0';
+
+    const formatLabel = (label: string) => label.replace(/_/g, ' ');
+
+    // 4.c) Dataset para barras por partido con esas metricas
     // Partidos jugados
     const matchesPlayed = matches.length || 0;
+
 
 // Equipo: totales PF/PC
 const pfTotal = matches.reduce((acc, m) => acc + Number(m.my_score ?? 0), 0);
@@ -231,21 +268,15 @@ const pfpcData = [
   { nombre: t('en_contra') || 'En contra', valor: pcTotal },
 ];
 
-// Jugador: elegir métrica de anotación (prioriza nombres típicos, si no la primera numérica)
+// Jugador: elegir metrica de anotacion (prioriza nombres tipicos, si no la primera numerica)
 const scoringAliases = ['goles','gol','puntos','points','goals','tantos','anotaciones'];
 const scoringKey =
   statKeys.find(k => scoringAliases.includes(k.toLowerCase())) || statKeys[0] || null;
-
-// Totales jugador para esa métrica
-let playerScoringTotal = 0;
-if (scoringKey) {
-  for (const m of matches) {
-    const s = (m.stats as Record<string, any>) || {};
-    const v = s[scoringKey];
-    if (typeof v === 'number' && Number.isFinite(v)) playerScoringTotal += v;
-  }
-}
-// Pastel: contribución del jugador vs total del equipo (PF)
+const scoringSummary = scoringKey ? statSummaries.find(stat => stat.key === scoringKey) ?? null : null;
+const scoringLabel = scoringSummary?.label ?? scoringKey ?? '';
+const playerScoringTotal = scoringSummary?.total ?? 0;
+const playerScoringAverage = scoringSummary?.average ?? 0;
+// Pastel: contribucion del jugador vs total del equipo (PF)
 const teamTotalForPie = pfTotal || 0;
 const otherTeam = Math.max(0, teamTotalForPie - playerScoringTotal);
 
@@ -310,178 +341,216 @@ const otherTeam = Math.max(0, teamTotalForPie - playerScoringTotal);
             {/* Panels */}
             {tab === 'matches' ? (
                 <section className="mt-8 rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm">
-                    <table className="min-w-full text-sm">
-                        <thead className="bg-gray-50 text-gray-700">
-                            <tr>
-                                <th className="px-3 py-2 text-left">{t('fecha') || 'Fecha'}</th>
-                                <th className="px-3 py-2 text-left">{t('lugar') || 'Lugar'}</th>
-                                <th className="px-3 py-2 text-left">{t('condicion') || 'Condición'}</th>
-                                <th className="px-3 py-2 text-left">{t('rival') || 'Rival'}</th>
-                                <th className="px-3 py-2 text-left">{t('marcador') || 'Marcador'}</th>
-                                <th className="px-3 py-2 text-left">{t('acciones') || 'Acciones'}</th>
-                            </tr>
-                        </thead>
-                        
-                        <tbody>
-                            {matches.length === 0 && (
+                    {/* Scroll horizontal en mÃ³vil, suave en desktop, inercia iOS */}
+                    <div
+                        className="relative -mx-4 sm:mx-0 mt-4 overflow-x-auto md:overflow-visible px-4 sm:px-0 md:scroll-smooth"
+                        style={{
+                            WebkitOverflowScrolling: 'touch',
+                            WebkitMaskImage:
+                            'linear-gradient(to right, transparent 0, black 16px, black calc(100% - 16px), transparent 100%)'
+                        }}
+                    >
+                        <table className="min-w-[720px] md:min-w-full text-sm">
+                            <thead className="bg-gray-50 text-gray-700">
                                 <tr>
-                                    <td colSpan={6} className="px-3 py-6 text-center text-gray-500">
-                                        {t('sin_partidos') || 'No hay partidos para esta competición y temporada.'}
-                                    </td>
+                                    <th className="px-3 py-2 text-left">{t('fecha') || 'Fecha'}</th>
+                                    <th className="px-3 py-2 text-left">{t('lugar') || 'Lugar'}</th>
+                                    <th className="px-3 py-2 text-left">{t('condicion') || 'CondiciÃ³n'}</th>
+                                    <th className="px-3 py-2 text-left">{t('rival') || 'Rival'}</th>
+                                    <th className="px-3 py-2 text-left">{t('marcador') || 'Marcador'}</th>
+                                    <th className="px-3 py-2 text-left">{t('acciones') || 'Acciones'}</th>
                                 </tr>
-                            )}
-                            {matches.map(m => {
-                                // Datos básicos
-                                const rival = m.rival_team_name || t('equipo_rival') || 'Rival';
-                                const myGoals = Number(m.my_score ?? 0);
-                                const rivalGoals = Number(m.rival_score ?? 0);
-
-                                // Resultado y estilos
-                                const outcome = myGoals > rivalGoals ? 'win' : myGoals < rivalGoals ? 'loss' : 'draw';
-                                const score = `${myGoals} - ${rivalGoals}`;
-                                const scoreClass =
-                                outcome === 'win'  ? 'text-green-600'
-                                : outcome === 'loss' ? 'text-red-600'
-                                : 'text-gray-600';
-
-                                return (
-                                    <tr key={m.id} className="border-t">
-                                        <td className="px-3 py-2 whitespace-nowrap">{new Date(m.date_at).toLocaleString()}</td>
-                                        <td className="px-3 py-2">{m.place || '—'}</td>
-
-                                        <td className="px-3 py-2">
-                                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${m.is_home ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
-                                              {m.is_home ? (t('local') || 'Local') : (t('visitante') || 'Visitante')}
-                                            </span>
-                                        </td>
-
-                                        {/* Rival: SIEMPRE el nombre del rival */}
-                                        <td className="px-3 py-2">{rival}</td>
-
-                                        {/* Marcador: verde/rojo/gris según resultado */}
-                                        <td className="px-3 py-2 font-semibold">
-                                            <span className={scoreClass}>{score}</span>
-                                        </td>
-
-                                        <td className="px-3 py-2">
-                                            <a
-                                              href={`/matches/${m.id}/live`}
-                                              className="rounded-xl border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 ml-2"
-                                            >
-                                              {t('partido_ver') || 'Ver partido'}
-                                            </a>
+                            </thead>
+                            
+                            <tbody>
+                                {matches.length === 0 && (
+                                    <tr>
+                                        <td colSpan={6} className="px-3 py-6 text-center text-gray-500">
+                                            {t('sin_partidos') || 'No hay partidos para esta competiciÃ³n y temporada.'}
                                         </td>
                                     </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
+                                )}
+                                {matches.map(m => {
+                                    // Datos bÃ¡sicos
+                                    const rival = m.rival_team_name || t('equipo_rival') || 'Rival';
+                                    const myGoals = Number(m.my_score ?? 0);
+                                    const rivalGoals = Number(m.rival_score ?? 0);
+
+                                    // Resultado y estilos
+                                    const outcome = myGoals > rivalGoals ? 'win' : myGoals < rivalGoals ? 'loss' : 'draw';
+
+                                    const homeScore = m.is_home ? myGoals : rivalGoals;
+                                    const awayScore = m.is_home ? rivalGoals : myGoals;
+                                    const score = `${homeScore} - ${awayScore}`;
+
+                                    const scoreClass =
+                                      outcome === 'win'  ? 'text-green-600'
+                                    : outcome === 'loss' ? 'text-red-600'
+                                    : 'text-gray-600';
+
+                                    return (
+                                        <tr key={m.id} className="border-t">
+                                            <td className="px-3 py-2 whitespace-nowrap">{new Date(m.date_at).toLocaleString()}</td>
+                                            <td className="px-3 py-2">{m.place || 'â€”'}</td>
+
+                                            <td className="px-3 py-2">
+                                                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${m.is_home ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
+                                                  {m.is_home ? (t('local') || 'Local') : (t('visitante') || 'Visitante')}
+                                                </span>
+                                            </td>
+
+                                            {/* Rival: SIEMPRE el nombre del rival */}
+                                            <td className="px-3 py-2">{rival}</td>
+
+                                            {/* Marcador: verde/rojo/gris segÃºn resultado */}
+                                            <td className="px-3 py-2 font-semibold">
+                                                <span className={scoreClass}>{score}</span>
+                                            </td>
+
+                                            <td className="px-3 py-2 text-right">
+                                                <a
+                                                  href={`/matches/${m.id}/live`}
+                                                  className="inline-flex items-center justify-center rounded-xl border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 ml-2 min-h-[32px] whitespace-nowrap"
+                                                >
+                                                  {t('partido_ver') || 'Ver partido'}
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
                 </section>
 
             ) : (
-                <div className="mt-8 p-6 bg-white text-sm text-gray-600">
+                <div className="mt-8 py-6 bg-white text-sm text-gray-600 bg-green-700">
                     {/* ------- Equipo ------- */}
                     <div>
-    <h3 className="text-lg font-semibold mb-3">{t('equipo') || 'Equipo'}</h3>
+                        <h3 className="text-lg font-semibold mb-3">{t('equipo') || 'Equipo'}</h3>
 
-    {/* KPIs rápidos */}
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-      <div className="rounded-xl border p-3">
-        <div className="text-xs text-gray-600 text-center">{t('pf_total') || 'PF total'}</div>
-        <div className="text-2xl font-semibold text-right">{pfTotal}</div>
-      </div>
-      <div className="rounded-xl border p-3">
-        <div className="text-xs text-gray-600 text-center">{t('pc_total') || 'PC total'}</div>
-        <div className="text-2xl font-semibold text-right">{pcTotal}</div>
-      </div>
-      <div className="rounded-xl border p-3">
-        <div className="text-xs text-gray-600 text-center">{t('pf_promedio') || 'PF promedio'}</div>
-        <div className="text-2xl font-semibold text-right">{pfAvg}</div>
-      </div>
-      <div className="rounded-xl border p-3">
-        <div className="text-xs text-gray-600 text-center">{t('pc_promedio') || 'PC promedio'}</div>
-        <div className="text-2xl font-semibold text-right">{pcAvg}</div>
-      </div>
-    </div>
+                        {/* KPIs rÃ¡pidos */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                            <div className="rounded-xl border p-3">
+                                <div className="text-xs text-gray-600 text-center">{t('pf_total') || 'PF total'}</div>
+                                <div className="text-2xl font-semibold text-right">{pfTotal}</div>
+                            </div>
+                            <div className="rounded-xl border p-3">
+                                <div className="text-xs text-gray-600 text-center">{t('pc_total') || 'PC total'}</div>
+                                <div className="text-2xl font-semibold text-right">{pcTotal}</div>
+                            </div>
+                            <div className="rounded-xl border p-3">
+                                <div className="text-xs text-gray-600 text-center">{t('pf_promedio') || 'PF promedio'}</div>
+                                <div className="text-2xl font-semibold text-right">{pfAvg}</div>
+                            </div>
+                            <div className="rounded-xl border p-3">
+                                <div className="text-xs text-gray-600 text-center">{t('pc_promedio') || 'PC promedio'}</div>
+                                <div className="text-2xl font-semibold text-right">{pcAvg}</div>
+                            </div>
+                        </div>
 
-    {/* Barras W/L/D */}
-    <div className="h-60 w-full">
-  <ResponsiveContainer width="100%" height="100%">
-    <BarChart data={wldData}>
-      <CartesianGrid strokeDasharray="3 3" />
-      <XAxis dataKey="nombre" />
-      <YAxis allowDecimals={false} />
-      <Tooltip />
-      <Legend />
-      <Bar dataKey="valor">
-        {wldData.map((d, i) => (
-          <Cell key={`wld-${i}`} fill={colorForWLD(d.nombre)} />
-        ))}
-      </Bar>
-    </BarChart>
-  </ResponsiveContainer>
-</div>
+                        {/* Barras W/L/D */}
+                        <div className="h-60 w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={wldData}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="nombre" />
+                                    <YAxis allowDecimals={false} />
+                                    <Tooltip />
+                                    <Legend />
+                                    <Bar dataKey="valor">
+                                        {wldData.map((d, i) => (
+                                            <Cell key={`wld-${i}`} fill={colorForWLD(d.nombre)} />
+                                        ))}
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
 
-    {/* Barras PF vs PC */}
-    <div className="h-60 w-full mt-8">
-  <ResponsiveContainer width="100%" height="100%">
-    <BarChart data={pfpcData}>
-      <CartesianGrid strokeDasharray="3 3" />
-      <XAxis dataKey="nombre" />
-      <YAxis allowDecimals={false} />
-      <Tooltip />
-      <Legend />
-      <Bar dataKey="valor">
-        {pfpcData.map((d, i) => (
-          <Cell key={`pfpc-${i}`} fill={colorForPFPC(d.nombre)} />
-        ))}
-      </Bar>
-    </BarChart>
-  </ResponsiveContainer>
-</div>
+                        {/* Barras PF vs PC */}
+                        <div className="h-60 w-full mt-8">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={pfpcData}>
+                                  <CartesianGrid strokeDasharray="3 3" />
+                                  <XAxis dataKey="nombre" />
+                                  <YAxis allowDecimals={false} />
+                                  <Tooltip />
+                                  <Legend />
+                                  <Bar dataKey="valor">
+                                    {pfpcData.map((d, i) => (
+                                      <Cell key={`pfpc-${i}`} fill={colorForPFPC(d.nombre)} />
+                                    ))}
+                                  </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
 
+                        {/* ======= Jugador ======= */}
+                        <div>
+                            <h3 className="text-lg font-semibold mb-3">{t('jugador') || 'Jugador'}</h3>
 
-  {/* ======= Jugador ======= */}
-  <div>
-    <h3 className="text-lg font-semibold mb-3">{t('jugador') || 'Jugador'}</h3>
+                            {statSummaries.length > 0 ? (
+                                <>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {statSummaries.map((summary) => (
+                                            <div
+                                                key={summary.key}
+                                                className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+                                            >
+                                                <div className="flex items-baseline justify-between">
+                                                    <span className="text-sm font-semibold text-gray-700">{formatLabel(summary.label)}</span>
+                                                    <span className="text-xs text-gray-400 uppercase">{t('promedio') || 'Promedio'}</span>
+                                                </div>
+                                                <div className="mt-3 text-3xl font-semibold text-green-700">
+                                                    {formatNumber(summary.average)}
+                                                </div>
+                                                <div className="mt-2 text-xs text-gray-500">
+                                                    {(t('total') || 'Total')}: <span className="font-semibold text-gray-700">{formatNumber(summary.total)}</span>
+                                                    {' | '}
+                                                    {(t('partidos') || 'Partidos')}: {summary.count}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
 
-    {scoringKey ? (
-      <>
-        <div className="text-sm mb-2 text-gray-600">
-          {(t('métrica') || 'Métrica')}: <b>{scoringKey.replace(/_/g,' ')}</b>
-        </div>
-        <div className="h-64 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Tooltip />
-              <Legend />
-              <Pie
-                data={[
-                  { name: t('jugador') || 'Jugador', value: playerScoringTotal },
-                  { name: t('resto_equipo') || 'Resto del equipo', value: otherTeam },
-                ]}
-                dataKey="value"
-                nameKey="name"
-                innerRadius="55%"
-                outerRadius="80%"
-              >
-                <Cell fill={WIN_COLOR} />
-                <Cell fill="#e5e7eb" />
-              </Pie>
-
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      </>
-    ) : (
-      <p className="text-sm text-gray-600">{t('sin_estadisticas_detectadas') || 'No hay estadísticas numéricas para mostrar.'}</p>
-    )}
-  </div>
-
-
-
-        </div>
-        </div>
+                                    {scoringKey ? (
+                                        <div className="mt-10">
+                                            <div className="text-sm mb-2 text-gray-600">
+                                                {(t('metrica') || 'Metrica')}: <b>{formatLabel(scoringLabel)}</b>
+                                                <span className="ml-2 text-xs text-gray-500">
+                                                    {(t('promedio') || 'Promedio')}: {formatNumber(playerScoringAverage)}
+                                                </span>
+                                            </div>
+                                            <div className="h-64 w-full">
+                                                <ResponsiveContainer width="100%" height="100%">
+                                                    <PieChart>
+                                                        <Tooltip />
+                                                        <Legend />
+                                                        <Pie
+                                                            data={[
+                                                                { name: t('jugador') || 'Jugador', value: playerScoringTotal },
+                                                                { name: t('equipo') || 'Equipo', value: otherTeam },
+                                                            ]}
+                                                            dataKey="value"
+                                                            nameKey="name"
+                                                            innerRadius="55%"
+                                                            outerRadius="80%"
+                                                        >
+                                                            <Cell fill={WIN_COLOR} />
+                                                            <Cell fill="#e5e7eb" />
+                                                        </Pie>
+                                                    </PieChart>
+                                                </ResponsiveContainer>
+                                            </div>
+                                        </div>
+                                    ) : null}
+                                </>
+                            ) : (
+                                <p className="text-sm text-gray-600">{t('sin_estadisticas_detectadas') || 'No hay estadisticas numericas para mostrar.'}</p>
+                            )}
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

@@ -1,4 +1,10 @@
+## PNPM:
+	- Comandos reinstalación:
+		- npx -y pnpm@8.15.4 install
+		- npx -y pnpm@8.15.4 dev
 
+## CODEX OPEN AI:
+	- Ctrl+Shift+P
 
 
 ## QUERIES:

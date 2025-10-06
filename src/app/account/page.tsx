@@ -297,30 +297,25 @@ export default async function AccountPage() {
             <section className="mt-8 rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm">
                 <div className="flex items-center justify-between">
                     <h2 className="text-base font-semibold text-gray-800">{t('suscripciones')}</h2>
-          
-                    {/*{currentSubId && (
-                        <form action={renewSubscription}>
-                            <input type="hidden" name="subId" value={currentSubId} />
-                            <button
-                                type="submit"
-                                className="rounded-xl bg-green-600 px-3 py-2 text-sm font-semibold text-white hover:bg-green-700"
-                                title="Renovar la suscripción vigente"
-                            >
-                                {t('renovar_ahora')}
-                            </button>
-                        </form>
-                    )}*/}
                 </div>
 
-                <div className="mt-4 overflow-x-auto">
+                {/* Scroll horizontal en móvil, suave en desktop, inercia iOS */}
+                <div
+                    className="relative -mx-4 sm:mx-0 mt-4 overflow-x-auto md:overflow-visible px-4 sm:px-0 md:scroll-smooth"
+                    style={{
+                        WebkitOverflowScrolling: 'touch',
+                        WebkitMaskImage:
+                        'linear-gradient(to right, transparent 0, black 16px, black calc(100% - 16px), transparent 100%)'
+                    }}
+                >
                     {subs.length === 0 ? (
                         <p className="text-sm text-gray-500">{t('suscripciones_no_registradas')}</p>
-
                     ) : (
-                        <table className="min-w-full text-sm">
+                        <table className="min-w-[720px] md:min-w-full text-sm">
                             <thead>
                                 <tr className="text-left text-gray-500">
-                                    <th className="py-2 pr-4">{t('estado')}</th>
+                                    {/* Columna pegajosa */}
+                                    <th className="py-2 pr-4 sticky left-0 z-10 bg-white">{t('estado')}</th>
                                     <th className="py-2 pr-4 text-center">{t('importe')}</th>
                                     <th className="py-2 pr-4 text-center">{t('inicio')}</th>
                                     <th className="py-2 pr-4 text-center">{t('fin')}</th>
@@ -331,41 +326,48 @@ export default async function AccountPage() {
                             <tbody>
                                 {subs.map((s) => (
                                     <tr key={s.id} className="border-t border-gray-100">
-                                        <td className="py-3 pr-4">
+                                        {/* celda pegajosa con sombra lateral sutil */}
+                                        <td
+                                            className="py-3 pr-4 sticky left-0 z-10 bg-white"
+                                            style={{ boxShadow: 'inset -8px 0 8px -8px rgba(0,0,0,0.08)' }}
+                                        >
                                             <span
-                                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                                                className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
                                                 s.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                                                 }`}
                                             >
                                                 {s.active ? t('activo') : t('inactivo')}
-                                            </span>    
+                                            </span>
                                         </td>
 
                                         <td className="py-3 pr-4 text-center">
-                                            {s.amount == null || s.amount === 0
-                                            ? <span className="text-gray-900 font-medium">Free</span>
-                                            : <>
+                                            {s.amount == null || s.amount === 0 ? (
+                                              <span className="text-gray-900 font-medium">Free</span>
+                                            ) : (
+                                              <>
                                                 {formatAmount(s.amount, s.currency || 'EUR', locale)}{' '}
                                                 <span className="text-gray-400">(IVA incl.)</span>
-                                            </>
-                                            }
+                                              </>
+                                            )}
                                         </td>
+
                                         <td className="py-3 pr-4 text-right">{formatDate(s.start, locale)}</td>
                                         <td className="py-3 pr-4 text-right">{formatDate(s.end, locale)}</td>
-                                        {/* Renovar */}
+
                                         <td className="py-3 pr-4 text-right">
+                                            {/* Mantengo tus clases del botón tal cual */}
                                             <form action={renewSubscription}>
-                                                <input type="hidden" name="subId" value={s.id} />
-                                                <button
-                                                    type="submit"
-                                                    className="rounded-xl border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
-                                                >
-                                                    {t('renovar')}
-                                                </button>
+                                              <input type="hidden" name="subId" value={s.id} />
+                                              <button
+                                                type="submit"
+                                                className="rounded-xl border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                                              >
+                                                {t('renovar')}
+                                              </button>
                                             </form>
                                         </td>
                                     </tr>
-                                ))}
+                                 ))}
                             </tbody>
                         </table>
                     )}
@@ -383,19 +385,26 @@ export default async function AccountPage() {
                     <h2 className="text-base font-semibold text-gray-800">{t('deportistas') || 'Deportistas'}</h2>
 
                     {pendingPlayers > 0 && (
-                        <Link
-                            href="/players/new"
-                            className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-2 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                        >
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                              <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" />
-                            </svg>
-                            <span>{t('deportista_agregar') || 'Añadir deportista'}</span>
-                        </Link>
-                    )}
-                </div>
+      <Link
+        href="/players/new"
+        className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-2 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" />
+        </svg>
+        <span>{t('deportista_agregar') || 'Añadir deportista'}</span>
+      </Link>
+    )}
+  </div>
 
-                <div className="mt-4 overflow-x-auto">
+  <div
+    className="relative -mx-4 sm:mx-0 mt-4 overflow-x-auto md:overflow-visible px-4 sm:px-0 md:scroll-smooth"
+    style={{
+      WebkitOverflowScrolling: 'touch',
+      WebkitMaskImage:
+        'linear-gradient(to right, transparent 0, black 16px, black calc(100% - 16px), transparent 100%)'
+    }}
+  >
                     {players.length === 0 ? (
                         <div className="text-sm">
                             {!pendingPlayers && (
@@ -405,38 +414,45 @@ export default async function AccountPage() {
                             )}
                             {pendingPlayers > 0 && (
                                 <p className="text-gray-700">
-                                    {t('tienes')} <span className="font-semibold text-gray-900">{pendingPlayers}</span>{' '}
-                                    {pendingPlayers === 1 ? t('deportista_pendiente') : t('deportistas_pendientes')} {t('pendientes_alta')}.
+                                    {t('tienes')}{' '}
+                                    <span className="font-semibold text-gray-900">{pendingPlayers}</span>{' '}
+                                    {pendingPlayers === 1 ? t('deportista_pendiente') : t('deportistas_pendientes')}{' '}
+                                    {t('pendientes_alta')}.
                                 </p>
                             )}
                         </div>
                     ) : (
-                        <table className="min-w-full text-sm">
+                        <table className="min-w-[560px] md:min-w-full text-sm">
                             <thead>
-                                <tr className="text-left text-gray-500">
-                                    <th className="py-2 pr-4">{t('nombre') || 'Nombre'}</th>
-                                    <th className="py-2 pr-4 text-center">{t('fecha_alta') || 'Fecha de alta'}</th>
-                                    <th className="py-2 pr-4 text-center">{t('acciones') || 'Acciones'}</th>
-                                </tr>
+                              <tr className="text-left text-gray-500">
+                                {/* Columna pegajosa */}
+                                <th className="py-2 pr-4 sticky left-0 z-10 bg-white">{t('nombre') || 'Nombre'}</th>
+                                <th className="py-2 pr-4 text-center">{t('fecha_alta') || 'Fecha de alta'}</th>
+                                <th className="py-2 pr-4 text-center">{t('acciones') || 'Acciones'}</th>
+                              </tr>
                             </thead>
-        
+
                             <tbody>
                                 {players.map((p) => (
                                     <tr key={p.id} className="border-t border-gray-100">
-                                        <td className="py-3 pr-4">
-                                            <span className="font-medium text-gray-900">{p.display}</span>
-                                        </td>
-                                        <td className="py-3 pr-4 text-center">
-                                            {formatDate(p.created_at, me?.locale || 'es-ES')}
-                                        </td>
-                                        <td className="py-3 pr-4 text-right">
-                                            <Link
-                                                href={`/players/${p.id}`}
-                                                className="rounded-xl border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
-                                            >
-                                                {t('detalle_ver') || 'Ver detalle'}
-                                            </Link>
-                                        </td>
+                                      <td
+                                        className="py-3 pr-4 sticky left-0 z-10 bg-white"
+                                        style={{ boxShadow: 'inset -8px 0 8px -8px rgba(0,0,0,0.08)' }}
+                                      >
+                                        <span className="font-medium text-gray-900 break-words">{p.display}</span>
+                                      </td>
+                                      <td className="py-3 pr-4 text-right">
+                                        {formatDate(p.created_at, me?.locale || 'es-ES')}
+                                      </td>
+                                      <td className="py-3 pr-4 text-right">
+                                        {/* Botón con las mismas clases que ya tenías */}
+                                        <Link
+                                          href={`/players/${p.id}`}
+                                          className="rounded-xl border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 whitespace-nowrap"
+                                        >
+                                          {t('detalle_ver') || 'Ver detalle'}
+                                        </Link>
+                                      </td>
                                     </tr>
                                 ))}
                             </tbody>

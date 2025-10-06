@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import {
     CreditCard,
+    Home,
+    Mail,
     LayoutDashboard,
     LogOut,
     PackageSearch,
@@ -49,14 +51,14 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
     const userRef = useRef<HTMLDivElement>(null);
     const adminRef = useRef<HTMLDivElement>(null);
     const loggingOutRef = useRef(false);
-  const router = useRouter();
-  const pathname = usePathname();
-  // Detecta si la ruta es protegida (dashboard, account, players, settings), con o sin prefijo de idioma
-  const pathParts = (pathname || '/').split('?')[0].split('/').filter(Boolean);
-  const maybeLocale = pathParts[0];
-  const hasLocalePrefix = locales?.some?.(l => l.code === maybeLocale) ?? false;
-  const firstSeg = hasLocalePrefix ? (pathParts[1] || '') : (pathParts[0] || '');
-  const isProtectedPath = ['dashboard', 'account', 'players', 'settings'].includes(firstSeg);
+    const router = useRouter();
+    const pathname = usePathname();
+    // Detecta si la ruta es protegida (dashboard, account, players, settings), con o sin prefijo de idioma
+    const pathParts = (pathname || '/').split('?')[0].split('/').filter(Boolean);
+    const maybeLocale = pathParts[0];
+    const hasLocalePrefix = locales?.some?.(l => l.code === maybeLocale) ?? false;
+    const firstSeg = hasLocalePrefix ? (pathParts[1] || '') : (pathParts[0] || '');
+    const isProtectedPath = ['dashboard', 'account', 'players', 'settings'].includes(firstSeg);
     const hideAuthUI = pathname === '/logout';
 
     // Cierra menús al cambiar de ruta
@@ -66,7 +68,7 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
         setUserOpen(false);
     }, [pathname, isProtectedPath]);
 
-  // Detecta sesión y suscribe a cambios
+    // Detecta sesión y suscribe a cambios
     useEffect(() => {
         let mounted = true;
 
@@ -86,15 +88,15 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
           setAuthChecked(true);
         });
 
-    const { data: sub } = supabase.auth.onAuthStateChange((evt, session) => {
-      if (loggingOutRef.current) return;
-      if (session?.user) {
-        setUser(session.user as any);
-  } else if (evt === 'SIGNED_OUT') {
-        setUser(null);
-      } // Ignora INITIAL_SESSION vacío para no machacar SSR
-      setAuthChecked(true);
-    });
+        const { data: sub } = supabase.auth.onAuthStateChange((evt, session) => {
+            if (loggingOutRef.current) return;
+            if (session?.user) {
+                setUser(session.user as any);
+        } else if (evt === 'SIGNED_OUT') {
+            setUser(null);
+        } // Ignora INITIAL_SESSION vacío para no machacar SSR
+            setAuthChecked(true);
+        });
 
         return () => {
             mounted = false;
@@ -102,27 +104,27 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
         };
     }, []);
 
-  // Escucha señales de auth (postMessage) para hidratar inmediatamente tras login por password
-  useEffect(() => {
-    if (typeof window === 'undefined' || typeof BroadcastChannel === 'undefined') return;
-    const bc = new BroadcastChannel('auth');
-    const onMsg = (ev: MessageEvent) => {
-      const msg = ev.data;
-      if (!msg || typeof msg !== 'object') return;
-      if (msg.type === 'SIGNED_IN' && msg.user) {
-        loggingOutRef.current = false;
-        setUser(msg.user as any);
-        setAuthChecked(true);
-      }
-    };
-    bc.addEventListener('message', onMsg);
-    return () => {
-      try { bc.removeEventListener('message', onMsg); bc.close(); } catch {}
-    };
-  }, []);
+    // Escucha señales de auth (postMessage) para hidratar inmediatamente tras login por password
+    useEffect(() => {
+        if (typeof window === 'undefined' || typeof BroadcastChannel === 'undefined') return;
+        const bc = new BroadcastChannel('auth');
+        const onMsg = (ev: MessageEvent) => {
+          const msg = ev.data;
+          if (!msg || typeof msg !== 'object') return;
+          if (msg.type === 'SIGNED_IN' && msg.user) {
+            loggingOutRef.current = false;
+            setUser(msg.user as any);
+            setAuthChecked(true);
+          }
+        };
+        bc.addEventListener('message', onMsg);
+        return () => {
+            try { bc.removeEventListener('message', onMsg); bc.close(); } catch {}
+        };
+    }, []);
 
-  // Re-sincroniza el usuario al cambiar de ruta (evita quedarse con CTAs tras login si el layout no se re-renderiza)
-  useEffect(() => {
+    // Re-sincroniza el usuario al cambiar de ruta (evita quedarse con CTAs tras login si el layout no se re-renderiza)
+    useEffect(() => {
     if (typeof window === 'undefined') return;
     const url = new URL(window.location.href);
     if (url.pathname === '/logout') return;
@@ -308,8 +310,8 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
     const desktopLinkClasses = (active: boolean) => [
         'rounded-lg px-3 py-2 text-sm font-semibold transition-colors',
         active
-            ? 'bg-emerald-500/15 text-emerald-600 shadow-sm dark:bg-emerald-400/20 dark:text-emerald-300'
-            : 'text-slate-100 hover:text-white hover:bg-emerald-500/10 dark:text-zinc-200 dark:hover:text-white'
+            ? 'bg-gray-500/15 text-slate-500 shadow-sm dark:bg-emerald-400/20 dark:text-gray-300'
+            : 'text-slate-500 hover:text-gray-600 hover:bg-emerald-500/10 dark:text-zinc-200 dark:hover:text-white'
     ].join(' ');
 
     // Selector de idioma (desktop)
@@ -317,7 +319,7 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
         <div className="relative" ref={langRef}>
           <button
             onClick={() => setLangOpen(o => !o)}
-            className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-slate-100 transition-colors hover:text-white hover:bg-emerald-500/10"
+            className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-slate-500 transition-colors hover:text-gray-600 hover:bg-emerald-500/10"
             aria-haspopup="listbox"
             aria-expanded={langOpen}
           >
@@ -360,7 +362,7 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
         <div className="relative" ref={userRef}>
             <button
                 onClick={() => setUserOpen(o => !o)}
-                className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-slate-100 transition-colors hover:text-white hover:bg-emerald-500/10"
+                className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-slate-500 transition-colors hover:text-gray-600 hover:bg-emerald-500/10"
                 aria-haspopup="menu"
                 aria-expanded={userOpen}
             >
@@ -402,53 +404,53 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
         </div>
     );
 
-  // Placeholder de menú de usuario (desktop) mientras resolvemos auth en rutas protegidas
-  const UserMenuPlaceholder = (
-    <div className="h-8 w-36 rounded-md bg-slate-700/60 animate-pulse" aria-hidden="true" />
-  );
+    // Placeholder de menú de usuario (desktop) mientras resolvemos auth en rutas protegidas
+    const UserMenuPlaceholder = (
+        <div className="h-8 w-36 rounded-md bg-slate-700/60 animate-pulse" aria-hidden="true" />
+    );
 
-  const AdminMenuDesktop = isAdmin && (
-    <div className="relative" ref={adminRef}>
-      <button
-        onClick={() => setAdminOpen(o => !o)}
-        className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-slate-100 transition-colors hover:text-white hover:bg-emerald-500/10"
-        aria-haspopup="menu"
-        aria-expanded={adminOpen}
-      >
-        {t('stripe_admin_menu') || 'Administración Stripe'}
-        <svg width="14" height="14" viewBox="0 0 20 20" aria-hidden="true">
-          <path d="M5 7l5 6 5-6H5z" fill="currentColor" />
-        </svg>
-      </button>
+    const AdminMenuDesktop = isAdmin && (
+        <div className="relative" ref={adminRef}>
+             <button
+              onClick={() => setAdminOpen(o => !o)}
+              className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-slate-500 transition-colors hover:text-gray-600 hover:bg-emerald-500/10"
+              aria-haspopup="menu"
+              aria-expanded={adminOpen}
+             >
+                {t('stripe_admin_menu') || 'Administración Stripe'}
+                <svg width="14" height="14" viewBox="0 0 20 20" aria-hidden="true">
+                <path d="M5 7l5 6 5-6H5z" fill="currentColor" />
+                </svg>
+            </button>
 
-      {adminOpen && (
-        <div className="absolute right-0 z-50 mt-2 w-56 rounded-md border border-slate-700 bg-slate-800/95 text-slate-100 shadow-lg shadow-emerald-500/10">
-          <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-            {t('stripe_admin_manage') || 'Gestionar Stripe'}
-          </div>
-          <div className="space-y-1 px-2 pb-2">
-            {adminMenuItems.map(item => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setAdminOpen(false)}
-                className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-emerald-500/15"
-              >
-                <item.Icon className="h-4 w-4" aria-hidden="true" />
-                {item.label}
-              </Link>
-            ))}
-          </div>
+            {adminOpen && (
+                <div className="absolute right-0 z-50 mt-2 w-56 rounded-md border border-slate-700 bg-slate-800/95 text-slate-100 shadow-lg shadow-emerald-500/10">
+                    <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        {t('stripe_admin_manage') || 'Gestionar Stripe'}
+                    </div>
+                    <div className="space-y-1 px-2 pb-2">
+                        {adminMenuItems.map(item => (
+                        <Link
+                            key={item.href}
+                            href={item.href}
+                            onClick={() => setAdminOpen(false)}
+                            className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-emerald-500/15"
+                        >
+                            <item.Icon className="h-4 w-4" aria-hidden="true" />
+                            {item.label}
+                        </Link>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
-      )}
-    </div>
-  );
+    );
 
-  // Mostrar CTAs: en rutas protegidas no mostramos CTAs aunque aún no se haya resuelto user
-  const showCTAs = mounted && !isProtectedPath && ((hideAuthUI) ? true : (authChecked && !user));
+    // Mostrar CTAs: en rutas protegidas no mostramos CTAs aunque aún no se haya resuelto user
+    const showCTAs = mounted && !isProtectedPath && ((hideAuthUI) ? true : (authChecked && !user));
 
-  return (
-        <nav className="fixed left-0 right-0 top-0 z-50 border-b border-slate-700 bg-slate-900/95 text-slate-100 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-slate-900/80 dark:border-zinc-700 dark:bg-zinc-950/80">
+    return (
+        <nav className="fixed left-0 right-0 top-0 z-50 border-b border-green-200 bg-green-100 text-slate-100 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-green-100 dark:border-zinc-700 dark:bg-zinc-950/80">
             <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:h-16 sm:px-6 lg:px-8">
                 {/* Brand */}
                 <div className="text-lg font-bold text-emerald-500">
@@ -467,21 +469,21 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
                         </Link>
                     ))}
 
-          {AdminMenuDesktop}
+                    {AdminMenuDesktop}
 
-          {LangSelectorDesktop}
+                    {LangSelectorDesktop}
 
-          {/* Menú de usuario: en rutas protegidas, muestra placeholder mientras no haya user; si hay user, muestra el menú real */}
-          {mounted && !hideAuthUI && (
-            user ? UserMenuDesktop : (isProtectedPath ? UserMenuPlaceholder : null)
-          )}
+                    {/* Menú de usuario: en rutas protegidas, muestra placeholder mientras no haya user; si hay user, muestra el menú real */}
+                    {mounted && !hideAuthUI && (
+                        user ? UserMenuDesktop : (isProtectedPath ? UserMenuPlaceholder : null)
+                    )}
 
-          {/* CTA login/registro solo tras mount y authChecked */}
-      {showCTAs && (
+                    {/* CTA login/registro solo tras mount y authChecked */}
+                    {showCTAs && (
                         <div className="flex items-center gap-3">
                             <Link
                                 href="/login"
-                                className="rounded-md px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:text-green-600 dark:text-zinc-200 dark:hover:text-emerald-300"
+                                className="rounded-md px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:text-green-600 dark:text-slate-500 dark:hover:text-slate-500"
                             >
                                 {t('login') || 'Entrar'}
                             </Link>
@@ -527,7 +529,7 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
                         <div className="flex items-center justify-between bg-white px-4 py-3 dark:bg-zinc-950">
                             <span className="text-base font-semibold text-green-700 dark:text-emerald-300">{BRAND}</span>
                             <button
-                                className="rounded-md p-2 text-gray-700 transition-colors hover:bg-gray-100 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                                className="rounded-md p-2 text-gray-700 transition-colors hover:bg-gray-100 dark:text-slate-500 dark:hover:bg-zinc-800"
                                 aria-label="Close menu"
                                 onClick={() => setMobileOpen(false)}
                             >
@@ -540,10 +542,10 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
                         <div className="flex h-[calc(100%-3.25rem)] flex-col justify-between">
                             <ul className="space-y-0 bg-white px-2 py-3 dark:bg-zinc-950">
                                 {/* Saludo */}
-                {mounted && !hideAuthUI && authChecked && user && (
+                                {mounted && !hideAuthUI && authChecked && user && (
                                     <>
                                         <li className="pt-2">
-                                            <span className="block select-none px-3 py-2 text-sm font-semibold text-gray-900 dark:text-zinc-100">
+                                            <span className="block select-none px-3 py-2 text-sm font-semibold text-gray-600 dark:text-zinc-100">
                                                 {(t('hola') || 'Hola') + ', ' + displayName}
                                             </span>
                                         </li>
@@ -554,9 +556,10 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
                                 <li>
                                     <Link
                                         href="/"
-                                        className="block rounded-md px-3 py-2 text-sm font-medium text-gray-800 transition-colors hover:bg-green-50 dark:text-zinc-200 dark:hover:bg-emerald-900/30"
+                                        className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-slate-500 transition-colors hover:bg-green-50 dark:text-zinc-200 dark:hover:bg-emerald-900/30"
                                         onClick={() => setMobileOpen(false)}
                                     >
+                                        <Home className="h-4 w-4" aria-hidden="true" />
                                         {t('inicio') || 'Inicio'}
                                     </Link>
                                 </li>
@@ -565,9 +568,10 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
                                 <li>
                                     <Link
                                         href="/contacto"
-                                        className="block rounded-md px-3 py-2 text-sm font-medium text-gray-800 transition-colors hover:bg-green-50 dark:text-zinc-200 dark:hover:bg-emerald-900/30"
+                                        className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-slate-500 transition-colors hover:bg-green-50 dark:text-zinc-200 dark:hover:bg-emerald-900/30"
                                         onClick={() => setMobileOpen(false)}
                                     >
+                                        <Mail className="h-4 w-4" aria-hidden="true" />
                                         {t('contacto') || 'Contacto'}
                                     </Link>
                                 </li>
@@ -583,7 +587,7 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
                                                     <Link
                                                         href={item.href}
                                                         onClick={() => setMobileOpen(false)}
-                                                        className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-gray-100 transition-colors hover:bg-emerald-500/10 dark:text-zinc-200 dark:hover:bg-emerald-900/30"
+                                                        className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-slate-500 transition-colors hover:bg-emerald-500/10 dark:text-zinc-200 dark:hover:bg-emerald-900/30"
                                                     >
                                                         <item.Icon className="h-4 w-4" aria-hidden="true" />
                                                         {item.label}
@@ -602,7 +606,7 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
                                             <Link
                                               href={item.href}
                                               onClick={() => setMobileOpen(false)}
-                                              className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-gray-100 transition-colors hover:bg-emerald-500/10 dark:text-zinc-200 dark:hover:bg-emerald-900/30"
+                                              className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-slate-500 transition-colors hover:bg-emerald-500/10 dark:text-zinc-200 dark:hover:bg-emerald-900/30"
                                             >
                                               <item.Icon className="h-4 w-4" aria-hidden="true" />
                                               {item.label}
@@ -616,7 +620,7 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
                                               await handleLogout();
                                               setMobileOpen(false);
                                             }}
-                                            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-gray-100 transition-colors hover:bg-emerald-500/10 dark:text-zinc-200 dark:hover:bg-emerald-900/30"
+                                            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-slate-500 transition-colors hover:bg-emerald-500/10 dark:text-zinc-200 dark:hover:bg-emerald-900/30"
                                           >
                                             <LogOut className="h-4 w-4" aria-hidden="true" />
                                             {t('logout') || 'Salir'}
@@ -632,7 +636,7 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
                                           <Link
                                             href="/login"
                                             onClick={() => setMobileOpen(false)}
-                                            className="block rounded-md px-3 py-2 text-sm font-medium text-gray-100 transition-colors hover:bg-emerald-500/10 dark:text-zinc-200 dark:hover:bg-emerald-900/30"
+                                            className="block rounded-md px-3 py-2 text-sm font-medium text-slate-500 transition-colors hover:bg-emerald-500/10 dark:text-zinc-200 dark:hover:bg-emerald-900/30"
                                           >
                                             {t('login') || 'Entrar'}
                                           </Link>
@@ -641,7 +645,7 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
                                           <Link
                                             href="/registro"
                                             onClick={() => setMobileOpen(false)}
-                                            className="block rounded-md px-3 py-2 text-sm font-medium text-gray-100 transition-colors hover:bg-emerald-500/10 dark:text-zinc-200 dark:hover:bg-emerald-900/30"
+                                            className="block rounded-md px-3 py-2 text-sm font-medium text-slate-500 transition-colors hover:bg-emerald-500/10 dark:text-zinc-200 dark:hover:bg-emerald-900/30"
                                           >
                                             {t('registrate') || 'Registrarse'}
                                           </Link>
