@@ -51,5 +51,10 @@ p{
   appearance: textfield; /* Standard */
 }
 
-
+@media (max-width: 400px) {
+    .responsive-submit-button {
+        font-size: 10px !important;
+        height: 46px;
+    }
+}
 

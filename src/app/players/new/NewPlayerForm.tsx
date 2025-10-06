@@ -174,321 +174,321 @@ export default function NewPlayerForm({
                 return `fsapi://${handle.name}`;
             }
         } catch {/* meh */}
-            return `local://avatars/${playerId}/${seasonId}/${encodeURIComponent(file.name)}`;
+        return `local://avatars/${playerId}/${seasonId}/${encodeURIComponent(file.name)}`;
+    }
+
+    // Submit
+    const createOne = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (blocks.length > MAX_BLOCKS) {
+            setErr(`Máximo ${MAX_BLOCKS} participaciones por deportista.`);
+            return;
+        }
+        setErr(null);
+        setInfo(null);
+
+        if (!name.trim()) {
+            setErr('Introduce un nombre.');
+            return;
         }
 
-        // Submit
-        const createOne = async (e: React.FormEvent) => {
-            e.preventDefault();
-            if (blocks.length > MAX_BLOCKS) {
-                setErr(`Máximo ${MAX_BLOCKS} participaciones por deportista.`);
+        for (let i = 0; i < blocks.length; i++) {
+            if (!blocks[i].sportId) {
+                setErr(`Selecciona el deporte en el bloque ${i + 1}.`);
                 return;
             }
-            setErr(null);
-            setInfo(null);
+        }
 
-            if (!name.trim()) {
-                setErr('Introduce un nombre.');
-                return;
+        setBusy(true);
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error('No autenticado.');
+
+            // Barrera final seats: si sabemos que no hay y no hay código, no seguimos
+            if (!pendingCode && seatsRemaining !== null && seatsRemaining <= 0) {
+                throw new Error('No te quedan plazas disponibles para crear deportistas.');
             }
 
-            for (let i = 0; i < blocks.length; i++) {
-                if (!blocks[i].sportId) {
-                    setErr(`Selecciona el deporte en el bloque ${i + 1}.`);
-                    return;
-                }
+            const seasonId = await getCurrentSeasonId(supabase);
+
+            // Crear jugador
+            const { data: p, error: insErr } = await supabase
+            .from('players')
+            .insert({ full_name: name })
+            .select('id')
+            .single();
+            if (insErr) throw insErr;
+            const playerId = p!.id as string;
+
+            // Avatar de temporada
+            let avatarPath: string | null = null;
+            const firstBlock = blocks[0];
+            if (firstBlock?.avatarFile) {
+                avatarPath = await saveAvatarLocally(firstBlock.avatarFile, playerId, seasonId);
             }
 
-            setBusy(true);
-            try {
-                const { data: { user } } = await supabase.auth.getUser();
-                if (!user) throw new Error('No autenticado.');
+            // player_seasons upsert
+            {
+                const { error: psErr } = await supabase
+                .from('player_seasons')
+                .upsert(
+                    { player_id: playerId, season_id: seasonId, avatar: avatarPath ?? null },
+                    { onConflict: 'player_id,season_id', ignoreDuplicates: false }
+                );
+                if (psErr) throw psErr;
+            }
 
-                // Barrera final seats: si sabemos que no hay y no hay código, no seguimos
-                if (!pendingCode && seatsRemaining !== null && seatsRemaining <= 0) {
-                    throw new Error('No te quedan plazas disponibles para crear deportistas.');
-                }
-
-                const seasonId = await getCurrentSeasonId(supabase);
-
-                // Crear jugador
-                const { data: p, error: insErr } = await supabase
-                .from('players')
-                .insert({ full_name: name })
-                .select('id')
-                .single();
-                if (insErr) throw insErr;
-                const playerId = p!.id as string;
-
-                // Avatar de temporada
-                let avatarPath: string | null = null;
-                const firstBlock = blocks[0];
-                if (firstBlock?.avatarFile) {
-                    avatarPath = await saveAvatarLocally(firstBlock.avatarFile, playerId, seasonId);
-                }
-
-                // player_seasons upsert
-                {
-                    const { error: psErr } = await supabase
-                    .from('player_seasons')
+            // participaciones -> clubs/teams/competitions
+            for (const b of blocks) {
+                // club
+                let clubId: string | null = null;
+                if (b.clubName.trim()) {
+                    const { data: club, error: clubErr } = await supabase
+                    .from('clubs')
                     .upsert(
-                        { player_id: playerId, season_id: seasonId, avatar: avatarPath ?? null },
-                        { onConflict: 'player_id,season_id', ignoreDuplicates: false }
-                    );
-                    if (psErr) throw psErr;
+                        { name: b.clubName.trim(), player_id: playerId },
+                        { onConflict: 'player_id,name' }
+                    )
+                    .select('id')
+                    .single();
+                    if (clubErr) throw clubErr;
+                    clubId = club!.id;
                 }
 
-                // participaciones -> clubs/teams/competitions
-                for (const b of blocks) {
-                    // club
-                    let clubId: string | null = null;
-                    if (b.clubName.trim()) {
-                        const { data: club, error: clubErr } = await supabase
-                        .from('clubs')
-                        .upsert(
-                            { name: b.clubName.trim(), player_id: playerId },
-                            { onConflict: 'player_id,name' }
-                        )
-                        .select('id')
-                        .single();
-                        if (clubErr) throw clubErr;
-                        clubId = club!.id;
-                    }
-
-                    // team
-                    let teamId: string | null = null;
-                    if (b.teamName.trim()) {
-                        if (!clubId) throw new Error(t('equipo_necesita_club_aviso'));
-                        const { data: teamUpsert, error: teamUpErr } = await supabase
-                        .from('teams')
-                        .upsert(
-                        {
-                            name: b.teamName.trim(),
-                            club_id: clubId,
-                            sport_id: b.sportId,
-                            player_id: playerId,
-                        },
-                        { onConflict: 'player_id,club_id,sport_id,name' }
-                        )
-                        .select('id')
-                        .single();
-                        if (teamUpErr) throw teamUpErr;
-                        teamId = teamUpsert!.id;
-                    }
-
-                    // competition
-                    const payload = {
-                        player_id: playerId,
-                        season_id: seasonId,
-                        sport_id: b.sportId,
+                // team
+                let teamId: string | null = null;
+                if (b.teamName.trim()) {
+                    if (!clubId) throw new Error(t('equipo_necesita_club_aviso'));
+                    const { data: teamUpsert, error: teamUpErr } = await supabase
+                    .from('teams')
+                    .upsert(
+                    {
+                        name: b.teamName.trim(),
                         club_id: clubId,
-                        team_id: teamId,
-                        category_id: b.categoryId ?? null,
-                        name: b.competitionName?.trim() || null,
-                    };
-                    const { error: cmpErr } = await supabase.from('competitions').insert(payload);
-                    if (cmpErr) throw cmpErr;
+                        sport_id: b.sportId,
+                        player_id: playerId,
+                    },
+                    { onConflict: 'player_id,club_id,sport_id,name' }
+                    )
+                    .select('id')
+                    .single();
+                    if (teamUpErr) throw teamUpErr;
+                    teamId = teamUpsert!.id;
                 }
 
-                // asignación de asiento o canje de código
-                if (pendingCode) {
-                    const { data, error: rpcErr } = await supabase.rpc('redeem_access_code_for_player', {
-                        p_code: pendingCode,
-                        p_user_id: user.id,
-                        p_player_id: playerId,
-                    });
-                    if (rpcErr) throw rpcErr;
-                    if (!data?.ok) {
-                        setInfo(null);
-                        setErr(data?.message || 'No se pudo canjear el código.');
-                    } else {
-                        try {
-                            sessionStorage.removeItem('pending_access_code');
-                            localStorage.removeItem('pending_access_code');
-                        } catch {}
-                        setInfo(`Acceso activado hasta ${new Date(data.ends_at).toLocaleDateString()}.`);
-                    }
-                } else {
-                    const { data: seatData, error: seatErr } = await supabase.rpc('assign_free_seat_to_player', {
-                        p_user_id: user.id,
-                        p_player_id: playerId,
-                    });
-                    //if (seatErr) throw seatErr;
-                    //if (!seatData?.ok) throw new Error(seatData?.message || 'No quedan plazas disponibles.');
-                    if (seatErr || !seatData?.ok) throw new Error(seatData?.message || t('plazas_disponibles_sin'));
-                    setSeatsRemaining((s) => (typeof s === 'number' ? Math.max(0, s - 1) : s));
-                }
-
-                // navegación
-                setCreated((c) => c + 1);
-                if (created + 1 >= total) {
-                    router.replace(`/players/${playerId}`);
-                } else {
-                    // reset para siguiente alta en lote
-                    setName('');
-                    setBlocks([{ sportId: '', competitionName: '', clubName: '', teamName: '', categoryId: null, avatarFile: null, avatarPath: null }]);
-                    setInfo(t('jugador_creado')); // opcional
-                }
-            } catch (e: any) {
-                setErr(e?.message ?? t('deportista_crear_error'));
-            } finally {
-                setBusy(false);
+                // competition
+                const payload = {
+                    player_id: playerId,
+                    season_id: seasonId,
+                    sport_id: b.sportId,
+                    club_id: clubId,
+                    team_id: teamId,
+                    category_id: b.categoryId ?? null,
+                    name: b.competitionName?.trim() || null,
+                };
+                const { error: cmpErr } = await supabase.from('competitions').insert(payload);
+                if (cmpErr) throw cmpErr;
             }
-        };
 
-        const remaining = total - created;
+            // asignación de asiento o canje de código
+            if (pendingCode) {
+                const { data, error: rpcErr } = await supabase.rpc('redeem_access_code_for_player', {
+                    p_code: pendingCode,
+                    p_user_id: user.id,
+                    p_player_id: playerId,
+                });
+                if (rpcErr) throw rpcErr;
+                if (!data?.ok) {
+                    setInfo(null);
+                    setErr(data?.message || 'No se pudo canjear el código.');
+                } else {
+                    try {
+                        sessionStorage.removeItem('pending_access_code');
+                        localStorage.removeItem('pending_access_code');
+                    } catch {}
+                    setInfo(`Acceso activado hasta ${new Date(data.ends_at).toLocaleDateString()}.`);
+                }
+            } else {
+                const { data: seatData, error: seatErr } = await supabase.rpc('assign_free_seat_to_player', {
+                    p_user_id: user.id,
+                    p_player_id: playerId,
+                });
+                //if (seatErr) throw seatErr;
+                //if (!seatData?.ok) throw new Error(seatData?.message || 'No quedan plazas disponibles.');
+                if (seatErr || !seatData?.ok) throw new Error(seatData?.message || t('plazas_disponibles_sin'));
+                setSeatsRemaining((s) => (typeof s === 'number' ? Math.max(0, s - 1) : s));
+            }
 
-        const GENDER_ORDER: Record<NonNullable<Category['gender']>, number> = {
-            masculino: 0, femenino: 1, mixto: 2,
-        };
-
-        if (checkingSeats) {
-            return <div className="p-6">{t('cargando')}</div>;
+            // navegación
+            setCreated((c) => c + 1);
+            if (created + 1 >= total) {
+                router.replace(`/players/${playerId}`);
+            } else {
+                // reset para siguiente alta en lote
+                setName('');
+                setBlocks([{ sportId: '', competitionName: '', clubName: '', teamName: '', categoryId: null, avatarFile: null, avatarPath: null }]);
+                setInfo(t('jugador_creado')); // opcional
+            }
+        } catch (e: any) {
+            setErr(e?.message ?? t('deportista_crear_error'));
+        } finally {
+            setBusy(false);
         }
+    };
 
-        return (
-            <div className="max-w-xl mx-auto">
-                <TitleH1>{t('deportista_nuevo')}</TitleH1>
+    const remaining = total - created;
 
-                <div className="mt-2 mb-4 rounded border p-3 bg-blue-50 text-blue-900 text-sm">
-                    {t('player_nuevo_texto1')}: <b>{remaining}</b>.
-                    {pendingCode && <span className="ml-2">· {t('codigo_detectado') ?? 'Código aplicado'}</span>}
-                </div>
+    const GENDER_ORDER: Record<NonNullable<Category['gender']>, number> = {
+        masculino: 0, femenino: 1, mixto: 2,
+    };
 
-                {info && <div className="rounded border p-3 bg-green-50 text-green-700 mb-4">{info}</div>}
-                {err && <div className="rounded border p-3 bg-red-50 text-red-700 mb-4">{err}</div>}
+    if (checkingSeats) {
+        return <div className="p-6">{t('cargando')}</div>;
+    }
 
-                <form onSubmit={createOne} className="space-y-4">
-                    <Input
-                        value={name}
-                        onChange={(e: any) => setName(e.target.value)}
-                        label={t('deportista_nombre')}
-                        placeholder={t('nombre')}
-                    />
+    return (
+        <div className="max-w-xl mx-auto">
+            <TitleH1>{t('deportista_nuevo')}</TitleH1>
 
-                    <p>{t('player_nuevo_texto2')}</p>
+            <div className="mt-2 mb-4 rounded border p-3 bg-blue-50 text-blue-900 text-sm">
+                {t('player_nuevo_texto1')}: <b>{remaining}</b>.
+                {pendingCode && <span className="ml-2">· {t('codigo_detectado') ?? 'Código aplicado'}</span>}
+            </div>
 
-                    <h3 className="text-center font-bold">{t('temporada')} {seasonTitle}</h3>
+            {info && <div className="rounded border p-3 bg-green-50 text-green-700 mb-4">{info}</div>}
+            {err && <div className="rounded border p-3 bg-red-50 text-red-700 mb-4">{err}</div>}
 
-                    <div className="space-y-6">
-                        {blocks.map((b, i) => {
-                            const sportCats = b.sportId ? categoriesBySport[b.sportId] || [] : [];
-                            return (
-                                <div key={i} className="p-4 bg-gray-100 space-y-4 rounded-lg">
-                                    <div className="flex items-center justify-between">
-                                        <div className="font-medium">{t('participacion')} #{i + 1}</div>
-                                        {blocks.length > 1 && (
-                                            <button type="button" onClick={() => removeBlock(i)} className="text-sm text-red-600 hover:underline">
-                                                {t('eliminar')}
-                                            </button>
-                                        )}
-                                    </div>
+            <form onSubmit={createOne} className="space-y-4">
+                <Input
+                    value={name}
+                    onChange={(e: any) => setName(e.target.value)}
+                    label={t('deportista_nombre')}
+                    placeholder={t('nombre')}
+                />
 
-                                    <div>
-                                        <label className="text-sm font-medium">{t('deporte')}</label>
-                                        <Select
-                                            name={`sport_${i}`}
-                                            value={b.sportId}
-                                            onChange={(e: ChangeEvent<HTMLSelectElement>) => setBlock(i, 'sportId', e.target.value)}
-                                            options={sports.map((s) => ({ value: s.id, label: s.name }))}
-                                            placeholder={t('deporte_selec')}
-                                            fontSize="sm"
-                                        />
-                                    </div>
+                <p>{t('player_nuevo_texto2')}</p>
 
-                                    <div>
-                                        <Input
-                                            value={b.competitionName}
-                                            onChange={(e: any) => setBlock(i, 'competitionName', e.target.value)}
-                                            label={t('competicion')}
-                                            placeholder={t('competicion_nombre')}
-                                            helpText={t('competicion_nombre_info')}
-                                        />
-                                    </div>
+                <h3 className="text-center font-bold">{t('temporada')} {seasonTitle}</h3>
 
-                                    <div>
-                                        <Select
-                                            name={`categoryId_${i}`}
-                                            label={t('categoria')}
-                                            value={b.categoryId ?? ''}  // scalar
-                                            onChange={(e: ChangeEvent<HTMLSelectElement>) =>
-                                              setBlock(i, 'categoryId', e.target.value || null)
-                                            }
-                                            options={[...sportCats]
-                                              .sort((a, b) => {
-                                                if (a.name !== b.name) return a.name.localeCompare(b.name, 'es');
-                                                const ga = a.gender ?? 'mixto';
-                                                const gb = b.gender ?? 'mixto';
-                                                return GENDER_ORDER[ga] - GENDER_ORDER[gb];
-                                              })
-                                              .map((c) => ({ value: c.id, label: labelWithGender(c) }))}
-                                            placeholder={sportCats.length === 0 ? t('deporte_selec_primero') : t('categoria_selec')}
-                                            fontSize="sm"
-                                        />
-                                    </div>
-
-                                    <Input
-                                        value={b.clubName}
-                                        onChange={(e: any) => setBlock(i, 'clubName', e.target.value)}
-                                        label="Club"
-                                        placeholder={t('club_nombre')}
-                                    />
-
-                                    <Input
-                                        value={b.teamName}
-                                        onChange={(e: any) => setBlock(i, 'teamName', e.target.value)}
-                                        label={t('equipo')}
-                                        placeholder={t('equipo_nombre')}
-                                        helpText={t('equipo_nombre_info')}
-                                    />
-
-                                    {i === 0 && (
-                                        <div>
-                                            <label className="text-sm font-medium block mb-1 text-gray-700">
-                                                {t('avatar')} <small>({t('avatar_temporada')})</small>
-                                            </label>
-                                            <label className="flex items-center justify-center border-2 border-dashed rounded-lg p-6 bg-white cursor-pointer hover:bg-gray-100">
-                                                <input
-                                                    type="file"
-                                                    accept="image/*"
-                                                    className="hidden"
-                                                    onChange={(e) => {
-                                                        const f = e.target.files?.[0] || null;
-                                                        setBlock(i, 'avatarFile', f);
-                                                    }}
-                                                />
-                                                <div className="text-center">
-                                                    <div className="text-sm">
-                                                        {b.avatarFile ? `Seleccionado: ${b.avatarFile.name}` : t('imagen_selec')}
-                                                    </div>
-                                                    <div className="text-xs text-gray-500">{t('imagenes_guarda_local')}</div>
-                                                </div>
-                                            </label>
-                                        </div>
+                <div className="space-y-6">
+                    {blocks.map((b, i) => {
+                        const sportCats = b.sportId ? categoriesBySport[b.sportId] || [] : [];
+                        return (
+                            <div key={i} className="p-4 bg-gray-100 space-y-4 rounded-lg">
+                                <div className="flex items-center justify-between">
+                                    <div className="font-medium">{t('participacion')} #{i + 1}</div>
+                                    {blocks.length > 1 && (
+                                        <button type="button" onClick={() => removeBlock(i)} className="text-sm text-red-600 hover:underline">
+                                            {t('eliminar')}
+                                        </button>
                                     )}
                                 </div>
-                            );
-                        })}
-                    </div>
 
-                    <div className="grid grid-cols-2 gap-3 mt-4">
-                        <button
-                            type="button"
-                            onClick={addBlock}
-                            disabled={!canAddMore(blocks.length)}
-                            className={`h-12 w-full rounded-lg border text-sm font-medium ${canAddMore(blocks.length) ? 'bg-white hover:bg-gray-50' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
-                        >
-                            + {t('participacion_add')}
-                        </button>
+                                <div>
+                                    <label className="text-sm font-medium">{t('deporte')}</label>
+                                    <Select
+                                        name={`sport_${i}`}
+                                        value={b.sportId}
+                                        onChange={(e: ChangeEvent<HTMLSelectElement>) => setBlock(i, 'sportId', e.target.value)}
+                                        options={sports.map((s) => ({ value: s.id, label: s.name }))}
+                                        placeholder={t('deporte_selec')}
+                                        fontSize="sm"
+                                    />
+                                </div>
 
-                        <Submit
-                            text={t('guardar')}
-                            loadingText={t('procesando') ?? t('guardar')}
-                            disabled={busy}
-                            className="h-12 w-full"
-                        />
-                    </div>
-                </form>
-            </div>
-        );
-    }
+                                <div>
+                                    <Input
+                                        value={b.competitionName}
+                                        onChange={(e: any) => setBlock(i, 'competitionName', e.target.value)}
+                                        label={t('competicion')}
+                                        placeholder={t('competicion_nombre')}
+                                        helpText={t('competicion_nombre_info')}
+                                    />
+                                </div>
+
+                                <div>
+                                    <Select
+                                        name={`categoryId_${i}`}
+                                        label={t('categoria')}
+                                        value={b.categoryId ?? ''}  // scalar
+                                        onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+                                          setBlock(i, 'categoryId', e.target.value || null)
+                                        }
+                                        options={[...sportCats]
+                                          .sort((a, b) => {
+                                            if (a.name !== b.name) return a.name.localeCompare(b.name, 'es');
+                                            const ga = a.gender ?? 'mixto';
+                                            const gb = b.gender ?? 'mixto';
+                                            return GENDER_ORDER[ga] - GENDER_ORDER[gb];
+                                          })
+                                          .map((c) => ({ value: c.id, label: labelWithGender(c) }))}
+                                        placeholder={sportCats.length === 0 ? t('deporte_selec_primero') : t('categoria_selec')}
+                                        fontSize="sm"
+                                    />
+                                </div>
+
+                                <Input
+                                    value={b.clubName}
+                                    onChange={(e: any) => setBlock(i, 'clubName', e.target.value)}
+                                    label="Club"
+                                    placeholder={t('club_nombre')}
+                                />
+
+                                <Input
+                                    value={b.teamName}
+                                    onChange={(e: any) => setBlock(i, 'teamName', e.target.value)}
+                                    label={t('equipo')}
+                                    placeholder={t('equipo_nombre')}
+                                    helpText={t('equipo_nombre_info')}
+                                />
+
+                                {i === 0 && (
+                                    <div>
+                                        <label className="text-sm font-medium block mb-1 text-gray-700">
+                                            {t('avatar')} <small>({t('avatar_temporada')})</small>
+                                        </label>
+                                        <label className="flex items-center justify-center border-2 border-dashed rounded-lg p-6 bg-white cursor-pointer hover:bg-gray-100">
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={(e) => {
+                                                    const f = e.target.files?.[0] || null;
+                                                    setBlock(i, 'avatarFile', f);
+                                                }}
+                                            />
+                                            <div className="text-center">
+                                                <div className="text-sm">
+                                                    {b.avatarFile ? `Seleccionado: ${b.avatarFile.name}` : t('imagen_selec')}
+                                                </div>
+                                                <div className="text-xs text-gray-500">{t('imagenes_guarda_local')}</div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 mt-4">
+                    <button
+                        type="button"
+                        onClick={addBlock}
+                        disabled={!canAddMore(blocks.length)}
+                        className={`h-12 w-full rounded-lg border text-sm font-medium ${canAddMore(blocks.length) ? 'bg-white hover:bg-gray-50' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
+                    >
+                        + {t('participacion_add')}
+                    </button>
+
+                    <Submit
+                        text={t('guardar')}
+                        loadingText={t('procesando') ?? t('guardar')}
+                        disabled={busy}
+                        className="h-12 w-full"
+                    />
+                </div>
+            </form>
+        </div>
+    );
+}
