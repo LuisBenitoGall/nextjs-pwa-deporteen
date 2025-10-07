@@ -86,6 +86,7 @@
   "deshacer": "Deshacer",
   "editar": "Editar",
   "eliminar": "Eliminar",
+  "eliminando": "Eliminando...",
   "email": "Email",
   "empatados": "Empatados",
   "en_contra": "En contra",
@@ -258,6 +259,8 @@
   "stripe_price_currency_hint": "La moneda por defecto es EUR.",
   "stripe_price_type_hint": "Una vez creado el precio, solo podrás activar o desactivar su disponibilidad.",
   "stripe_price_toggle_active": "Cambiar estado",
+  "partido_eliminar_confirmar": "Confirmar eliminación",
+  "partido_eliminar_texto_modal": "Si eliminas este partido, se borrarán todos sus datos y archivos asociados. Esta acción es irreversible.",
   "stripe_price_active_badge": "Activo",
   "stripe_price_inactive_badge": "Inactivo",
   "stripe_price_view_dashboard": "Ver en Stripe",
@@ -453,5 +456,6 @@
   "valor": "Valor",
   "video": "Vídeo",
   "visitante": "Visitante",
+  "volver_atras": "Volver atrás",
   "waterpolo": "Waterpolo"
 }

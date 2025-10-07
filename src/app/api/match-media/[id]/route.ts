@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_req: Request, context: { params: Promise<{ id: string }> }) {
   try {
-    const mediaId = params.id;
+    const { id: mediaId } = await context.params;
     if (!mediaId) {
       return NextResponse.json({ error: 'mediaId requerido' }, { status: 400 });
     }
