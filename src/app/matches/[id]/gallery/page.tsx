@@ -130,13 +130,13 @@ export default function MatchGalleryPage() {
         }
 
         return (
-          <Image
+            <Image
             src={src}
             alt={item.mime_type ?? 'media'}
             className="w-full h-full object-cover rounded-lg"
             width={500} // Adjust width as needed
             height={500} // Adjust height as needed
-          />
+            />
         );
     }
 

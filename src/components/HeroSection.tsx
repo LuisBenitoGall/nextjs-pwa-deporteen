@@ -33,7 +33,8 @@ export default function HeroSection() {
     }, []);
 
     return (
-        <section className="px-6 pb-20 pt-8">
+        <section className="px-0 pb-20 pt-8 home_">
+            {/* Bloque principal */}
             <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
                 {/* Texto principal */}
                 <div className="text-center md:text-left">
@@ -73,6 +74,58 @@ export default function HeroSection() {
                         className="w-full max-w-md rounded-xl shadow-lg h-auto"
                         priority
                     />
+                </div>
+            </div>
+
+            {/* Bloque deportes */}
+            <div className="max-w-7xl mx-auto grid grid-cols-1 items-center rounded-lg bg-green-50 my-16 py-8 px-6">
+                <h2 className="text-3xl font-bold text-foreground text-center mb-3 w-full">{ t('deportes') }</h2>
+                <p className="text-center m-0 font-bold text-gray-500">Registra el historial deportivo de estos deportes</p>
+            </div>
+
+            {/* Bloque características */}
+            <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start rounded-lg bg-gray-50 my-16 py-8 px-6">
+                <div className="flex flex-col items-start p-6 border border-gray-200 rounded-lg shadow bg-white h-40">
+                    <div className="flex items-center justify-center w-12 h-12 bg-green-600 rounded-full mb-4">
+                        <Image src="/icons/athlete.svg" alt="Athlete Icon" width={24} height={24} />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-800">Gestión de Deportistas</h3>
+                    <p className="text-sm text-gray-500 w-full">Registra y organiza a todos tus deportistas favoritos</p>
+                </div>
+                <div className="flex flex-col items-start p-6 border border-gray-200 rounded-lg shadow bg-white h-40">
+                    <div className="flex items-center justify-center w-12 h-12 bg-green-600 rounded-full mb-4">
+                        <Image src="/icons/sports.svg" alt="Sports Icon" width={24} height={24} />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-800">Múltiples Deportes</h3>
+                    <p className="text-sm text-gray-500 w-full">Fútbol, baloncesto, voleibol y 5 deportes más</p>
+                </div>
+                <div className="flex flex-col items-start p-6 border border-gray-200 rounded-lg shadow bg-white h-40">
+                    <div className="flex items-center justify-center w-12 h-12 bg-green-600 rounded-full mb-4">
+                        <Image src="/icons/stats.svg" alt="Stats Icon" width={24} height={24} />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-800">Estadísticas Detalladas</h3>
+                    <p className="text-sm text-gray-500 w-full">Analiza el rendimiento de cada partido y temporada</p>
+                </div>
+                <div className="flex flex-col items-start p-6 border border-gray-200 rounded-lg shadow bg-white h-40">
+                    <div className="flex items-center justify-center w-12 h-12 bg-green-600 rounded-full mb-4">
+                        <Image src="/icons/media.svg" alt="Media Icon" width={24} height={24} />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-800">Fotos y Videos</h3>
+                    <p className="text-sm text-gray-500 w-full">Captura y almacena los mejores momentos</p>
+                </div>
+                <div className="flex flex-col items-start p-6 border border-gray-200 rounded-lg shadow bg-white h-40">
+                    <div className="flex items-center justify-center w-12 h-12 bg-green-600 rounded-full mb-4">
+                        <Image src="/icons/offline.svg" alt="Offline Icon" width={24} height={24} />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-800">Funciona Offline</h3>
+                    <p className="text-sm text-gray-500 w-full">Registra datos incluso sin conexión a internet</p>
+                </div>
+                <div className="flex flex-col items-start p-6 border border-gray-200 rounded-lg shadow bg-white h-40">
+                    <div className="flex items-center justify-center w-12 h-12 bg-green-600 rounded-full mb-4">
+                        <Image src="/icons/mobile.svg" alt="Mobile Icon" width={24} height={24} />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-800">PWA Móvil</h3>
+                    <p className="text-sm text-gray-500 w-full">Optimizada para móviles y tablets</p>
                 </div>
             </div>
         </section>
