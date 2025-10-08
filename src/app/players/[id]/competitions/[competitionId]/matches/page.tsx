@@ -79,16 +79,16 @@ export default function MatchesByCompetitionPage() {
             setLoading(true);
             setError(null);
 
-            // 0) ValidaciÃ³n de params
+            // 0) Validación de params
             if (!playerId || !competitionId) {
                 if (mounted) {
-                    setError('Faltan parÃ¡metros de ruta (playerId o competitionId).');
+                    setError('Faltan parámetros de ruta (playerId o competitionId).');
                     setLoading(false);
                 }
                 return;
             }
 
-            // 1) CompeticiÃ³n
+            // 1) Competición
             const { data: comp, error: cErr } = await supabase
             .from('competitions')
             .select('id, name, sport_id, season_id, team_id')
@@ -123,7 +123,7 @@ export default function MatchesByCompetitionPage() {
                 setSport((sportRow as Sport) || null);
             }
 
-            // 5) Partidos del jugador en esta competiciÃ³n (+ temporada si existe)
+            // 5) Partidos del jugador en esta competición (+ temporada si existe)
             let q = supabase
             .from('matches')
             .select('id, date_at, place, is_home, rival_team_name, my_score, rival_score, competition_id, season_id, player_id, stats')
@@ -312,6 +312,16 @@ const otherTeam = Math.max(0, teamTotalForPie - playerScoringTotal);
                         <span>{t('cuenta_mi_volver')}</span>
                     </button>
                 </Link>*/}
+
+                <Link
+                    href={`/players/${playerId}/matches/new`}
+                    className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-3 py-2 text-sm text-white font-bold hover:bg-green-700"
+                >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" />
+                    </svg>
+                    <span>{t('partido_nuevo')}</span>
+                </Link>
 
                 <button
                     type="button"
