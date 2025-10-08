@@ -32,6 +32,83 @@ export default function HeroSection() {
         };
     }, []);
 
+    // Lista en el orden indicado en tu comentario
+    const SPORTS = [
+        { name: 'Baloncesto', icon: '/icons/icon-baloncesto.png', slug: 'baloncesto' },
+        { name: 'Fútbol', icon: '/icons/icon-futbol.png', slug: 'futbol' },
+        { name: 'Fútbol Sala', icon: '/icons/icon-futbol-sala.png', slug: 'futbol-sala' },
+        { name: 'Balonmano', icon: '/icons/icon-balonmano.png', slug: 'balonmano' },
+        { name: 'Rugby', icon: '/icons/icon-rugby.png', slug: 'rugby' },
+        { name: 'Voleibol', icon: '/icons/icon-voleibol.png', slug: 'voleibol' },
+        { name: 'Waterpolo', icon: '/icons/icon-waterpolo.png', slug: 'waterpolo' },
+        { name: 'Hockey Hierba', icon: '/icons/icon-hockey-hierba.png', slug: 'hockey-hierba' },
+        { name: 'Hockey Patines', icon: '/icons/icon-hockey-patines.png', slug: 'hockey-patines' }
+    ];
+
+    const FEATURES = [
+        {   title: 'Gestión de Deportistas',
+            desc: 'Registra y organiza a todos tus deportistas favoritos',
+            icon: '/icons/athlete.svg',
+        },
+        {
+            title: 'Múltiples Deportes',
+            desc: 'Fútbol, baloncesto, voleibol y 5 deportes más',
+            icon: '/icons/sports.svg',
+        },
+        {
+            title: 'Estadísticas Detalladas',
+            desc: 'Analiza el rendimiento de cada partido y temporada',
+            icon: '/icons/stats.svg',
+        },
+        {
+            title: 'Fotos y Videos',
+            desc: 'Captura y almacena los mejores momentos',
+            icon: '/icons/media.svg',
+        },
+        {
+            title: 'Funciona Offline',
+            desc: 'Registra datos incluso sin conexión a internet',
+            icon: '/icons/offline.svg',
+        },
+        {
+            title: 'PWA Móvil',
+            desc: 'Optimizada para móviles y tablets',
+            icon: '/icons/mobile.svg',
+        }
+    ];
+
+    function FeatureCard({
+        title,
+        desc,
+        icon, // ruta a svg/png
+    }: {
+        title: string;
+        desc: string;
+        icon: string;
+    }) {
+        return (
+            <div className="rounded-xl bg-white p-4 md:p-5 ring-1 ring-gray-200 shadow-sm
+                            hover:shadow-md hover:ring-green-200 transition">
+            {/* Header: icono + título */}
+            <div className="grid grid-cols-[auto,1fr] items-center gap-3 md:gap-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-green-600">
+                {/* Si tus SVG no heredan color, les aplicamos invert para que queden claros sobre el verde */}
+                <Image src={icon} alt="" width={20} height={20} className="invert" />
+                </div>
+
+                <h3 className="text-[16px] md:text-[17px] font-semibold leading-6 text-gray-900">
+                {title}
+                </h3>
+
+                {/* Descripción: ocupa TODA la anchura del card */}
+                <p className="col-span-2 mt-1 text-sm leading-6 text-gray-600">
+                {desc}
+                </p>
+            </div>
+            </div>
+        );
+    }
+
     return (
         <section className="px-0 pb-20 pt-8 home_">
             {/* Bloque principal */}
@@ -78,55 +155,44 @@ export default function HeroSection() {
             </div>
 
             {/* Bloque deportes */}
-            <div className="max-w-7xl mx-auto grid grid-cols-1 items-center rounded-lg bg-green-50 my-16 py-8 px-6">
+            <div className="max-w-7xl mx-auto grid grid-cols-1 items-center rounded-lg bg-green-50 my-8 py-8 px-6" id="block-sports">
                 <h2 className="text-3xl font-bold text-foreground text-center mb-3 w-full">{ t('deportes') }</h2>
                 <p className="text-center m-0 font-bold text-gray-500">Registra el historial deportivo de estos deportes</p>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-6 mt-8">
+
+                    {SPORTS.map((s) => (
+                        <div
+                            key={s.slug}
+                            aria-label={s.name}
+                            className="group"
+                        >
+                            <div className="relative flex flex-col items-center gap-3 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-200 transition
+                                            hover:-translate-y-0.5 hover:shadow-md hover:ring-green-200">
+                                <div className="flex items-center justify-center w-16 h-16 rounded-full bg-green-50 ring-1 ring-green-100">
+                                    <Image
+                                    src={s.icon}
+                                    alt={s.name}
+                                    width={80}   
+                                    height={80}
+                                    className="h-[80px] w-[80px] object-contain transition group-hover:scale-[1.03]"
+                                    />
+                                </div>
+                                <span className="text-sm font-semibold text-gray-800 text-center">
+                                    {s.name}
+                                </span>
+                                <div className="mt-1 h-px w-10 bg-gray-200" />
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
 
             {/* Bloque características */}
-            <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start rounded-lg bg-gray-50 my-16 py-8 px-6">
-                <div className="flex flex-col items-start p-6 border border-gray-200 rounded-lg shadow bg-white h-40">
-                    <div className="flex items-center justify-center w-12 h-12 bg-green-600 rounded-full mb-4">
-                        <Image src="/icons/athlete.svg" alt="Athlete Icon" width={24} height={24} />
-                    </div>
-                    <h3 className="text-lg font-bold text-gray-800">Gestión de Deportistas</h3>
-                    <p className="text-sm text-gray-500 w-full">Registra y organiza a todos tus deportistas favoritos</p>
-                </div>
-                <div className="flex flex-col items-start p-6 border border-gray-200 rounded-lg shadow bg-white h-40">
-                    <div className="flex items-center justify-center w-12 h-12 bg-green-600 rounded-full mb-4">
-                        <Image src="/icons/sports.svg" alt="Sports Icon" width={24} height={24} />
-                    </div>
-                    <h3 className="text-lg font-bold text-gray-800">Múltiples Deportes</h3>
-                    <p className="text-sm text-gray-500 w-full">Fútbol, baloncesto, voleibol y 5 deportes más</p>
-                </div>
-                <div className="flex flex-col items-start p-6 border border-gray-200 rounded-lg shadow bg-white h-40">
-                    <div className="flex items-center justify-center w-12 h-12 bg-green-600 rounded-full mb-4">
-                        <Image src="/icons/stats.svg" alt="Stats Icon" width={24} height={24} />
-                    </div>
-                    <h3 className="text-lg font-bold text-gray-800">Estadísticas Detalladas</h3>
-                    <p className="text-sm text-gray-500 w-full">Analiza el rendimiento de cada partido y temporada</p>
-                </div>
-                <div className="flex flex-col items-start p-6 border border-gray-200 rounded-lg shadow bg-white h-40">
-                    <div className="flex items-center justify-center w-12 h-12 bg-green-600 rounded-full mb-4">
-                        <Image src="/icons/media.svg" alt="Media Icon" width={24} height={24} />
-                    </div>
-                    <h3 className="text-lg font-bold text-gray-800">Fotos y Videos</h3>
-                    <p className="text-sm text-gray-500 w-full">Captura y almacena los mejores momentos</p>
-                </div>
-                <div className="flex flex-col items-start p-6 border border-gray-200 rounded-lg shadow bg-white h-40">
-                    <div className="flex items-center justify-center w-12 h-12 bg-green-600 rounded-full mb-4">
-                        <Image src="/icons/offline.svg" alt="Offline Icon" width={24} height={24} />
-                    </div>
-                    <h3 className="text-lg font-bold text-gray-800">Funciona Offline</h3>
-                    <p className="text-sm text-gray-500 w-full">Registra datos incluso sin conexión a internet</p>
-                </div>
-                <div className="flex flex-col items-start p-6 border border-gray-200 rounded-lg shadow bg-white h-40">
-                    <div className="flex items-center justify-center w-12 h-12 bg-green-600 rounded-full mb-4">
-                        <Image src="/icons/mobile.svg" alt="Mobile Icon" width={24} height={24} />
-                    </div>
-                    <h3 className="text-lg font-bold text-gray-800">PWA Móvil</h3>
-                    <p className="text-sm text-gray-500 w-full">Optimizada para móviles y tablets</p>
-                </div>
+            <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 md:gap-6 items-start rounded-xl bg-gray-100 my-8 py-8 px-6">
+                {FEATURES.map((f) => (
+                    <FeatureCard key={f.title} {...f} />
+                ))}
             </div>
         </section>
     );
