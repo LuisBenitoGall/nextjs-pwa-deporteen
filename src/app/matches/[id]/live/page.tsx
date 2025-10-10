@@ -7,7 +7,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabaseBrowser } from '../../../../lib/supabase/client';
 import { useParams } from 'next/navigation';
 import { getCurrentSeasonId } from '@/lib/seasons';
+import { getSportIconPath } from '@/lib/sports';
 import { useT } from '@/i18n/I18nProvider';
+import Image from 'next/image';
 
 import Input from '@/components/Input';
 import Link from 'next/link';
@@ -306,11 +308,26 @@ export default function LiveMatchPage() {
           }
         `}</style>
 
-        <TitleH1>
-          <span className="block md:inline">{leftLabel}</span>
-          <span className="block md:inline md:px-2 text-base md:text-inherit text-gray-700">vs</span>
-          <span className="block md:inline">{rightLabel}</span>
-        </TitleH1>
+        <div className="relative">
+            <TitleH1>
+                <span className="block md:inline">{leftLabel}</span>
+                <span className="block md:inline md:px-2 text-base md:text-inherit text-gray-700">vs</span>
+                <span className="block md:inline">{rightLabel}</span>
+            </TitleH1>
+
+            {/* Icono a la derecha, con margen máximo 15px */}
+            {sport?.name && getSportIconPath(sport.name) && (
+                <Image
+                src={getSportIconPath(sport.name)!}
+                alt={sport.name || 'deporte'}
+                width={60}
+                height={60}
+                className="absolute top-1/2 -translate-y-1/2 right-0 select-none"
+                style={{ objectFit: 'contain' }}
+                priority
+                />
+            )}
+        </div>
 
         <div className="flex items-center gap-2 mb-4">
           <a href={backToListUrl} className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-3 py-2 rounded-lg shadow transition">
@@ -339,46 +356,48 @@ export default function LiveMatchPage() {
 
         {/* Cabecera */}
         <div className="text-sm text-gray-700 mb-4 grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-1">
-          <div>{t('temporada')}: <b>{seasonLabel}</b></div>
-          <div>{t('competicion')}: <b>{sport?.name} - {competition?.name}</b></div>
-          <div>{t('fecha')}: <b>{new Date(match.date_at).toLocaleString()}</b></div>
-          <div>{t('lugar')}: <b>{match.place}</b></div>
+            <div>{t('temporada')}: <b>{seasonLabel}</b></div>
+            <div>{t('competicion')}: <b>{sport?.name} - {competition?.name}</b></div>
+            <div>{t('fecha')}: <b>{new Date(match.date_at).toLocaleString()}</b></div>
+            <div>{t('lugar')}: <b>{match.place}</b></div>
         </div>
 
         {/* Marcador */}
         <div className="grid grid-cols-2 gap-6 items-center my-6">
-          {/* Izquierda */}
-          <div className="text-center">
-            <div className="text-sm mb-2 text-green-700 font-bold text-center" style={{ fontSize: '1.1rem' }}>
-              <span className="bg-green-700 text-white rounded-md px-3 py-1">{leftLabel}</span>
+            {/* Izquierda */}
+            <div className="text-center">
+                <div className="text-sm mb-2 text-green-700 font-bold text-center" style={{ fontSize: '1.1rem' }}>
+                    <span className="bg-green-700 text-white rounded-md px-3 py-1">{leftLabel}</span>
+                </div>
+                <div className="flex items-center justify-center gap-4">
+                    <div className="flex flex-col gap-2">
+                        <button type="button" aria-label="+1" className="rounded-md px-3 py-2 border" onClick={incLeft}>+</button>
+                        <button type="button" aria-label="-1" className="rounded-md px-3 py-2 border" onClick={decLeft}>-</button>
+                    </div>
+                    <div className="grid place-content-center border rounded-md w-24 sm:w-28 md:w-32 lg:w-40 aspect-square text-5xl md:text-6xl font-bold select-none">
+                        {leftScore}
+                    </div>
+                </div>
             </div>
-            <div className="flex items-center justify-center gap-4">
-              <div className="flex flex-col gap-2">
-                <button type="button" aria-label="+1" className="rounded-md px-3 py-2 border" onClick={incLeft}>+</button>
-                <button type="button" aria-label="-1" className="rounded-md px-3 py-2 border" onClick={decLeft}>-</button>
-              </div>
-              <div className="grid place-content-center border rounded-md w-24 sm:w-28 md:w-32 lg:w-40 aspect-square text-5xl md:text-6xl font-bold select-none">
-                {leftScore}
-              </div>
-            </div>
-          </div>
 
-          {/* Derecha */}
-          <div className="text-center">
-            <div className="text-sm mb-2 text-green-700 font-bold text-center" style={{ fontSize: '1.1rem' }}>
-              <span className="bg-green-700 text-white rounded-md px-3 py-1">{rightLabel}</span>
+            {/* Derecha */}
+            <div className="text-center">
+                <div className="text-sm mb-2 text-green-700 font-bold text-center" style={{ fontSize: '1.1rem' }}>
+                    <span className="bg-green-700 text-white rounded-md px-3 py-1">{rightLabel}</span>
+                </div>
+                <div className="flex items-center justify-center gap-4">
+                    <div className="grid place-content-center border rounded-md w-24 sm:w-28 md:w-32 lg:w-40 aspect-square text-5xl md:text-6xl font-bold select-none">
+                    {rightScore}
+                    </div>
+                    <div className="flex flex-col gap-2">
+                        <button type="button" aria-label="+1" className="rounded-md px-3 py-2 border" onClick={incRight}>+</button>
+                        <button type="button" aria-label="-1" className="rounded-md px-3 py-2 border" onClick={decRight}>-</button>
+                    </div>
+                </div>
             </div>
-            <div className="flex items-center justify-center gap-4">
-              <div className="grid place-content-center border rounded-md w-24 sm:w-28 md:w-32 lg:w-40 aspect-square text-5xl md:text-6xl font-bold select-none">
-                {rightScore}
-              </div>
-              <div className="flex flex-col gap-2">
-                <button type="button" aria-label="+1" className="rounded-md px-3 py-2 border" onClick={incRight}>+</button>
-                <button type="button" aria-label="-1" className="rounded-md px-3 py-2 border" onClick={decRight}>-</button>
-              </div>
-            </div>
-          </div>
         </div>
+
+        <p className="text-center text-gray-500 font-bold underline">{t('recuerda_guardar_cambios')}</p>
 
         {/* Stats */}
         {statDefs.length > 0 && (
@@ -462,36 +481,37 @@ export default function LiveMatchPage() {
         </div>
       </div>
 
-      {/* Modal eliminar */}
-      {deleteOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
-          <div className="absolute inset-0 bg-black/40" onClick={() => !isDeleting && setDeleteOpen(false)} aria-hidden="true"></div>
-          <div className="relative z-10 w-full max-w-md rounded-2xl bg-white shadow-xl">
-            <div className="px-6 pt-5">
-              <h3 className="text-base font-semibold text-gray-900">{t('partido_eliminar_confirmar') || 'Confirmar eliminación'}</h3>
-              <p className="mt-2 text-sm text-gray-600">{t('partido_eliminar_texto_modal') || 'Si eliminas este partido, se borrarán todos sus datos. Esta acción es irreversible.'}</p>
-            </div>
-            <div className="mt-5 flex items-center justify-end gap-3 border-t border-gray-100 px-6 py-4">
-              <button
-                type="button"
-                onClick={() => setDeleteOpen(false)}
-                disabled={isDeleting}
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
-                {t('volver_atras')}
-              </button>
-              <button
-                type="button"
-                onClick={handleDeleteConfirm}
-                disabled={isDeleting}
-                className={`inline-flex items-center rounded-lg px-3 py-2 text-sm font-semibold text-white ${isDeleting ? 'bg-red-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}
-              >
-                {isDeleting ? (t('eliminando') || 'Eliminando…') : (t('partido_eliminar_confirmar') || 'Confirmar eliminación')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
-  );
+            {/* Modal eliminar */}
+            {deleteOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
+                    <div className="absolute inset-0 bg-black/40" onClick={() => !isDeleting && setDeleteOpen(false)} aria-hidden="true"></div>
+                    
+                    <div className="relative z-10 w-full max-w-md rounded-2xl bg-white shadow-xl">
+                        <div className="px-6 pt-5">
+                            <h3 className="text-base font-semibold text-gray-900">{t('partido_eliminar_confirmar') || 'Confirmar eliminación'}</h3>
+                            <p className="mt-2 text-sm text-gray-600">{t('partido_eliminar_texto_modal') || 'Si eliminas este partido, se borrarán todos sus datos. Esta acción es irreversible.'}</p>
+                        </div>
+                        <div className="mt-5 flex items-center justify-end gap-3 border-t border-gray-100 px-6 py-4">
+                            <button
+                                type="button"
+                                onClick={() => setDeleteOpen(false)}
+                                disabled={isDeleting}
+                                className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                            >
+                                {t('volver_atras')}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleDeleteConfirm}
+                                disabled={isDeleting}
+                                className={`inline-flex items-center rounded-lg px-3 py-2 text-sm font-semibold text-white ${isDeleting ? 'bg-red-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}
+                            >
+                                {isDeleting ? (t('eliminando') || 'Eliminando…') : (t('partido_eliminar_confirmar') || 'Confirmar eliminación')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
+    );
 }

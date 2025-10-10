@@ -251,6 +251,26 @@ export default async function AccountPage() {
         redirect('/logout');
     }
 
+    // Borrado lógico de jugador por id
+    async function deletePlayer(playerId: string) {
+        'use server';
+        const supabase = await createSupabaseServerClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) redirect('/login');
+
+        const { getSupabaseAdmin } = await import('@/lib/supabase/admin');
+        const admin = getSupabaseAdmin();
+        const nowIso = new Date().toISOString();
+
+        await admin
+            .from('players')
+            .update({ deleted_at: nowIso, active: false })
+            .eq('id', playerId)
+            .eq('user_id', user.id);
+
+        redirect('/account');
+    }
+
     return (
         <div>
             <TitleH1>{t('cuenta_mi')}</TitleH1>
@@ -385,26 +405,26 @@ export default async function AccountPage() {
                     <h2 className="text-base font-semibold text-gray-800">{t('deportistas') || 'Deportistas'}</h2>
 
                     {pendingPlayers > 0 && (
-      <Link
-        href="/players/new"
-        className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-2 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50"
-      >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" />
-        </svg>
-        <span>{t('deportista_agregar') || 'Añadir deportista'}</span>
-      </Link>
-    )}
-  </div>
+                        <Link
+                            href="/players/new"
+                            className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-2 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                        >
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" />
+                            </svg>
+                            <span>{t('deportista_agregar') || 'Añadir deportista'}</span>
+                        </Link>
+                    )}
+                </div>
 
-  <div
-    className="relative -mx-4 sm:mx-0 mt-4 overflow-x-auto md:overflow-visible px-4 sm:px-0 md:scroll-smooth"
-    style={{
-      WebkitOverflowScrolling: 'touch',
-      WebkitMaskImage:
-        'linear-gradient(to right, transparent 0, black 16px, black calc(100% - 16px), transparent 100%)'
-    }}
-  >
+                <div
+                    className="relative -mx-4 sm:mx-0 mt-4 overflow-x-auto md:overflow-visible px-4 sm:px-0 md:scroll-smooth"
+                    style={{
+                    WebkitOverflowScrolling: 'touch',
+                    WebkitMaskImage:
+                        'linear-gradient(to right, transparent 0, black 16px, black calc(100% - 16px), transparent 100%)'
+                    }}
+                >
                     {players.length === 0 ? (
                         <div className="text-sm">
                             {!pendingPlayers && (
@@ -435,24 +455,34 @@ export default async function AccountPage() {
                             <tbody>
                                 {players.map((p) => (
                                     <tr key={p.id} className="border-t border-gray-100">
-                                      <td
-                                        className="py-3 pr-4 sticky left-0 z-10 bg-white"
-                                        style={{ boxShadow: 'inset -8px 0 8px -8px rgba(0,0,0,0.08)' }}
-                                      >
-                                        <span className="font-medium text-gray-900 break-words">{p.display}</span>
-                                      </td>
-                                      <td className="py-3 pr-4 text-right">
-                                        {formatDate(p.created_at, me?.locale || 'es-ES')}
-                                      </td>
-                                      <td className="py-3 pr-4 text-right">
-                                        {/* Botón con las mismas clases que ya tenías */}
-                                        <Link
-                                          href={`/players/${p.id}`}
-                                          className="rounded-xl border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 whitespace-nowrap"
+                                        <td
+                                            className="py-3 pr-4 sticky left-0 z-10 bg-white"
+                                            style={{ boxShadow: 'inset -8px 0 8px -8px rgba(0,0,0,0.08)' }}
                                         >
-                                          {t('detalle_ver') || 'Ver detalle'}
-                                        </Link>
-                                      </td>
+                                            <span className="font-medium text-gray-900 break-words">{p.display}</span>
+                                        </td>
+                                        <td className="py-3 pr-4 text-right">
+                                            {formatDate(p.created_at, me?.locale || 'es-ES')}
+                                        </td>
+                                        <td className="py-3 pr-4 text-right">
+                                            {/* Ver detalle del jugador */}
+                                            <Link
+                                            href={`/players/${p.id}`}
+                                            className="rounded-xl border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 whitespace-nowrap h-[26px]"
+                                            >
+                                                {t('detalle_ver') || 'Ver detalle'}
+                                            </Link>
+
+                                            {/* Eliminar jugador con confirmación */}
+                                            <ConfirmDeleteButton
+                                                onConfirm={deletePlayer.bind(null, p.id)}          // server action, sin lambdas
+                                                label={t('eliminar') || 'Eliminar'}
+                                                className="inline-flex items-center rounded-xl bg-red-100 border border-red-300 ml-2 px-2 py-1 text-xs font-semibold text-red-700 hover:bg-red-200 whitespace-nowrap h-[26px]"
+                                                confirmTitle={t('jugador_eliminar_confirmar')}
+                                                confirmMessage={t('jugador_eliminar_confirmar_texto')}
+                                                confirmCta={t('borrado_confirmar')}
+                                            />
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>

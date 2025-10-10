@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, ChangeEvent } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { getCurrentSeasonId } from '@/lib/seasons';
+import { LIMITS } from '@/config/constants';
 import { useT } from '@/i18n/I18nProvider';
 
 import Input from '../../../components/Input';
@@ -50,7 +51,7 @@ export default function NewPlayerForm({
     const [checkingSeats, setCheckingSeats] = useState(false);
     const [seasonTitle, setSeasonTitle] = useState('');
 
-    const MAX_BLOCKS = 5;
+    const MAX_BLOCKS = LIMITS.COMPETITION_NUM_MAX_BY_SEASON;
     const canAddMore = (n: number) => n < MAX_BLOCKS;
 
     // Helpers
@@ -211,10 +212,34 @@ export default function NewPlayerForm({
 
             const seasonId = await getCurrentSeasonId(supabase);
 
+            // 1) Garantiza perfil en public.users (padre de la FK) antes de insertar jugador
+            {
+                // añade aquí cualquier campo NOT NULL que tenga tu tabla 'users'
+                const profilePayload: Record<string, any> = {
+                    id: user.id,
+                    status: true,           // si tu columna existe y es NOT NULL
+                    // locale: (mejor por defecto en DB si no lo sabes aquí)
+                };
+
+                const { error: profileErr } = await supabase
+                    .from('users')
+                    .upsert(profilePayload, { onConflict: 'id', ignoreDuplicates: false });
+
+                if (profileErr) {
+                    // Si RLS te bloquea, ver “Plan B” más abajo
+                    throw new Error(`No se pudo garantizar el perfil de usuario: ${profileErr.message}`);
+                }
+            }
+
+
+
+
+
+
             // Crear jugador
             const { data: p, error: insErr } = await supabase
             .from('players')
-            .insert({ full_name: name })
+            .insert({ full_name: name, user_id: user.id })
             .select('id')
             .single();
             if (insErr) throw insErr;

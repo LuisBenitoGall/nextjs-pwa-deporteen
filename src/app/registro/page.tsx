@@ -233,11 +233,11 @@ export default function RegistroPage() {
                         label={
                           <>
                             {t('acepta_rgpd_1')}{' '}
-                            <Link href="/terminos" className="text-green-600 underline">
+                            <Link href="/legal/terminos" className="text-green-600 underline">
                               {t('terminos_condiciones')}
                             </Link>{' '}
                             {t('acepta_rgpd_2')}{' '}
-                            <Link href="/privacidad" className="text-green-600 underline">
+                            <Link href="/legal/privacidad" className="text-green-600 underline">
                               {t('politica_privacidad')}
                             </Link>
                             .

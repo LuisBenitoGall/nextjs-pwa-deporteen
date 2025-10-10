@@ -27,8 +27,8 @@ export const ROUTES = {
     LOGIN: '/login',
     LOGOUT: '/logout',
     DASHBOARD: '/dashboard',
-    SUBSCRIPTION: '/subscription',
-    PLAYERS_NEW: '/players/new',
+    ACCOUNT: '/account',
+    CONTACT: '/contact',
 } as const;
 
 export const CONTACT = {
@@ -40,6 +40,7 @@ export const CONTACT = {
 export const LIMITS = {
     PLAYER_NAME_MAX: 60,
     COMPETITION_NAME_MAX: 80,
+    COMPETITION_NUM_MAX_BY_SEASON: 5,
     CLUB_NAME_MAX: 80,
     TEAM_NAME_MAX: 60,
 } as const;
