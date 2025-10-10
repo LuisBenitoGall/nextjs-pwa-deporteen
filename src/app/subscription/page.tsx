@@ -153,10 +153,7 @@ export default function SubscriptionPage() {
                         containerClassName="w-1/2"
                     />
 
-                    <p
-                        className="text-xs text-gray-600"
-                        dangerouslySetInnerHTML={{ __html: t('suscripcion_texto2') }}
-                    />
+                    <p dangerouslySetInnerHTML={{ __html: t('suscripcion_texto2') }} />
                 </div>
 
                 {/* Si solo 1 deportista, mostrar opción de código */}
@@ -178,7 +175,7 @@ export default function SubscriptionPage() {
                             </button>
                         </form>
 
-                        <div className="text-center text-sm text-gray-500">
+                        <div className="text-center">
                             {t('o')}
                         </div>
                     </>

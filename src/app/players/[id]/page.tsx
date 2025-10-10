@@ -4,8 +4,10 @@ import Link from 'next/link';
 import { redirect, notFound } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { tServer } from '@/i18n/server';
+import { LIMITS } from '@/config/constants';
 
 //Components
+import ConfirmDeleteButton from '@/components/ConfirmDeleteButton';
 import EditPlayerNameModal from '@/components/EditPlayerNameModal';
 import TitleH1 from '@/components/TitleH1';
 
@@ -86,6 +88,9 @@ export default async function PlayerDetailPage({
 
     const avatarUrl = psCurrent?.avatar || null;
 
+    //Límite competiciones
+    const MAX_COMP = LIMITS.COMPETITION_NUM_MAX_BY_SEASON;
+
     // Competiciones de la temporada vigente (con nombres por FK)
     const competitions = currentSeasonId
     ? (
@@ -100,8 +105,12 @@ export default async function PlayerDetailPage({
           .eq('player_id', player.id)
           .eq('season_id', currentSeasonId)
           .order('created_at', { ascending: false })
+          .limit(MAX_COMP)
       ).data ?? []
     : [];
+    
+    const compCount = competitions.length;
+    const reachedMax = compCount >= MAX_COMP;
 
     // Todas las temporadas del jugador con join a seasons
     const { data: seasonsAll } = await supabase
@@ -148,6 +157,76 @@ export default async function PlayerDetailPage({
         }
     }
 
+    // --- Server Action: borrar competición de esta temporada ---
+    async function deleteCompetitionAction(bound: { compId: string; playerId: string; seasonId: string | null }) {
+        'use server';
+        const { compId, playerId } = bound || {};
+        if (!compId || !playerId) return;
+
+        const supabase = await createSupabaseServerClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) redirect('/login');
+
+        // 0) Verificación: la competición es del usuario actual
+        const { data: owns, error: ownsErr } = await supabase
+            .from('competitions')
+            .select('id, player_id, p:players(user_id)')
+            .eq('id', compId)
+            .maybeSingle();
+
+        if (ownsErr || !owns || (owns as any)?.p?.user_id !== user.id || owns.player_id !== playerId) {
+            console.error('deleteCompetitionAction: ownership check failed', ownsErr, owns);
+            return; // salimos en silencio; si prefieres, lanza un Error
+        }
+
+        // 1) Admin client (service role) para bypass RLS
+        const { getSupabaseAdmin } = await import('@/lib/supabase/admin');
+        const admin = getSupabaseAdmin();
+
+        // 2) Borrar dependientes primero (matches)
+        const { error: delMatchesErr } = await admin
+            .from('matches')
+            .delete()
+            .eq('competition_id', compId);
+            // .eq('player_id', playerId) // opcional si tu esquema lo tiene siempre
+
+        if (delMatchesErr) {
+            console.error('deleteCompetitionAction: matches delete', delMatchesErr);
+            // seguimos; puede no haber partidos
+        }
+
+        // 3) Borrar la competición
+        const { data: deleted, error: delCompErr } = await admin
+            .from('competitions')
+            .delete()
+            .eq('id', compId)
+            .select('id')
+            .maybeSingle();
+
+        if (delCompErr || !deleted?.id) {
+            console.error('deleteCompetitionAction: competition delete', delCompErr);
+            return; // si quieres feedback visible, lanza Error aquí
+        }
+
+        // 4) Volver al detalle para refrescar
+        redirect(`/players/${playerId}`);
+    }
+
+    // --- Estado de suscripción del usuario ---
+    const { data: subs } = await supabase
+    .from('subscriptions')
+    .select('current_period_end, status')
+    .eq('user_id', user.id)
+    .order('current_period_end', { ascending: false });
+
+    let isActiveSubscription = false;
+    if (subs?.length) {
+        const latest = subs[0];
+        const end = latest.current_period_end ? new Date(latest.current_period_end) : null;
+        const statusOk = latest.status === true || String(latest.status || '').toLowerCase() === 'active';
+        isActiveSubscription = Boolean(end && end.getTime() > Date.now() && statusOk);
+    }
+
     return (
         <div>
             <TitleH1>{t('jugador')} <i>{player.full_name}</i></TitleH1>
@@ -171,15 +250,18 @@ export default async function PlayerDetailPage({
                     </button>
                 </Link>
         
-                <Link
-                    href={`/players/${player.id}/matches/new`}
-                    className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-3 py-2 text-sm text-white font-bold hover:bg-green-700"
-                >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" />
-                    </svg>
-                    <span>{t('partido_nuevo')}</span>
-                </Link>
+                {/* Nuevo partido */}
+                {isActiveSubscription && (
+                    <Link
+                        href={`/players/${player.id}/matches/new`}
+                        className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-3 py-2 text-sm text-white font-bold hover:bg-green-700"
+                    >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" />
+                        </svg>
+                        <span>{t('partido_nuevo')}</span>
+                    </Link>
+                )}
             </div>
 
             {/* Info del jugador */}
@@ -247,25 +329,61 @@ export default async function PlayerDetailPage({
             {/* Competiciones actuales */}
             <section className="mt-8 rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <h2 className="text-lg font-semibold">
-                  {t('competiciones')}.
-                  <span className="text-gray-500 ml-3 align-baseline">
-                    {t('temporada')}{' '}
-                    <b>{currentSeason ? `${currentSeason.year_start}-${currentSeason.year_end}` : `${startYear}-${endYear}`}</b>
-                  </span>
-                </h2>
+                    <h2 className="text-lg font-semibold">
+                        {t('competiciones')}.
+                        <span className="text-gray-500 ml-3 align-baseline">
+                            {t('temporada')}{' '}
+                            <b>{currentSeason ? `${currentSeason.year_start}-${currentSeason.year_end}` : `${startYear}-${endYear}`}</b>
+                        </span>
 
-                {currentSeasonId && (
-                  <Link
-                    href={`/players/${player.id}/competitions/new?season=${currentSeasonId}`}
-                    className="self-start sm:self-auto inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                    </svg>
-                    <span className="whitespace-nowrap">{t('competicion_nueva') || 'Nueva competición'}</span>
-                  </Link>
-                )}
+                        {/* Contador competiciones */}
+                        <span className="ml-3 inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
+                            {compCount}/{MAX_COMP}
+                        </span>
+                    </h2>
+
+                    {/* CTA: Nueva competición (bloquear si no hay suscripción activa) */}
+                    {currentSeasonId ? (
+                        isActiveSubscription ? (
+                            !reachedMax ? (
+                            <Link
+                                href={`/players/${player.id}/competitions/new?season=${currentSeasonId}`}
+                                className="self-start sm:self-auto inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                            >
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" />
+                                </svg>
+                                <span className="whitespace-nowrap">{t('competicion_nueva') || 'Nueva competición'}</span>
+                            </Link>
+                            ) : (
+                            <button
+                                type="button"
+                                disabled
+                                aria-disabled="true"
+                                title={t('limite_competiciones_alcanzado') || 'Has alcanzado el límite de competiciones para esta temporada'}
+                                className="self-start sm:self-auto inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-100 px-3 py-2 text-sm font-medium text-gray-400 cursor-not-allowed"
+                            >
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                                </svg>
+                                <span className="whitespace-nowrap">{t('competicion_nueva') || 'Nueva competición'}</span>
+                            </button>
+                            )
+                        ) : (
+                            <button
+                            type="button"
+                            disabled
+                            aria-disabled="true"
+                            title={t('suscripcion_necesaria_para_crear') || 'Necesitas una suscripción activa para crear competiciones'}
+                            className="self-start sm:self-auto inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-100 px-3 py-2 text-sm font-medium text-gray-400 cursor-not-allowed"
+                            >
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                            </svg>
+                            <span className="whitespace-nowrap">{t('competicion_nueva') || 'Nueva competición'}</span>
+                            </button>
+                        )
+                    ) : null}
                 </div>
 
                 {/* Contenedor con scroll horizontal en móvil, suave en desktop, inercia iOS */}
@@ -313,21 +431,44 @@ export default async function PlayerDetailPage({
                                             {matchesCountByComp.get(c.id) ?? 0}
                                         </td>
                                         <td className="py-3 pr-4">
-                                            <div className="flex flex-wrap justify-end gap-2">
-                                              {/* Nuevo partido con competition en query */}
-                                              <Link
-                                                href={`/players/${player.id}/matches/new?competition=${c.id}`}
-                                                className="inline-flex items-center rounded-xl border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 whitespace-nowrap min-h-9"
-                                              >
-                                                {t('partido_nuevo')}
-                                              </Link>
+                                            <div className="flex items-center justify-end gap-2 flex-wrap md:flex-nowrap">
+                                                {/* Nuevo partido con competition en query */}
+                                                {isActiveSubscription && (
+                                                    <Link
+                                                        href={`/players/${player.id}/matches/new?competition=${c.id}`}
+                                                        className="inline-flex items-center rounded-xl border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 whitespace-nowrap"
+                                                    >
+                                                        + {t('partido')}
+                                                    </Link>
+                                                )}
 
-                                              <Link
-                                                href={`/players/${player.id}/competitions/${c.id}/matches`}
-                                                className="inline-flex items-center rounded-xl border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 whitespace-nowrap min-h-9"
-                                              >
-                                                {t('partidos_ver')}
-                                              </Link>
+                                                {/* Ver partidos de esta competición */}
+                                                <Link
+                                                    href={`/players/${player.id}/competitions/${c.id}/matches`}
+                                                    className="inline-flex items-center rounded-xl border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 whitespace-nowrap"
+                                                >
+                                                    {t('partidos')}
+                                                </Link>
+
+                                                {/* Eliminar competición: mismo modal que “eliminar jugador” */}
+                                                {/* Eliminar competición: icono de papelera rojo, con etiqueta accesible */}
+                                                <ConfirmDeleteButton
+                                                    onConfirm={deleteCompetitionAction.bind(null, {
+                                                        compId: c.id,
+                                                        playerId: player.id,
+                                                        seasonId: currentSeasonId,
+                                                    })}
+                                                    ariaLabel={t('eliminar') || 'Eliminar'}
+                                                    confirmTitle={t('competicion_eliminar_confirmar') || 'Confirmar eliminación de competición'}
+      confirmMessage={
+        t('competicion_eliminar_confirmar_texto') ||
+        'Confirma que deseas eliminar esta competición. Se eliminarán los datos asociados. Esta acción es irreversible.'
+      }
+      confirmCta={t('borrado_confirmar') || 'Confirmar borrado'}
+      cancelCta={t('cancelar') || 'Cancelar'}
+
+                                                    className="inline-flex items-center rounded-xl bg-red-100 border border-red-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-red-50 whitespace-nowrap"
+                                                />
                                             </div>
                                         </td>
                                     </tr>

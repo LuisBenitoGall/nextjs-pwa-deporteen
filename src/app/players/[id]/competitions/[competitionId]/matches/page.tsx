@@ -40,6 +40,7 @@ export default function MatchesByCompetitionPage() {
     const t = useT();
     const { id: playerId, competitionId } = useParams() as { id?: string; competitionId?: string };
     const [tab, setTab] = useState<TabKey>('matches');
+    const [isActiveSubscription, setIsActiveSubscription] = useState<boolean | null>(null);
 
     const supabase = useMemo(() => supabaseBrowser(), []);
     const [loading, setLoading] = useState(true);
@@ -86,6 +87,26 @@ export default function MatchesByCompetitionPage() {
                     setLoading(false);
                 }
                 return;
+            }
+
+            // --- Suscripción: tomamos la última por fecha y vemos si sigue vigente ---
+            const { data: subRows, error: subErr } = await supabase
+            .from('subscriptions')
+            .select('current_period_end')
+            .order('current_period_end', { ascending: false })
+            .limit(1);
+
+            if (mounted) {
+                if (subErr) {
+                    // si falla, tratamos como sin suscripción (no creamos partidos)
+                    setIsActiveSubscription(false);
+                } else {
+                    const last = subRows?.[0] || null;
+                    const active = last?.current_period_end
+                    ? new Date(last.current_period_end).getTime() > Date.now()
+                    : false;
+                    setIsActiveSubscription(active);
+                }
             }
 
             // 1) Competición
@@ -313,15 +334,17 @@ const otherTeam = Math.max(0, teamTotalForPie - playerScoringTotal);
                     </button>
                 </Link>*/}
 
-                <Link
-                    href={`/players/${playerId}/matches/new`}
-                    className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-3 py-2 text-sm text-white font-bold hover:bg-green-700"
-                >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" />
-                    </svg>
-                    <span>{t('partido_nuevo')}</span>
-                </Link>
+                {isActiveSubscription && (
+                    <Link
+                        href={`/players/${playerId}/matches/new`}
+                        className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-3 py-2 text-sm text-white font-bold hover:bg-green-700"
+                    >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" />
+                        </svg>
+                        <span>{t('partido_nuevo')}</span>
+                    </Link>
+                )}
 
                 <button
                     type="button"
@@ -420,7 +443,7 @@ const otherTeam = Math.max(0, teamTotalForPie - playerScoringTotal);
                                             <td className="px-3 py-2 text-right">
                                                 <a
                                                   href={`/matches/${m.id}/live`}
-                                                  className="inline-flex items-center justify-center rounded-xl border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 ml-2 min-h-[32px] whitespace-nowrap"
+                                                  className="inline-flex items-center justify-center rounded-xl border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 ml-2 whitespace-nowrap"
                                                 >
                                                   {t('partido_ver') || 'Ver partido'}
                                                 </a>
@@ -439,7 +462,7 @@ const otherTeam = Math.max(0, teamTotalForPie - playerScoringTotal);
                     <div>
                         <h3 className="text-lg font-semibold mb-3">{t('equipo') || 'Equipo'}</h3>
 
-                        {/* KPIs rÃ¡pidos */}
+                        {/* KPIs rápidos */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                             <div className="rounded-xl border p-3">
                                 <div className="text-xs text-gray-600 text-center">{t('pf_total') || 'PF total'}</div>
@@ -461,13 +484,14 @@ const otherTeam = Math.max(0, teamTotalForPie - playerScoringTotal);
 
                         {/* Barras W/L/D */}
                         <div className="h-60 w-full">
+                            <h4 className="mb-3 font-bold">{t('partidos_balance')}</h4>
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={wldData}>
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis dataKey="nombre" />
                                     <YAxis allowDecimals={false} />
                                     <Tooltip />
-                                    <Legend />
+                                    {/* <Legend /> */}
                                     <Bar dataKey="valor">
                                         {wldData.map((d, i) => (
                                             <Cell key={`wld-${i}`} fill={colorForWLD(d.nombre)} />
@@ -478,14 +502,15 @@ const otherTeam = Math.max(0, teamTotalForPie - playerScoringTotal);
                         </div>
 
                         {/* Barras PF vs PC */}
-                        <div className="h-60 w-full mt-8">
+                        <div className="h-60 w-full mt-8 pt-8">
+                            <h4 className="mb-3 font-bold">{t('anotaciones_balance')}</h4>
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={pfpcData}>
                                   <CartesianGrid strokeDasharray="3 3" />
                                   <XAxis dataKey="nombre" />
                                   <YAxis allowDecimals={false} />
                                   <Tooltip />
-                                  <Legend />
+                                  {/* <Legend /> */}
                                   <Bar dataKey="valor">
                                     {pfpcData.map((d, i) => (
                                       <Cell key={`pfpc-${i}`} fill={colorForPFPC(d.nombre)} />
@@ -506,17 +531,37 @@ const otherTeam = Math.max(0, teamTotalForPie - playerScoringTotal);
                                             <div
                                                 key={summary.key}
                                                 className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
-                                            >
-                                                <div className="flex items-baseline justify-between">
-                                                    <span className="text-sm font-semibold text-gray-700">{formatLabel(summary.label)}</span>
-                                                    <span className="text-xs text-gray-400 uppercase">{t('promedio') || 'Promedio'}</span>
+                                                >
+                                                {/* Título de la métrica */}
+                                                <div className="text-sm font-semibold text-gray-700">
+                                                    {formatLabel(summary.label)}
                                                 </div>
-                                                <div className="mt-3 text-3xl font-semibold text-green-700">
-                                                    {formatNumber(summary.average)}
+
+                                                {/* TOTAL (izq) vs PROMEDIO (dcha) alineados al baseline */}
+                                                <div className="mt-1 flex items-end justify-between">
+                                                    {/* TOTAL */}
+                                                    <span className="text-left leading-none">
+                                                    <div className="text-xs text-gray-500 uppercase tracking-wide">
+                                                        {t('total') || 'TOTAL'}
+                                                    </div>
+                                                    <div className="text-4xl font-semibold text-green-700">
+                                                        {formatNumber(summary.total)}
+                                                    </div>
+                                                    </span>
+
+                                                    {/* PROMEDIO */}
+                                                    <span className="text-right leading-none">
+                                                    <div className="text-xs text-gray-500 uppercase tracking-wide">
+                                                        {t('promedio') || 'PROMEDIO'}
+                                                    </div>
+                                                    <div className="text-3xl font-semibold text-gray-700">
+                                                        {formatNumber(summary.average)}
+                                                    </div>
+                                                    </span>
                                                 </div>
+
+                                                {/* Solo Partidos (sin repetir el Total) */}
                                                 <div className="mt-2 text-xs text-gray-500">
-                                                    {(t('total') || 'Total')}: <span className="font-semibold text-gray-700">{formatNumber(summary.total)}</span>
-                                                    {' | '}
                                                     {(t('partidos') || 'Partidos')}: {summary.count}
                                                 </div>
                                             </div>
@@ -547,7 +592,7 @@ const otherTeam = Math.max(0, teamTotalForPie - playerScoringTotal);
                                                             outerRadius="80%"
                                                         >
                                                             <Cell fill={WIN_COLOR} />
-                                                            <Cell fill="#e5e7eb" />
+                                                            <Cell fill="#c5c7cb" />
                                                         </Pie>
                                                     </PieChart>
                                                 </ResponsiveContainer>

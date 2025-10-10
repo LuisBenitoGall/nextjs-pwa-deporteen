@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useT } from '@/i18n/I18nProvider';
 import { supabase } from '@/lib/supabase/client';
+import { getSportIconPath } from '@/lib/sports';
 
 import type { Session } from '@supabase/supabase-js';
 
@@ -33,46 +34,46 @@ export default function HeroSection() {
     }, []);
 
     // Lista en el orden indicado en tu comentario
-    const SPORTS = [
-        { name: 'Baloncesto', icon: '/icons/icon-baloncesto.png', slug: 'baloncesto' },
-        { name: 'Fútbol', icon: '/icons/icon-futbol.png', slug: 'futbol' },
-        { name: 'Fútbol Sala', icon: '/icons/icon-futbol-sala.png', slug: 'futbol-sala' },
-        { name: 'Balonmano', icon: '/icons/icon-balonmano.png', slug: 'balonmano' },
-        { name: 'Rugby', icon: '/icons/icon-rugby.png', slug: 'rugby' },
-        { name: 'Voleibol', icon: '/icons/icon-voleibol.png', slug: 'voleibol' },
-        { name: 'Waterpolo', icon: '/icons/icon-waterpolo.png', slug: 'waterpolo' },
-        { name: 'Hockey Hierba', icon: '/icons/icon-hockey-hierba.png', slug: 'hockey-hierba' },
-        { name: 'Hockey Patines', icon: '/icons/icon-hockey-patines.png', slug: 'hockey-patines' }
-    ];
+    const SPORT_NAMES: readonly string[] = [
+        t('baloncesto'),
+        t('futbol'),
+        t('futbol_sala'),
+        t('balonmano'),
+        t('rugby'),
+        t('voleibol'),
+        t('waterpolo'),
+        t('hockey_hierba'),
+        t('hockey_patines')
+  ];
 
     const FEATURES = [
-        {   title: 'Gestión de Deportistas',
-            desc: 'Registra y organiza a todos tus deportistas favoritos',
+        {   title: t('home_feature1_title'),
+            desc: t('home_feature1_text'),
             icon: '/icons/athlete.svg',
         },
         {
-            title: 'Múltiples Deportes',
-            desc: 'Fútbol, baloncesto, voleibol y 5 deportes más',
+            title: t('home_feature2_title'),
+            desc: t('home_feature2_text'),
             icon: '/icons/sports.svg',
         },
         {
-            title: 'Estadísticas Detalladas',
-            desc: 'Analiza el rendimiento de cada partido y temporada',
+            title: t('home_feature3_title'),
+            desc: t('home_feature3_text'),
             icon: '/icons/stats.svg',
         },
         {
-            title: 'Fotos y Videos',
-            desc: 'Captura y almacena los mejores momentos',
+            title: t('home_feature4_title'),
+            desc: t('home_feature4_text'),
             icon: '/icons/media.svg',
         },
         {
-            title: 'Funciona Offline',
-            desc: 'Registra datos incluso sin conexión a internet',
+            title: t('home_feature5_title'),
+            desc: t('home_feature5_text'),
             icon: '/icons/offline.svg',
         },
         {
-            title: 'PWA Móvil',
-            desc: 'Optimizada para móviles y tablets',
+            title: t('home_feature6_title'),
+            desc: t('home_feature6_text'),
             icon: '/icons/mobile.svg',
         }
     ];
@@ -87,24 +88,26 @@ export default function HeroSection() {
         icon: string;
     }) {
         return (
-            <div className="rounded-xl bg-white p-4 md:p-5 ring-1 ring-gray-200 shadow-sm
-                            hover:shadow-md hover:ring-green-200 transition">
-            {/* Header: icono + título */}
-            <div className="grid grid-cols-[auto,1fr] items-center gap-3 md:gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-green-600">
-                {/* Si tus SVG no heredan color, les aplicamos invert para que queden claros sobre el verde */}
-                <Image src={icon} alt="" width={20} height={20} className="invert" />
+            <div className="h-full flex flex-col rounded-xl bg-white p-4 md:p-5 ring-1 ring-gray-200 shadow-sm hover:shadow-md hover:ring-green-200 transition">
+                {/* Layout interno estable: header + body */}
+                <div className="grid gap-y-1">
+                    {/* HEADER: icono + título en una sola fila, siempre alineados */}
+                    <div className="col-span-2 flex items-center gap-3 md:gap-4">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-green-600">
+                        <Image src={icon} alt="" width={20} height={20} className="invert" />
+                    </div>
+                    <h3 className="m-0 text-[16px] md:text-[17px] font-semibold leading-6 text-gray-900">
+                        {title}
+                    </h3>
+                    </div>
+
+                    {/* BODY: descripción ocupa todo el ancho del card */}
+                    <div className="col-span-2">
+                    <p className="mt-1 text-sm leading-6 text-gray-600">
+                        {desc}
+                    </p>
+                    </div>
                 </div>
-
-                <h3 className="text-[16px] md:text-[17px] font-semibold leading-6 text-gray-900">
-                {title}
-                </h3>
-
-                {/* Descripción: ocupa TODA la anchura del card */}
-                <p className="col-span-2 mt-1 text-sm leading-6 text-gray-600">
-                {desc}
-                </p>
-            </div>
             </div>
         );
     }
@@ -160,36 +163,39 @@ export default function HeroSection() {
                 <p className="text-center m-0 font-bold text-gray-500">Registra el historial deportivo de estos deportes</p>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-6 mt-8">
-
-                    {SPORTS.map((s) => (
-                        <div
-                            key={s.slug}
-                            aria-label={s.name}
-                            className="group"
-                        >
-                            <div className="relative flex flex-col items-center gap-3 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-200 transition
-                                            hover:-translate-y-0.5 hover:shadow-md hover:ring-green-200">
-                                <div className="flex items-center justify-center w-16 h-16 rounded-full bg-green-50 ring-1 ring-green-100">
-                                    <Image
-                                    src={s.icon}
-                                    alt={s.name}
-                                    width={80}   
-                                    height={80}
-                                    className="h-[80px] w-[80px] object-contain transition group-hover:scale-[1.03]"
-                                    />
+                    {SPORT_NAMES.map((name) => {
+                        const icon = getSportIconPath(name);
+                        return (
+                            <div key={name} aria-label={name} className="group">
+                                <div className="relative flex flex-col items-center gap-3 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-200 transition hover:-translate-y-0.5 hover:shadow-md hover:ring-green-200">
+                                    <div className="flex items-center justify-center w-16 h-16 rounded-full bg-green-50 ring-1 ring-green-100">
+                                    {icon ? (
+                                        <Image
+                                        src={icon}
+                                        alt={name}
+                                        width={80}
+                                        height={80}
+                                        className="h-[80px] w-[80px] object-contain transition group-hover:scale-[1.03]"
+                                        />
+                                    ) : (
+                                        <div className="h-[80px] w-[80px]" />
+                                    )}
+                                    </div>
+                                    <span className="text-sm font-semibold text-gray-800 text-center">{name}</span>
+                                    <div className="mt-1 h-px w-10 bg-gray-200" />
                                 </div>
-                                <span className="text-sm font-semibold text-gray-800 text-center">
-                                    {s.name}
-                                </span>
-                                <div className="mt-1 h-px w-10 bg-gray-200" />
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
+
+                <p className="text-center mt-7 font-bold text-gray-500">
+                    <Link href="/contacto" className="text-green-500 hover:underline">{t('contacta')}</Link> {t('contacta_nuevo_deporte')}
+                </p>
             </div>
 
             {/* Bloque características */}
-            <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 md:gap-6 items-start rounded-xl bg-gray-100 my-8 py-8 px-6">
+            <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 md:gap-6 items-stretch rounded-xl bg-gray-100 my-8 py-8 px-6">
                 {FEATURES.map((f) => (
                     <FeatureCard key={f.title} {...f} />
                 ))}

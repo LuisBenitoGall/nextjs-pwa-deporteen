@@ -119,15 +119,14 @@ export default function LoginPage() {
                     text={t('login')}
                     loadingText={t('entrando') ?? t('procesando') ?? 'Entrando…'}
                 />
-
-                {/*<button
-                  type="submit"
-                  disabled={busy}
-                  className="w-full rounded-lg bg-green-600 py-3 font-semibold text-white transition hover:bg-green-700 disabled:opacity-60"
-                >
-                  {busy ? t('entrando') : t('login')}
-                </button>*/}
             </form>
+
+            {/* Recuperación password */}
+            <div className="mt-6 text-center">
+                <a href="/forgot-password" className="text-sm text-gray-600 underline hover:text-green-700">
+                    {t('olvide_contrasena') || '¿Has olvidado tu contraseña?'}
+                </a>
+            </div>
         </div>
     );
 }
