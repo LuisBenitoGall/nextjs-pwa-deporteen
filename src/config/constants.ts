@@ -3,6 +3,7 @@
 // Mantén este archivo sin dependencias de Node ni de Next.js para que sea isomórfico.
 
 export const APP = {
+    DEVELOPERS: 'Luis Benito',
     NAME: 'DeporTeen',
     TAGLINE: 'Tu deporte, tus datos',
 } as const;
@@ -15,11 +16,11 @@ export const COMPANY = {
     CITY: 'Barcelona',
     ADDRESS: 'C/ Maresme, 175 2º 2ª',
     ZIP: '08020',
-    TELF: '',
+    TELF: '600578602',
     NAME: 'DeporTeen SL',
     WEBSITE: 'https://www.deporteen.com',
-    PRIVACY_POLICY_URL: 'https://www.deporteen.com/politica-de-privacidad',
-    TERMS_URL: 'https://www.deporteen.com/terminos-y-condiciones',
+    PRIVACY_POLICY_URL: 'https://www.deporteen.com/legal/privacidad',
+    TERMS_URL: 'https://www.deporteen.com/legal/terminos',
 } as const;
 
 export const ROUTES = {
@@ -44,6 +45,40 @@ export const LIMITS = {
     CLUB_NAME_MAX: 80,
     TEAM_NAME_MAX: 60,
 } as const;
+
+export const LEGAL_CONSTANTS = {
+    company: {
+        name: process.env.NEXT_PUBLIC_COMPANY_NAME ?? '{{company_name}}',
+        nif: process.env.NEXT_PUBLIC_COMPANY_NIF ?? '{{company_nif}}',
+        address: process.env.NEXT_PUBLIC_COMPANY_ADDRESS ?? '{{company_address}}',
+        country: process.env.NEXT_PUBLIC_COMPANY_COUNTRY ?? 'España',
+        email: process.env.NEXT_PUBLIC_COMPANY_EMAIL ?? '{{company_email}}',
+        phone: process.env.NEXT_PUBLIC_COMPANY_PHONE ?? '',
+        reg_merc: process.env.NEXT_PUBLIC_COMPANY_RM ?? ''
+    },
+    legal: {
+        jurisdiction: 'España',
+        dpo_email: '',
+        data_subject_email: process.env.NEXT_PUBLIC_PRIVACY_EMAIL ?? '{{privacy_email}}'
+    },
+    product: {
+        app_name: process.env.NEXT_PUBLIC_APP_NAME ?? 'DeporTeen',
+        domain: process.env.NEXT_PUBLIC_APP_DOMAIN ?? '{{app_domain}}'
+    },
+    providers: {
+        supabase_region: 'UE (Irlanda)',
+        stripe_region: 'España/UE',
+        hosting: 'Vercel',
+        analytics: 'Google Analytics 4'
+    },
+    cookies: {
+        // nombres de cookies típicas; ajusta si cambias
+        session: ['sb-access-token', 'sb-refresh-token'],
+        stripe: ['__stripe_mid', '__stripe_sid'],
+        ga4: ['_ga', '_ga_*']
+    }
+};
+
 
 // Valores por defecto que puedes inyectar en las traducciones como placeholders
 // Ejemplo en es.json: "bienvenida": "Bienvenido a {APP_NAME}"

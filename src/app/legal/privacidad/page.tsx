@@ -4,6 +4,7 @@ import { useT, useLocale } from '@/i18n/I18nProvider';
 import { LIMITS } from '@/config/constants';
 
 // Components
+import LegalDoc from '@/components/LegalDoc';
 import TitleH1 from '../../../components/TitleH1';
 
 export default function Page() {
@@ -13,8 +14,7 @@ export default function Page() {
         <div>
             <TitleH1>{t('politica_privacidad')}</TitleH1>
 
-
-            <p>Contenido pendiente.</p>
+            <LegalDoc doc="privacy" />
         </div>
     );
 }

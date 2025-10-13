@@ -394,5 +394,39 @@
   "volver": "Tornar",
   "voleibol": "Voleibol",
   "volver_atras": "Tornar enrere",
-  "waterpolo": "Waterpolo"
+  "waterpolo": "Waterpolo",
+
+
+
+
+
+
+
+
+    "legal": {
+        "legal_notice": {
+          "sections": [
+            { "title": "1. Identificació del titular", "html": "<p>El lloc web i l’aplicació <b>{{product.app_name}}</b> ({{product.domain}}) són titularitat de <b>{{company.name}}</b>, NIF {{company.nif}}, {{company.address}}, {{company.country}}. Contacte: <a href=\"mailto:{{company.email}}\">{{company.email}}</a>.</p><p>Inscripció registral: {{company.reg_merc}}</p>" },
+            { "title": "2. Objecte i acceptació", "html": "<p>L’accés implica l’acceptació d’aquest Avís Legal i, si escau, dels <a href=\"/legal/terminos\" target=\"_blank\" rel=\"noopener\">Termes d’Ús</a>.</p>" },
+            { "title": "3. Usuaris i menors", "html": "<p>Servei per a adults. <b>Els menors de 16 anys no poden crear compte</b>. Els adults poden registrar dades esportives de tercers segons la <a href=\"/legal/contenidos\">Política de Continguts i Drets d’Imatge</a>.</p>" }
+          ]
+        },
+        "privacy": {
+          "sections": [
+            { "title": "1. Responsable", "html": "<p><b>{{company.name}}</b> ({{company.email}}).</p>" },
+            { "title": "2. Dades tractades", "html": "<ul><li>Compte: nom, cognoms, email, telèfon opcional.</li><li>Ús del servei: estadístiques esportives.</li><li>Mitjans: imatges/vídeos en emmagatzematge <b>local</b>.</li><li>Pagaments: Stripe.</li><li>Analítica: {{providers.analytics}}.</li></ul>" },
+            { "title": "3. Finalitats i bases", "html": "<ul><li>Servei i subscripció (contracte).</li><li>Analítica (consentiment).</li><li>Notificacions de renovació (consentiment).</li><li>Seguretat (interès legítim).</li></ul>" }
+          ]
+        },
+        "cookies": {
+          "sections": [
+            { "title": "1. Categories", "html": "<ul><li><b>Necessàries</b></li><li><b>Analítica</b></li><li><b>Funcionals</b></li><li><b>Màrqueting</b>: no s’utilitza.</li></ul>" },
+            { "title": "2. Llista", "html": "<p>Supabase: {{cookies.session}} | Stripe: {{cookies.stripe}} | GA4: {{cookies.ga4}}</p>" }
+          ]
+        },
+        "terms": { "sections": [ { "title": "1. Objecte", "html": "<p>Termes d’ús de {{product.app_name}}.</p>" } ] },
+        "subscription": { "sections": [ { "title": "1. Compra", "html": "<p>Pagaments amb Stripe. Dret de desistiment de 14 dies.</p>" } ] },
+        "content_policy": { "sections": [ { "title": "1. Abast", "html": "<p>Normes per a continguts i drets d’imatge.</p>" } ] }
+    }
+
 }

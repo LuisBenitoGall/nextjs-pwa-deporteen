@@ -8,6 +8,7 @@ import { supabaseBrowser } from '../../../../lib/supabase/client';
 import { useParams } from 'next/navigation';
 import { getCurrentSeasonId } from '@/lib/seasons';
 import { getSportIconPath } from '@/lib/sports';
+import { useWakeLock } from '@/lib/useWakeLock';
 import { useT } from '@/i18n/I18nProvider';
 import Image from 'next/image';
 
@@ -50,6 +51,8 @@ export default function LiveMatchPage() {
   const t = useT();
   const { id: matchId } = useParams() as { id: string };
   const supabase = useMemo(() => supabaseBrowser(), []);
+
+  const { active: wakeActive, requesting: wakeRequesting, request: wakeRequest, release: wakeRelease, supported: wakeSupported } = useWakeLock();
 
   const [isSaving, setIsSaving]   = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -98,10 +101,21 @@ export default function LiveMatchPage() {
     }, 600);
   }, [matchId, myScore, rivalScore, notes, stats]);
 
-  useEffect(() => () => { if (savingRef.current) clearTimeout(savingRef.current); }, []);
+    useEffect(() => () => { if (savingRef.current) clearTimeout(savingRef.current); }, []);
 
-  // Carga inicial
-  useEffect(() => {
+    // Auto-activar pantalla en el primer gesto del usuario
+    useEffect(() => {
+        const onFirst = async () => { try { await wakeRequest(); } catch {} };
+        window.addEventListener('pointerdown', onFirst, { once: true, passive: true });
+        window.addEventListener('keydown', onFirst, { once: true });
+        return () => {
+        window.removeEventListener('pointerdown', onFirst);
+        window.removeEventListener('keydown', onFirst);
+        };
+    }, [wakeRequest]);
+
+    // Carga inicial
+    useEffect(() => {
     let mounted = true;
     (async () => {
       setLoading(true);
@@ -158,7 +172,7 @@ export default function LiveMatchPage() {
     })();
 
     return () => { mounted = false; };
-  }, [supabase, matchId]);
+    }, [supabase, matchId]);
 
   // Lado local
   const leftIsHome = !!match?.is_home;
@@ -433,7 +447,23 @@ export default function LiveMatchPage() {
 
         {/* Barra inferior */}
         <div className="fixed bottom-0 left-0 right-0 border-t bg-white/95 backdrop-blur p-3">
-          <div className="max-w-4xl mx-auto grid grid-cols-5 gap-3 items-stretch">
+          <div className="max-w-4xl mx-auto grid grid-cols-6 gap-3 items-stretch">
+            {/* Pantalla activa */}
+            <button
+              type="button"
+              onClick={() => (wakeActive ? wakeRelease() : wakeRequest())}
+              disabled={wakeRequesting}
+              className={`inline-flex items-center justify-center rounded-lg px-2 text-xs font-semibold
+                          ${wakeActive ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-700'}
+                          border ${wakeActive ? 'border-emerald-600' : 'border-gray-300'} responsive-button`}
+              title={wakeActive ? (t('pantalla_activa') || 'Pantalla activa') : (t('mantener_pantalla') || 'Mantener pantalla encendida')}
+            >
+              <span aria-hidden>🔆</span>
+              <span className="sr-only">
+                {wakeActive ? (t('pantalla_activa') || 'Pantalla activa') : (t('mantener_pantalla') || 'Mantener pantalla encendida')}
+              </span>
+            </button>
+
             {/* Foto */}
             <label className="block responsive-button">
               <input type="file" accept="image/*" capture="environment" className="hidden" onChange={() => {/* TODO */}} />
