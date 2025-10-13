@@ -34,17 +34,17 @@ export default function HeroSection() {
     }, []);
 
     // Lista en el orden indicado en tu comentario
-    const SPORT_NAMES: readonly string[] = [
-        t('baloncesto'),
-        t('futbol'),
-        t('futbol_sala'),
-        t('balonmano'),
-        t('rugby'),
-        t('voleibol'),
-        t('waterpolo'),
-        t('hockey_hierba'),
-        t('hockey_patines')
-  ];
+    const SPORT_NAMES: readonly { name: string; icon: string }[] = [
+        { name: t('baloncesto'), icon: 'baloncesto' },
+        { name: t('futbol'), icon: 'futbol' },
+        { name: t('futbol_sala'), icon: 'futbol-sala' },
+        { name: t('balonmano'), icon: 'balonmano' },
+        { name: t('rugby'), icon: 'rugby' },
+        { name: t('voleibol'), icon: 'voleibol' },
+        { name: t('waterpolo'), icon: 'waterpolo' },
+        { name: t('hockey_hierba'), icon: 'hockey-hierba' },
+        { name: t('hockey_patines'), icon: 'hockey-patines' }
+    ];
 
     const FEATURES = [
         {   title: t('home_feature1_title'),
@@ -163,16 +163,16 @@ export default function HeroSection() {
                 <p className="text-center m-0 font-bold text-gray-500">Registra el historial deportivo de estos deportes</p>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-6 mt-8">
-                    {SPORT_NAMES.map((name) => {
-                        const icon = getSportIconPath(name);
+                    {SPORT_NAMES.map((sport) => {
+                        const icon = getSportIconPath(sport.icon);
                         return (
-                            <div key={name} aria-label={name} className="group">
+                            <div key={sport.name} aria-label={sport.name} className="group">
                                 <div className="relative flex flex-col items-center gap-3 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-200 transition hover:-translate-y-0.5 hover:shadow-md hover:ring-green-200">
                                     <div className="flex items-center justify-center w-16 h-16 rounded-full bg-green-50 ring-1 ring-green-100">
                                     {icon ? (
                                         <Image
                                         src={icon}
-                                        alt={name}
+                                        alt={sport.name}
                                         width={80}
                                         height={80}
                                         className="h-[80px] w-[80px] object-contain transition group-hover:scale-[1.03]"
@@ -181,7 +181,7 @@ export default function HeroSection() {
                                         <div className="h-[80px] w-[80px]" />
                                     )}
                                     </div>
-                                    <span className="text-sm font-semibold text-gray-800 text-center">{name}</span>
+                                    <span className="text-sm font-semibold text-gray-800 text-center">{sport.name}</span>
                                     <div className="mt-1 h-px w-10 bg-gray-200" />
                                 </div>
                             </div>
