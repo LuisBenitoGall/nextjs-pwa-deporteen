@@ -8,6 +8,7 @@ import type { Metadata, Viewport } from 'next';
 
 //Components
 import CookieBanner from '@/components/CookieBanner';
+import InstallBanner from '@/components/InstallBanner';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ServiceWorkerRegistrar from '@/components/ServiceWorkerRegistrar';
@@ -42,6 +43,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                     <ToastProvider>
                         <ServiceWorkerRegistrar />
                         <Navbar serverUserId={user?.id ?? null} />
+
+                        <InstallBanner />
+
                         <main className="mx-auto w-full max-w-5xl px-6 py-10 mt-10 flex-1">
                             <div className="mx-auto w-full max-w-3xl">
                                 {children}
