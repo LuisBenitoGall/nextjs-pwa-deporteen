@@ -1,9 +1,10 @@
 
 'use client';
 import { useEffect, useState } from 'react';
-import { getConsentFromCookie, setConsentCookie, CONSENT_COOKIE } from '@/lib/consent';
+import { getConsentFromCookie, setConsentCookie } from '@/lib/consent';
 import CookiePreferences from './CookiePreferences';
 import { useT } from '@/i18n/I18nProvider';
+import type { ConsentChoices } from '@/lib/consent';
 
 export default function CookieBanner() {
     const t = useT();
@@ -18,13 +19,14 @@ export default function CookieBanner() {
     if (!show) return null;
 
     function acceptAll() {
-        const choices = { necesarias: true, analitica: true, funcionales: true, marketing: true };
+        const choices: ConsentChoices = { necesarias: true, analitica: true, funcionales: true, marketing: true };
         setConsentCookie(choices);
         fetch('/api/cookies/consent', { method: 'POST', body: JSON.stringify({ consent_version: 'v1', choices }), headers: { 'Content-Type': 'application/json' }});
         setShow(false);
     }
+
     function rejectAll() {
-        const choices = { necesarias: true, analitica: false, funcionales: false, marketing: false };
+        const choices: ConsentChoices = { necesarias: true, analitica: false, funcionales: false, marketing: false };
         setConsentCookie(choices);
         fetch('/api/cookies/consent', { method: 'POST', body: JSON.stringify({ consent_version: 'v1', choices }), headers: { 'Content-Type': 'application/json' }});
         setShow(false);

@@ -52,7 +52,7 @@ export default function LiveMatchPage() {
   const { id: matchId } = useParams() as { id: string };
   const supabase = useMemo(() => supabaseBrowser(), []);
 
-  const { active: wakeActive, requesting: wakeRequesting, request: wakeRequest, release: wakeRelease, supported: wakeSupported } = useWakeLock();
+  const { active: wakeActive, requesting: wakeRequesting, request: wakeRequest, release: wakeRelease } = useWakeLock();
 
   const [isSaving, setIsSaving]   = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);

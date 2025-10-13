@@ -14,12 +14,17 @@ type DocId =
   | 'content_policy';
 
 type Section = { title?: string; html: string };
-type PlaceholderMap = Record<string, string | number | boolean | null | undefined>;
 
-/** Sustituye placeholders tipo {{a.b.c}} por valores del mapa. */
+type Primitive = string | number | boolean | null | undefined;
+type PlaceholderValue = Primitive | { [k: string]: PlaceholderValue } | PlaceholderValue[];
+type PlaceholderMap = { [k: string]: PlaceholderValue };
+
+/** Sustituye placeholders tipo {{a.b.c}} por valores del mapa (permite objetos y arrays). */
 function applyPlaceholders(text: string, vars: PlaceholderMap) {
-  return text.replace(/\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g, (_, key: string) => {
-    const value = key.split('.').reduce<any>((acc, part) => (acc ? acc[part] : undefined), vars);
+  return text.replace(/\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g, (_: string, key: string) => {
+    const value = key
+      .split('.')
+      .reduce<any>((acc, part) => (acc != null ? (acc as any)[part] : undefined), vars as any);
     return value == null ? '' : String(value);
   });
 }
@@ -41,44 +46,49 @@ function isMissing(key: string, value: unknown) {
 
 export default function LegalDoc({ doc }: { doc: DocId }) {
   const t = useT();
-  const vars = LEGAL_CONSTANTS as PlaceholderMap;
+  const vars: PlaceholderMap = LEGAL_CONSTANTS as PlaceholderMap;
 
-  // 1) Intento "ideal": pedir el array entero (si tu i18n lo soporta)
-  const raw = t(`legal.${doc}.sections`, { returnObjects: true } as any) as unknown;
+  // Construcción estable de secciones
+  const sections = useMemo<Section[]>(() => {
+    // 1) Intento "ideal": pedir el array entero (si la i18n lo soporta)
+    const raw = t(`legal.${doc}.sections`, { returnObjects: true } as any) as unknown;
 
-  let sections: Section[] = Array.isArray(raw)
-    ? (raw as Section[])
-    : Array.isArray((raw as any)?.sections)
-    ? ((raw as any).sections as Section[])
-    : [];
+    let out: Section[] = Array.isArray(raw)
+      ? (raw as Section[])
+      : Array.isArray((raw as any)?.sections)
+      ? ((raw as any).sections as Section[])
+      : [];
 
-  // 2) Plan B: leer secciones indexadas legal.X.sections.0.*, 1.*, ... hasta que falte .html
-  if (!sections.length) {
-    const collected: Section[] = [];
-    for (let i = 0; i < 200; i++) {
-      const titleKey = `legal.${doc}.sections.${i}.title`;
-      const htmlKey = `legal.${doc}.sections.${i}.html`;
-      const title = t(titleKey) as unknown as string;
-      const html = t(htmlKey) as unknown as string;
+    // 2) Plan B: leer secciones indexadas legal.X.sections.0.*, 1.*, ... hasta que falte .html
+    if (!out.length) {
+      const collected: Section[] = [];
+      for (let i = 0; i < 200; i++) {
+        const titleKey = `legal.${doc}.sections.${i}.title`;
+        const htmlKey = `legal.${doc}.sections.${i}.html`;
+        const title = t(titleKey) as unknown as string;
+        const html = t(htmlKey) as unknown as string;
 
-      if (isMissing(htmlKey, html)) break; // sin html, fin de lista
-      collected.push({
-        title: isMissing(titleKey, title) ? undefined : title,
-        html,
-      });
+        if (isMissing(htmlKey, html)) break; // sin html, fin de lista
+        collected.push({
+          title: isMissing(titleKey, title) ? undefined : title,
+          html,
+        });
+      }
+      out = collected;
     }
-    sections = collected;
-  }
 
-  if (!sections.length) {
-    // 3) Aviso amable para depurar. Sí, amable para mis estándares.
-    console.warn(
-      `[LegalDoc] No hay secciones para 'legal.${doc}.sections'. ` +
-        `Comprueba: (a) que existan en es/en/ca.json, (b) que estén como array o como claves indexadas sections.0.*, (c) que el fallback no devuelva la key literal. Raw=`,
-      raw
-    );
-  }
+    if (!out.length) {
+      // Aviso para depurar sin romper render
+      console.warn(
+        `[LegalDoc] No hay secciones para 'legal.${doc}.sections'. ` +
+          `Comprueba i18n (array o sections.N.*) y que no devuelva la key literal.`
+      );
+    }
 
+    return out;
+  }, [t, doc]);
+
+  // Render HTML final (memoizado)
   const content = useMemo(() => {
     if (!sections.length) return '<div></div>';
 

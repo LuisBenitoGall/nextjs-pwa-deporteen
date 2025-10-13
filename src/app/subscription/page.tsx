@@ -28,16 +28,16 @@ const LOCAL_FREE_PLAN: Plan = {
   name: 'Plan código (oculto)',
   days: 365,
   price_cents: 0,
-  currency: 'EUR',
+  currency: 'EUR' as const,
   active: true,
   free: true,
 };
 
 // Planes de pago locales (incluye lifetime)
 const LOCAL_PAID_PLANS: Plan[] = [
-  { id: 'plan-1y', name: 'Plan 1 año',  days: 365,   price_cents: 300,  currency: 'EUR', active: true, free: false },
-  { id: 'plan-3y', name: 'Plan 3 años', days: 1095,  price_cents: 750,  currency: 'EUR', active: true, free: false },
-  { id: 'plan-lt', name: 'Plan Para Siempre', days: 100000, price_cents: 2790, currency: 'EUR', active: true, free: false },
+  { id: 'plan-1y', name: 'Plan 1 año',  days: 365,   price_cents: 300,  currency: 'EUR' as const, active: true, free: false },
+  { id: 'plan-3y', name: 'Plan 3 años', days: 1095,  price_cents: 750,  currency: 'EUR' as const, active: true, free: false },
+  { id: 'plan-lt', name: 'Plan Para Siempre', days: 100000, price_cents: 2790, currency: 'EUR' as const, active: true, free: false },
 ].filter(p => p.active);
 
 // Helpers
@@ -190,7 +190,7 @@ export default function SubscriptionPage() {
     };
 
     const isMultiPlan = paidPlans.length > 1;
-    const stripeDisabled = isMultiPlan && !selectedPlanId;
+    //const stripeDisabled = isMultiPlan && !selectedPlanId;
 
     return (
         <div>

@@ -1,15 +1,21 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { getConsentFromCookie, setConsentCookie } from '@/lib/consent';
+import type { ConsentChoices } from '@/lib/consent';
 import { useT } from '@/i18n/I18nProvider';
 
 export default function CookiePreferences({ onClose, onSaved }: { onClose: () => void; onSaved: () => void; }) {
     const t = useT();
-    const [choices, setChoices] = useState({ necesarias: true, analitica: false, funcionales: false, marketing: false });
+    const [choices, setChoices] = useState<ConsentChoices>({
+        necesarias: true as const,
+        analitica: false,
+        funcionales: false,
+        marketing: false
+    });
 
     useEffect(() => {
         const existing = getConsentFromCookie();
-        if (existing) setChoices(existing);
+        if (existing) setChoices(existing as ConsentChoices);
     }, []);
 
     function save() {

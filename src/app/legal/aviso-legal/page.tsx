@@ -1,7 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { useT, useLocale } from '@/i18n/I18nProvider';
-import { LIMITS } from '@/config/constants';
+import { useT } from '@/i18n/I18nProvider';
 
 // Components
 import LegalDoc from '@/components/LegalDoc';

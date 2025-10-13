@@ -26,7 +26,7 @@ export function useWakeLock() {
   }, []);
 
   // --- Fallback: vídeo 1x1 en bucle (silencioso) ---
-  const ensureFallbackVideo = () => {
+  const ensureFallbackVideo = useCallback(() => {
     if (fallbackVideoRef.current) return fallbackVideoRef.current;
     const v = document.createElement('video');
     // MP4 minúsculo de 1px en base64 (similar a NoSleep)
@@ -45,9 +45,9 @@ export function useWakeLock() {
     document.body.appendChild(v);
     fallbackVideoRef.current = v;
     return v;
-  };
+  }, []);
 
-  const requestFallback = async () => {
+  const requestFallback = useCallback(async () => {
     const v = ensureFallbackVideo();
     try {
       await v.play();
@@ -57,16 +57,16 @@ export function useWakeLock() {
       setError(e?.message || 'No se pudo activar el modo pantalla activa (fallback).');
       setActive(false);
     }
-  };
+  }, [ensureFallbackVideo]);
 
-  const stopFallback = () => {
+  const stopFallback = useCallback(() => {
     const v = fallbackVideoRef.current;
     if (v) {
       try { v.pause(); } catch {}
       try { v.remove(); } catch {}
       fallbackVideoRef.current = null;
     }
-  };
+  }, []);
 
   const request = useCallback(async () => {
     setRequesting(true);
@@ -75,7 +75,6 @@ export function useWakeLock() {
 
     if ((navigator as any)?.wakeLock?.request) {
       try {
-        // @ts-ignore
         const sentinel = await (navigator as any).wakeLock.request('screen');
         wakeRef.current = sentinel;
         setActive(true);
@@ -94,7 +93,7 @@ export function useWakeLock() {
     // Fallback si no soporta o falló
     await requestFallback();
     setRequesting(false);
-  }, []);
+  }, [requestFallback]);
 
   const release = useCallback(async () => {
     setError(null);
@@ -109,7 +108,7 @@ export function useWakeLock() {
     } catch {}
     wakeRef.current = null;
     setActive(false);
-  }, []);
+  }, [stopFallback]);
 
   // Re-solicita si el doc vuelve a ser visible y ya se había pedido antes
   useEffect(() => {
@@ -129,7 +128,7 @@ export function useWakeLock() {
       try { wakeRef.current?.release?.(); } catch {}
       wakeRef.current = null;
     };
-  }, []);
+  }, [stopFallback]);
 
   return { active, supported, requesting, error, request, release };
 }
