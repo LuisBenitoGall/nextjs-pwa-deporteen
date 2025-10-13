@@ -439,5 +439,47 @@
   "visitante": "Away",
   "voleibol": "Volleyball",
   "volver_atras": "Go back",
-  "waterpolo": "Waterpolo"
+  "waterpolo": "Waterpolo",
+
+    
+
+
+
+
+    "legal": {
+        "legal_notice": {
+          "sections": [
+            { "title": "1. Owner details", "html": "<p>The website and the <b>{{product.app_name}}</b> app ({{product.domain}}) are owned by <b>{{company.name}}</b>, VAT {{company.nif}}, {{company.address}}, {{company.country}}. Contact: <a href=\"mailto:{{company.email}}\">{{company.email}}</a>.</p><p>Trade registry: {{company.reg_merc}}</p>" },
+            { "title": "2. Purpose and acceptance", "html": "<p>Accessing {{product.app_name}} implies acceptance of this Legal Notice and, where applicable, the <a href=\"/legal/terminos\" target=\"_blank\" rel=\"noopener\">Terms of Use</a>.</p>" },
+            { "title": "3. Users and minors", "html": "<p>The service is for adults. <b>Children under 16 cannot create an account</b>. Adults may record sports data of third parties pursuant to the <a href=\"/legal/contenidos\">Content & Image Policy</a>.</p>" },
+            { "title": "4. IP rights", "html": "<p>Software and design belong to {{company.name}} or its licensors.</p>" },
+            { "title": "5. Liability", "html": "<p>{{company.name}} is not liable for user-stored data, images or videos on the device, nor for misuse of the app.</p>" },
+            { "title": "6. Third-party services", "html": "<p>We integrate <b>Supabase</b> (EU/Ireland), <b>Stripe</b> (payments), <b>{{providers.hosting}}</b> (hosting) and <b>{{providers.analytics}}</b> (analytics). See the <a href=\"/legal/privacidad\">Privacy Policy</a>.</p>" },
+            { "title": "7. Governing law", "html": "<p>Spanish law applies. Consumer jurisdiction rules prevail.</p>" }
+          ]
+        },
+        "privacy": {
+          "sections": [
+            { "title": "1. Controller", "html": "<p>Controller: <b>{{company.name}}</b> ({{company.email}}). No DPO appointed for now.</p>" },
+            { "title": "2. Data we process", "html": "<ul><li><b>Account</b>: name, surname, email, optional phone.</li><li><b>Service use</b>: sports stats created by the user about third parties.</li><li><b>Media</b>: images/videos stored <b>locally</b>, not in cloud.</li><li><b>Payments</b>: handled by Stripe.</li><li><b>Analytics</b>: {{providers.analytics}}.</li></ul>" },
+            { "title": "3. Purposes & legal bases", "html": "<ul><li><b>Service & subscription</b> (contract).</li><li><b>Analytics</b> (consent).</li><li><b>Renewal notifications</b> (consent).</li><li><b>Security/fraud</b> (legitimate interest).</li></ul>" },
+            { "title": "4. Retention", "html": "<ul><li>Account and records while account exists. Billing data: <b>6 years</b>.</li><li>Security logs: <b>12 months</b>.</li></ul>" },
+            { "title": "5. Recipients", "html": "<ul><li>Supabase (EU/Ireland)</li><li>Stripe</li><li>{{providers.hosting}}</li><li>{{providers.analytics}}</li></ul>" },
+            { "title": "6. Rights", "html": "<p>Contact <a href=\"mailto:{{legal.data_subject_email}}\">{{legal.data_subject_email}}</a> to exercise GDPR rights. Response within one month.</p>" },
+            { "title": "7. Minors", "html": "<p>Under-16s cannot create an account. Adults must ensure consent to process minors' images/data.</p>" }
+          ]
+        },
+        "cookies": {
+          "sections": [
+            { "title": "1. What cookies we use", "html": "<p>Only necessary cookies and, if consented, analytics ({{providers.analytics}}).</p>" },
+            { "title": "2. Categories", "html": "<ul><li><b>Necessary</b>: login, security.</li><li><b>Analytics</b>: usage measurement (consent-based).</li><li><b>Functional</b>: non-essential improvements.</li><li><b>Marketing</b>: currently unused.</li></ul>" },
+            { "title": "3. List", "html": "<p><b>Necessary</b></p><ul><li>Supabase session: {{cookies.session}}</li><li>Stripe: {{cookies.stripe}}</li></ul><p><b>Analytics</b></p><ul><li>GA4: {{cookies.ga4}}</li></ul>" },
+            { "title": "4. Manage consent", "html": "<p>Use the cookie banner or your browser settings to withdraw consent.</p>" }
+          ]
+        },
+        "terms": { "sections": [ { "title": "1. Purpose", "html": "<p>Terms for using {{product.app_name}}.</p>" } ] },
+        "subscription": { "sections": [ { "title": "1. Purchase", "html": "<p>Payments via Stripe. 14-day withdrawal right as applicable.</p>" } ] },
+        "content_policy": { "sections": [ { "title": "1. Scope", "html": "<p>Rules for user content and image rights.</p>" } ] }
+    }
+
 }
