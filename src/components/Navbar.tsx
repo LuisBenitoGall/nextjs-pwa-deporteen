@@ -26,6 +26,8 @@ import { isAdminUser } from '@/lib/auth/roles';
 
 // Components
 import Select from '@/components/Select';
+import LogoScatter from '@/components/LogoScatter';
+import { BALL_ICONS } from '@/components/ball-icons';
 
 type UserLike = {
     id: string;
@@ -453,8 +455,17 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
         <nav className="fixed left-0 right-0 top-0 z-50 border-b border-green-200 bg-green-100 text-slate-100 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-green-100 dark:border-zinc-700 dark:bg-zinc-950/80">
             <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:h-16 sm:px-6 lg:px-8">
                 {/* Brand */}
-                <div className="text-2xl font-extrabold text-green-700">
-                    <Link href="/">{BRAND}</Link>
+                <div className="text-3xl font-extrabold text-green-700">
+                    <LogoScatter
+                        icons={BALL_ICONS}
+                        count={6}
+                        sizeRangePx={[12, 15]}   // más pequeño para nav
+                        minDistanceCm={0.35}
+                        className="inline-block align-middle"
+                        zIndex={1}               // por si acaso, debajo de overlays
+                    >
+                        <Link href="/">{BRAND}</Link>
+                    </LogoScatter>
                 </div>
 
                 {/* Desktop nav */}

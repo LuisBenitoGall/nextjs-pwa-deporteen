@@ -8,6 +8,10 @@ import { getSportIconPath } from '@/lib/sports';
 
 import type { Session } from '@supabase/supabase-js';
 
+//Componentes
+import LogoScatter from '@/components/LogoScatter';
+import { BALL_ICONS } from '@/components/ball-icons';
+
 export default function HeroSection() {
     const t = useT();
     const [session, setSession] = useState<Session | null>(null);
@@ -121,9 +125,19 @@ export default function HeroSection() {
                     <span className="inline-block bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1 rounded-full mb-4">
                         {t('claim')}
                     </span>
-                    <h1 className="text-4xl sm:text-5xl font-extrabold leading-tight tracking-tight text-green-700">
-                        {t('titulo')}
-                    </h1>
+
+                    <LogoScatter
+                        icons={BALL_ICONS}
+                        count={6}                 // cuántos pegatinas máximo
+                        sizeRangePx={[12, 16]}    // tamaño aleatorio
+                        minDistanceCm={0.5}
+                        className="inline-block"
+                    >
+                        <h1 className="text-4xl sm:text-5xl font-extrabold leading-tight tracking-tight text-green-700">
+                            {t('titulo')}
+                        </h1>
+                    </LogoScatter>
+
                     <p className="mt-6 text-lg text-gray-600">
                         {t('descripcion')}
                     </p>
