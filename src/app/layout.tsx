@@ -4,12 +4,29 @@ import Script from 'next/script';
 import { I18nProvider } from '@/i18n/I18nProvider';
 import { getServerUser } from '@/lib/supabase/server';
 import { ToastProvider } from '@/components/ui/toast';
+import type { Metadata, Viewport } from 'next';
 
 //Components
 import CookieBanner from '@/components/CookieBanner';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ServiceWorkerRegistrar from '@/components/ServiceWorkerRegistrar';
+
+export const metadata: Metadata = {
+  title: 'DeporTeen',
+  description: 'Resultados y estadísticas para familias y clubs.',
+  manifest: '/manifest.webmanifest',
+  icons: {
+    icon: [
+      { url: '/icons/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/icons/favicon-16x16.png', sizes: '16x16', type: 'image/png' }
+    ],
+    apple: [{ url: '/icons/apple-touch-icon-180.png', sizes: '180x180' }]
+  },
+  themeColor: '#0EA5E9'
+};
+
+export const viewport: Viewport = { themeColor: '#0EA5E9' };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
     const { user } = await getServerUser();
