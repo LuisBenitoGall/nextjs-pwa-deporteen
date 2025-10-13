@@ -9,7 +9,7 @@ self.addEventListener('message', (event) => {
   }
 });
 
-self.addEventListener('install', event => {
+self.addEventListener('install', () => {
   console.log('Service Worker instalado');
   self.skipWaiting();
 });
@@ -34,7 +34,7 @@ self.addEventListener('activate', event => {
       for (const client of clients) {
         try {
           await client.navigate(client.url);
-        } catch (e) {
+        } catch {
           // Navegar puede fallar en algunos navegadores si no está visible; ignorar.
         }
       }
