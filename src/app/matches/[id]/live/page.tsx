@@ -9,6 +9,9 @@ import { useParams } from 'next/navigation';
 import { getCurrentSeasonId } from '@/lib/seasons';
 import { getSportIconPath } from '@/lib/sports';
 import { useWakeLock } from '@/lib/useWakeLock';
+import { guessExt, probeImage, probeVideo } from '@/lib/uploadMatchMedia';
+import { enqueue, trySyncAll } from '@/lib/mediaSync';
+import { idbPut } from '@/lib/mediaLocal';
 import { useT } from '@/i18n/I18nProvider';
 import Image from 'next/image';
 
@@ -48,58 +51,159 @@ type Sport  = { id: string; name: string | null; stats: any };
 type Team   = { id: string; name: string | null };
 
 export default function LiveMatchPage() {
-  const t = useT();
-  const { id: matchId } = useParams() as { id: string };
-  const supabase = useMemo(() => supabaseBrowser(), []);
+    const t = useT();
+    const { id: matchId } = useParams() as { id: string };
+    const supabase = useMemo(() => supabaseBrowser(), []);
 
-  const { active: wakeActive, requesting: wakeRequesting, request: wakeRequest, release: wakeRelease } = useWakeLock();
+    const { active: wakeActive, requesting: wakeRequesting, request: wakeRequest, release: wakeRelease } = useWakeLock();
 
-  const [isSaving, setIsSaving]   = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [loading, setLoading]     = useState(true);
-  const [error, setError]         = useState<string | null>(null);
+    const [isSaving, setIsSaving]   = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [deleteOpen, setDeleteOpen] = useState(false);
+    const [loading, setLoading]     = useState(true);
+    const [error, setError]         = useState<string | null>(null);
 
-  const [match, setMatch]             = useState<MatchRow | null>(null);
-  const [competition, setCompetition] = useState<Competition | null>(null);
-  const [sport, setSport]             = useState<Sport | null>(null);
-  const [myTeam, setMyTeam]           = useState<Team | null>(null);
-  const [season, setSeason]           = useState<Season | null>(null);
+    const [match, setMatch]             = useState<MatchRow | null>(null);
+    const [competition, setCompetition] = useState<Competition | null>(null);
+    const [sport, setSport]             = useState<Sport | null>(null);
+    const [myTeam, setMyTeam]           = useState<Team | null>(null);
+    const [season, setSeason]           = useState<Season | null>(null);
 
-  // Estado editable
-  const [myScore, setMyScore]       = useState<number>(0);
-  const [rivalScore, setRivalScore] = useState<number>(0);
-  const [notes, setNotes]           = useState<string>('');
-  const [stats, setStats]           = useState<Record<string, any>>({});
+    // Estado editable
+    const [myScore, setMyScore]       = useState<number>(0);
+    const [rivalScore, setRivalScore] = useState<number>(0);
+    const [notes, setNotes]           = useState<string>('');
+    const [stats, setStats]           = useState<Record<string, any>>({});
 
-  // Debounce SOLO para notas/stats
-  const savingRef = useRef<NodeJS.Timeout | null>(null);
-  const scheduleSave = useCallback(() => {
-    if (savingRef.current) clearTimeout(savingRef.current);
+    const [busyMedia, setBusyMedia] = useState(false);
+    //const [uploadStep, setUploadStep] = useState<string | null>(null);
 
-    const payload = {
-      my_score: myScore,
-      rival_score: rivalScore,
-      notes,
-      stats: Object.keys(stats || {}).length ? stats : null,
-    };
+    const onFilesSelected = useCallback(async (fileList: FileList | null, kind: 'image'|'video', inputEl?: HTMLInputElement | null) => {
+        if (!fileList || !fileList.length || !match) return;
 
-    savingRef.current = setTimeout(async () => {
-      try {
-        const res = await fetch(`/api/matches/${matchId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-        if (!res.ok) {
-          const { error: errMsg } = await res.json().catch(() => ({ error: 'Error' }));
-          setError(errMsg || 'No se pudo guardar');
+        setBusyMedia(true);
+        //setUploadStep('auth');
+        setError(null);
+
+        try {
+            // Usa el supabase YA MEMOIZADO del componente
+            const { data: authData, error: authErr } = await supabase.auth.getUser();
+            if (authErr || !authData?.user?.id) {
+                throw new Error('No autenticado. Abre sesión y vuelve a intentarlo.');
+            }
+            const uid = authData.user.id;
+
+            for (const file of Array.from(fileList)) {
+                const mime = file.type || (kind === 'image' ? 'image/jpeg' : 'video/mp4');
+                const ext  = guessExt(mime) || (kind === 'image' ? '.jpg' : '.mp4');
+                const mediaId   = (crypto?.randomUUID?.() ?? `m_${Math.random().toString(36).slice(2)}${Date.now()}`);
+                const deviceKey = `media:${mediaId}`;
+
+                //setUploadStep('save-local');
+                await idbPut(deviceKey, file);
+
+                // Metadatos
+                let width: number | undefined, height: number | undefined, duration_ms: number | undefined;
+                if (kind === 'image') {
+                    const meta = await probeImage(file);
+                    width = meta.width; height = meta.height;
+                } else {
+                    const meta = await probeVideo(file);
+                    width = meta.width; height = meta.height; duration_ms = meta.duration_ms;
+                }
+
+                // INSERT en match_media (RLS valida por matches.player_id → players.user_id)
+                //setUploadStep('insert-db');
+                const ins = await supabase.from('match_media').insert({
+                    id: mediaId,
+                    match_id: match.id,
+                    player_id: match.player_id ?? null,
+                    kind,
+                    mime_type: mime,
+                    size_bytes: file.size,
+                    width, height, duration_ms,
+                    device_uri: deviceKey,
+                    storage_path: null,
+                    synced_at: null,
+                    taken_at: new Date().toISOString()
+                }).select('id').single();
+
+                if (ins.error) {
+                    console.error('INSERT match_media error:', ins.error);
+                    throw new Error(ins.error.message || 'RLS/INSERT falló en match_media');
+                }
+
+                // Upload a Storage con prefijo obligatorio
+                const storagePath = `${uid}/matches/${match.id}/${mediaId}${ext}`;
+                //setUploadStep('upload-storage');
+                const up = await supabase.storage.from('matches').upload(storagePath, file, { upsert: true, contentType: mime });
+
+                if (up.error) {
+                    console.warn('Storage.upload fallo, encolando para sync:', up.error);
+                    enqueue({ id: mediaId, key: deviceKey, matchId: match.id, ext, mime });
+                } else {
+                    // Marca sincronizado
+                    //setUploadStep('update-db');
+                    const upRes = await supabase.from('match_media')
+                    .update({ storage_path: storagePath, synced_at: new Date().toISOString() })
+                    .eq('id', mediaId);
+
+                    if (upRes.error) {
+                    console.error('UPDATE storage_path error:', upRes.error);
+                    // encolamos si el UPDATE falla por cualquier chorrada
+                    enqueue({ id: mediaId, key: deviceKey, matchId: match.id, ext, mime });
+                    }
+                }
+            }
+
+            // Reintento de sync por si había red
+            //setUploadStep('sync-try');
+            if (navigator.onLine) {
+            try { await trySyncAll(); } catch (e) { console.warn('trySyncAll warning:', e); }
+            }
+
+            //setUploadStep('done');
+            console.info('✅ Media procesada');
+        } catch (e: any) {
+            console.error('onFilesSelected error:', e);
+            setError(e?.message || 'Error al procesar los ficheros');
+        } finally {
+            // Reset del input para poder volver a elegir el MISMO archivo sin que el change se ignore
+            if (inputEl) inputEl.value = '';
+            setBusyMedia(false);
+            // breve limpieza del paso
+            //setTimeout(() => setUploadStep(null), 2000);
         }
-      } catch (e: any) {
-        setError(e?.message || 'No se pudo guardar');
-      }
-    }, 600);
-  }, [matchId, myScore, rivalScore, notes, stats]);
+    }, [match, supabase]);
+
+    // Debounce SOLO para notas/stats
+    const savingRef = useRef<NodeJS.Timeout | null>(null);
+    const scheduleSave = useCallback(() => {
+        if (savingRef.current) clearTimeout(savingRef.current);
+
+        const payload = {
+        my_score: myScore,
+        rival_score: rivalScore,
+        notes,
+        stats: Object.keys(stats || {}).length ? stats : null,
+        };
+
+        savingRef.current = setTimeout(async () => {
+        try {
+            const res = await fetch(`/api/matches/${matchId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            });
+            if (!res.ok) {
+            const { error: errMsg } = await res.json().catch(() => ({ error: 'Error' }));
+            setError(errMsg || 'No se pudo guardar');
+            }
+        } catch (e: any) {
+            setError(e?.message || 'No se pudo guardar');
+        }
+        }, 600);
+    }, [matchId, myScore, rivalScore, notes, stats]);
 
     useEffect(() => () => { if (savingRef.current) clearTimeout(savingRef.current); }, []);
 
@@ -116,8 +220,8 @@ export default function LiveMatchPage() {
 
     // Carga inicial
     useEffect(() => {
-    let mounted = true;
-    (async () => {
+        let mounted = true;
+        (async () => {
       setLoading(true);
       setError(null);
 
@@ -169,55 +273,55 @@ export default function LiveMatchPage() {
       setStats((matchRow.stats as any) || {});
 
       setLoading(false);
-    })();
+        })();
 
-    return () => { mounted = false; };
+        return () => { mounted = false; };
     }, [supabase, matchId]);
 
-  // Lado local
-  const leftIsHome = !!match?.is_home;
+    // Lado local
+    const leftIsHome = !!match?.is_home;
 
-  // Guardado inmediato del marcador
-  const updateScores = useCallback(async (deltaLeft: number, side: 'left' | 'right') => {
-    let nextMy = myScore;
-    let nextRival = rivalScore;
+    // Guardado inmediato del marcador
+    const updateScores = useCallback(async (deltaLeft: number, side: 'left' | 'right') => {
+        let nextMy = myScore;
+        let nextRival = rivalScore;
 
-    if (leftIsHome) {
-      if (side === 'left') nextMy = Math.max(0, myScore + deltaLeft);
-      else                 nextRival = Math.max(0, rivalScore + deltaLeft);
-    } else {
-      if (side === 'left') nextRival = Math.max(0, rivalScore + deltaLeft);
-      else                 nextMy = Math.max(0, myScore + deltaLeft);
-    }
+        if (leftIsHome) {
+        if (side === 'left') nextMy = Math.max(0, myScore + deltaLeft);
+        else                 nextRival = Math.max(0, rivalScore + deltaLeft);
+        } else {
+        if (side === 'left') nextRival = Math.max(0, rivalScore + deltaLeft);
+        else                 nextMy = Math.max(0, myScore + deltaLeft);
+        }
 
-    // Optimistic UI
-    setMyScore(nextMy);
-    setRivalScore(nextRival);
+        // Optimistic UI
+        setMyScore(nextMy);
+        setRivalScore(nextRival);
 
-    try {
-      const res = await fetch(`/api/matches/${matchId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ my_score: nextMy, rival_score: nextRival }),
-      });
-      if (!res.ok) {
-        const { error: errMsg } = await res.json().catch(() => ({ error: 'Error' }));
+        try {
+        const res = await fetch(`/api/matches/${matchId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ my_score: nextMy, rival_score: nextRival }),
+        });
+        if (!res.ok) {
+            const { error: errMsg } = await res.json().catch(() => ({ error: 'Error' }));
+            setMyScore(myScore); setRivalScore(rivalScore);
+            setError(errMsg || 'No se pudo actualizar el marcador');
+        }
+        } catch (e: any) {
         setMyScore(myScore); setRivalScore(rivalScore);
-        setError(errMsg || 'No se pudo actualizar el marcador');
-      }
-    } catch (e: any) {
-      setMyScore(myScore); setRivalScore(rivalScore);
-      setError(e?.message || 'No se pudo actualizar el marcador');
-    }
-  }, [leftIsHome, myScore, rivalScore, matchId]);
+        setError(e?.message || 'No se pudo actualizar el marcador');
+        }
+    }, [leftIsHome, myScore, rivalScore, matchId]);
 
-  // Handlers ±
-  const incLeft  = () => void updateScores(+1, 'left');
-  const decLeft  = () => void updateScores(-1, 'left');
-  const incRight = () => void updateScores(+1, 'right');
-  const decRight = () => void updateScores(-1, 'right');
+    // Handlers ±
+    const incLeft  = () => void updateScores(+1, 'left');
+    const decLeft  = () => void updateScores(-1, 'left');
+    const incRight = () => void updateScores(+1, 'right');
+    const decRight = () => void updateScores(-1, 'right');
 
-  const backToListUrl = `/players/${match?.player_id}/competitions/${match?.competition_id}/matches`;
+    const backToListUrl = `/players/${match?.player_id}/competitions/${match?.competition_id}/matches`;
 
   async function handleDeleteConfirm() {
     setIsDeleting(true);
@@ -287,229 +391,241 @@ export default function LiveMatchPage() {
     scheduleSave();
   }
 
-  async function flushNow() {
-    setIsSaving(true);
-    try {
-      const res = await fetch(`/api/matches/${matchId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          my_score: myScore,
-          rival_score: rivalScore,
-          notes,
-          stats: Object.keys(stats || {}).length ? stats : null,
-        }),
-      });
-      if (!res.ok) {
-        const { error: errMsg } = await res.json().catch(() => ({ error: 'Error' }));
-        setError(errMsg || 'No se pudo guardar');
-      }
-    } catch (e: any) {
-      setError(e?.message || 'No se pudo guardar');
-    } finally {
-      setIsSaving(false);
+    async function flushNow() {
+        setIsSaving(true);
+        try {
+            const res = await fetch(`/api/matches/${matchId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  my_score: myScore,
+                  rival_score: rivalScore,
+                  notes,
+                  stats: Object.keys(stats || {}).length ? stats : null,
+                }),
+            });
+            if (!res.ok) {
+                const { error: errMsg } = await res.json().catch(() => ({ error: 'Error' }));
+                setError(errMsg || 'No se pudo guardar');
+            }
+        } catch (e: any) {
+            setError(e?.message || 'No se pudo guardar');
+        } finally {
+            setIsSaving(false);
+        }
     }
-  }
 
-  return (
-    <>
-      <div className="max-w-4xl mx-auto pb-28">
-        {/* Ocultar el footer global SOLO en esta página */}
-        <style jsx global>{`footer{display:none !important}`}</style>
-        <style jsx>{`
-          @media (max-width: 500px) {
-            .responsive-button { width: 46px; height: 46px; }
-          }
-        `}</style>
+    return (
+        <>
+            <div className="max-w-4xl mx-auto pb-28">
+                {/* Ocultar el footer global SOLO en esta página */}
+                <style jsx global>{`footer{display:none !important}`}</style>
+                <style jsx>{`
+                @media (max-width: 500px) {
+                    .responsive-button { width: 46px; height: 46px; }
+                }
+                `}</style>
 
-        <div className="relative">
-            <TitleH1>
-                <span className="block md:inline">{leftLabel}</span>
-                <span className="block md:inline md:px-2 text-base md:text-inherit text-gray-700">vs</span>
-                <span className="block md:inline">{rightLabel}</span>
-            </TitleH1>
+                <div className="relative">
+                    <TitleH1>
+                        <span className="block md:inline">{leftLabel}</span>
+                        <span className="block md:inline md:px-2 text-base md:text-inherit text-gray-700">vs</span>
+                        <span className="block md:inline">{rightLabel}</span>
+                    </TitleH1>
 
-            {/* Icono a la derecha, con margen máximo 15px */}
-            {sport?.name && getSportIconPath(sport.name) && (
-                <Image
-                src={getSportIconPath(sport.name)!}
-                alt={sport.name || 'deporte'}
-                width={60}
-                height={60}
-                className="absolute top-1/2 -translate-y-1/2 right-0 select-none"
-                style={{ objectFit: 'contain' }}
-                priority
-                />
-            )}
-        </div>
-
-        <div className="flex items-center gap-2 mb-4">
-          <a href={backToListUrl} className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-3 py-2 rounded-lg shadow transition">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M15 18L9 12L15 6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            <span>{t('competicion_volver') || 'Partidos de la competición'}</span>
-          </a>
-          <button
-            type="button"
-            onClick={() => setDeleteOpen(true)}
-            aria-label={t('eliminar') || 'Eliminar'}
-            title={t('eliminar') || 'Eliminar'}
-            className="ml-auto inline-flex items-center justify-center rounded-lg bg-red-100 p-2 text-red-700 hover:bg-red-200"
-          >
-            {/* Trash icon */}
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="3 6 5 6 21 6" />
-              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-              <path d="M10 11v6" />
-              <path d="M14 11v6" />
-              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-            </svg>
-          </button>
-        </div>
-
-        {/* Cabecera */}
-        <div className="text-sm text-gray-700 mb-4 grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-1">
-            <div>{t('temporada')}: <b>{seasonLabel}</b></div>
-            <div>{t('competicion')}: <b>{sport?.name} - {competition?.name}</b></div>
-            <div>{t('fecha')}: <b>{new Date(match.date_at).toLocaleString()}</b></div>
-            <div>{t('lugar')}: <b>{match.place}</b></div>
-        </div>
-
-        {/* Marcador */}
-        <div className="grid grid-cols-2 gap-6 items-center my-6">
-            {/* Izquierda */}
-            <div className="text-center">
-                <div className="text-sm mb-2 text-green-700 font-bold text-center" style={{ fontSize: '1.1rem' }}>
-                    <span className="bg-green-700 text-white rounded-md px-3 py-1">{leftLabel}</span>
+                    {/* Icono a la derecha, con margen máximo 15px */}
+                    {sport?.name && getSportIconPath(sport.name) && (
+                        <Image
+                        src={getSportIconPath(sport.name)!}
+                        alt={sport.name || 'deporte'}
+                        width={60}
+                        height={60}
+                        className="absolute top-1/2 -translate-y-1/2 right-0 select-none"
+                        style={{ objectFit: 'contain' }}
+                        priority
+                        />
+                    )}
                 </div>
-                <div className="flex items-center justify-center gap-4">
-                    <div className="flex flex-col gap-2">
-                        <button type="button" aria-label="+1" className="rounded-md px-3 py-2 border" onClick={incLeft}>+</button>
-                        <button type="button" aria-label="-1" className="rounded-md px-3 py-2 border" onClick={decLeft}>-</button>
+
+                <div className="flex items-center gap-2 mb-4">
+                <a href={backToListUrl} className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-3 py-2 rounded-lg shadow transition">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M15 18L9 12L15 6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span>{t('competicion_volver') || 'Partidos de la competición'}</span>
+                </a>
+                <button
+                    type="button"
+                    onClick={() => setDeleteOpen(true)}
+                    aria-label={t('eliminar') || 'Eliminar'}
+                    title={t('eliminar') || 'Eliminar'}
+                    className="ml-auto inline-flex items-center justify-center rounded-lg bg-red-100 p-2 text-red-700 hover:bg-red-200"
+                >
+                    {/* Trash icon */}
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                    <path d="M10 11v6" />
+                    <path d="M14 11v6" />
+                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                    </svg>
+                </button>
+                </div>
+
+                {/* Cabecera */}
+                <div className="text-sm text-gray-700 mb-4 grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-1">
+                    <div>{t('temporada')}: <b>{seasonLabel}</b></div>
+                    <div>{t('competicion')}: <b>{sport?.name} - {competition?.name}</b></div>
+                    <div>{t('fecha')}: <b>{new Date(match.date_at).toLocaleString()}</b></div>
+                    <div>{t('lugar')}: <b>{match.place}</b></div>
+                </div>
+
+                {/* Marcador */}
+                <div className="grid grid-cols-2 gap-6 items-center my-6">
+                    {/* Izquierda */}
+                    <div className="text-center">
+                        <div className="text-sm mb-2 text-green-700 font-bold text-center" style={{ fontSize: '1.1rem' }}>
+                            <span className="bg-green-700 text-white rounded-md px-3 py-1">{leftLabel}</span>
+                        </div>
+                        <div className="flex items-center justify-center gap-4">
+                            <div className="flex flex-col gap-2">
+                                <button type="button" aria-label="+1" className="rounded-md px-3 py-2 border" onClick={incLeft}>+</button>
+                                <button type="button" aria-label="-1" className="rounded-md px-3 py-2 border" onClick={decLeft}>-</button>
+                            </div>
+                            <div className="grid place-content-center border rounded-md w-24 sm:w-28 md:w-32 lg:w-40 aspect-square text-5xl md:text-6xl font-bold select-none">
+                                {leftScore}
+                            </div>
+                        </div>
                     </div>
-                    <div className="grid place-content-center border rounded-md w-24 sm:w-28 md:w-32 lg:w-40 aspect-square text-5xl md:text-6xl font-bold select-none">
-                        {leftScore}
+
+                    {/* Derecha */}
+                    <div className="text-center">
+                        <div className="text-sm mb-2 text-green-700 font-bold text-center" style={{ fontSize: '1.1rem' }}>
+                            <span className="bg-green-700 text-white rounded-md px-3 py-1">{rightLabel}</span>
+                        </div>
+                        <div className="flex items-center justify-center gap-4">
+                            <div className="grid place-content-center border rounded-md w-24 sm:w-28 md:w-32 lg:w-40 aspect-square text-5xl md:text-6xl font-bold select-none">
+                            {rightScore}
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <button type="button" aria-label="+1" className="rounded-md px-3 py-2 border" onClick={incRight}>+</button>
+                                <button type="button" aria-label="-1" className="rounded-md px-3 py-2 border" onClick={decRight}>-</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <p className="text-center text-gray-500 font-bold underline">{t('recuerda_guardar_cambios')}</p>
+
+                {/* Stats */}
+                {statDefs.length > 0 && (
+                <div className="mt-8">
+                    <h3 className="text-lg font-semibold mb-3">{t('estadisticas_individuales') || 'Estadísticas individuales'}</h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-2 gap-y-0">
+                    {statDefs.map((f) =>
+                        f.type === 'boolean' ? (
+                        <label key={f.key} className="flex items-center gap-2 text-sm">
+                            <input type="checkbox" checked={!!stats[f.key]} onChange={(e)=>setStat(f.key, 'boolean', e.target.checked)} /> {f.label}
+                        </label>
+                        ) : (
+                        <Input
+                            key={f.key}
+                            label={f.label}
+                            type={f.type==='number' ? 'number' : 'text'}
+                            noSpinner={f.type==='number'}
+                            value={stats[f.key] ?? ''}
+                            onChange={(e:any)=>setStat(f.key, f.type, e.target.value)}
+                        />
+                        )
+                    )}
+                    </div>
+                </div>
+                )}
+
+                <div className="mt-0">
+                    <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="notes">
+                        {t('comentarios') || 'Comentarios'}
+                    </label>
+                    <Textarea value={notes} onChange={(e:any)=>{ setNotes(e.target.value); scheduleSave(); }} />
+                </div>
+
+                {/* Barra inferior */}
+                <div className="fixed bottom-0 left-0 right-0 border-t bg-white/95 backdrop-blur p-3">
+                    <div className="max-w-4xl mx-auto grid grid-cols-6 gap-3 items-stretch">
+                        {/* Pantalla activa */}
+                        <button
+                        type="button"
+                        onClick={() => (wakeActive ? wakeRelease() : wakeRequest())}
+                        disabled={wakeRequesting}
+                        className={`inline-flex items-center justify-center rounded-lg px-2 text-xs font-semibold
+                                    ${wakeActive ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-700'}
+                                    border ${wakeActive ? 'border-emerald-600' : 'border-gray-300'} responsive-button`}
+                        title={wakeActive ? (t('pantalla_activa') || 'Pantalla activa') : (t('mantener_pantalla') || 'Mantener pantalla encendida')}
+                        >
+                        <span aria-hidden>🔆</span>
+                        <span className="sr-only">
+                            {wakeActive ? (t('pantalla_activa') || 'Pantalla activa') : (t('mantener_pantalla') || 'Mantener pantalla encendida')}
+                        </span>
+                        </button>
+
+                        {/* Foto */}
+                        <label className="block responsive-button">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            className="hidden"
+                            onChange={(e) => onFilesSelected(e.currentTarget.files, 'image', e.currentTarget)}
+                          />
+                          <span className="grid place-content-center gap-1 border border-gray-300 rounded-lg text-xs">
+                            <div className="text-base text-center">{busyMedia ? '⏳' : '📷'}</div>
+                            <div className="font-medium">{t('foto') || 'Foto'}</div>
+                          </span>
+                        </label>
+
+                        {/* Vídeo */}
+                        <label className="block responsive-button">
+                          <input
+                            type="file"
+                            accept="video/*"
+                            capture
+                            className="hidden"
+                            onChange={(e) => onFilesSelected(e.currentTarget.files, 'video', e.currentTarget)}
+                          />
+                          <span className="grid place-content-center gap-1 border border-gray-300 rounded-lg text-xs">
+                            <div className="text-base text-center">{busyMedia ? '⏳' : '🎥'}</div>
+                            <div className="font-medium">{t('video') || 'Vídeo'}</div>
+                          </span>
+                        </label>
+
+                        {/* Galería */}
+                        <Link
+                        href={`/matches/${matchId}/gallery`}
+                        className="grid place-content-center gap-1 border border-gray-300 rounded-lg text-xs responsive-button"
+                        >
+                        <div className="text-base text-center">🖼️</div>
+                        <div className="font-medium">{t('galeria') || 'Galería'}</div>
+                        </Link>
+
+                        {/* Editar (Link estilizado como botón) */}
+                        <Link
+                        href={`/matches/${matchId}/edit`}
+                        className="w-full responsive-submit-button inline-flex items-center justify-center rounded-lg bg-emerald-600 px-3 py-3 font-semibold text-white hover:bg-emerald-700"
+                        >
+                        {t('editar') || 'Editar'}
+                        </Link>
+
+                        {/* Guardar manual */}
+                        <Submit
+                        onClick={flushNow as any}
+                        text={t('guardar') || 'Guardar'}
+                        loadingText={t('guardando') || 'Guardando…'}
+                        loading={isSaving}
+                        className="responsive-submit-button"
+                        />
                     </div>
                 </div>
             </div>
-
-            {/* Derecha */}
-            <div className="text-center">
-                <div className="text-sm mb-2 text-green-700 font-bold text-center" style={{ fontSize: '1.1rem' }}>
-                    <span className="bg-green-700 text-white rounded-md px-3 py-1">{rightLabel}</span>
-                </div>
-                <div className="flex items-center justify-center gap-4">
-                    <div className="grid place-content-center border rounded-md w-24 sm:w-28 md:w-32 lg:w-40 aspect-square text-5xl md:text-6xl font-bold select-none">
-                    {rightScore}
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        <button type="button" aria-label="+1" className="rounded-md px-3 py-2 border" onClick={incRight}>+</button>
-                        <button type="button" aria-label="-1" className="rounded-md px-3 py-2 border" onClick={decRight}>-</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <p className="text-center text-gray-500 font-bold underline">{t('recuerda_guardar_cambios')}</p>
-
-        {/* Stats */}
-        {statDefs.length > 0 && (
-          <div className="mt-8">
-            <h3 className="text-lg font-semibold mb-3">{t('estadisticas_individuales') || 'Estadísticas individuales'}</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-2 gap-y-0">
-              {statDefs.map((f) =>
-                f.type === 'boolean' ? (
-                  <label key={f.key} className="flex items-center gap-2 text-sm">
-                    <input type="checkbox" checked={!!stats[f.key]} onChange={(e)=>setStat(f.key, 'boolean', e.target.checked)} /> {f.label}
-                  </label>
-                ) : (
-                  <Input
-                    key={f.key}
-                    label={f.label}
-                    type={f.type==='number' ? 'number' : 'text'}
-                    noSpinner={f.type==='number'}
-                    value={stats[f.key] ?? ''}
-                    onChange={(e:any)=>setStat(f.key, f.type, e.target.value)}
-                  />
-                )
-              )}
-            </div>
-          </div>
-        )}
-
-        <div className="mt-0">
-          <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="notes">
-            {t('comentarios') || 'Comentarios'}
-          </label>
-          <Textarea value={notes} onChange={(e:any)=>{ setNotes(e.target.value); scheduleSave(); }} />
-        </div>
-
-        {/* Barra inferior */}
-        <div className="fixed bottom-0 left-0 right-0 border-t bg-white/95 backdrop-blur p-3">
-          <div className="max-w-4xl mx-auto grid grid-cols-6 gap-3 items-stretch">
-            {/* Pantalla activa */}
-            <button
-              type="button"
-              onClick={() => (wakeActive ? wakeRelease() : wakeRequest())}
-              disabled={wakeRequesting}
-              className={`inline-flex items-center justify-center rounded-lg px-2 text-xs font-semibold
-                          ${wakeActive ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-700'}
-                          border ${wakeActive ? 'border-emerald-600' : 'border-gray-300'} responsive-button`}
-              title={wakeActive ? (t('pantalla_activa') || 'Pantalla activa') : (t('mantener_pantalla') || 'Mantener pantalla encendida')}
-            >
-              <span aria-hidden>🔆</span>
-              <span className="sr-only">
-                {wakeActive ? (t('pantalla_activa') || 'Pantalla activa') : (t('mantener_pantalla') || 'Mantener pantalla encendida')}
-              </span>
-            </button>
-
-            {/* Foto */}
-            <label className="block responsive-button">
-              <input type="file" accept="image/*" capture="environment" className="hidden" onChange={() => {/* TODO */}} />
-              <span className="grid place-content-center gap-1 border border-gray-300 rounded-lg text-xs">
-                <div className="text-base text-center">📷</div>
-                <div className="font-medium">{t('foto') || 'Foto'}</div>
-              </span>
-            </label>
-
-            {/* Vídeo */}
-            <label className="block responsive-button">
-              <input type="file" accept="video/*" capture className="hidden" onChange={() => {/* TODO */}} />
-              <span className="grid place-content-center gap-1 border border-gray-300 rounded-lg text-xs">
-                <div className="text-base text-center">🎥</div>
-                <div className="font-medium">{t('video') || 'Vídeo'}</div>
-              </span>
-            </label>
-
-            {/* Galería */}
-            <Link
-              href={`/matches/${matchId}/gallery`}
-              className="grid place-content-center gap-1 border border-gray-300 rounded-lg text-xs responsive-button"
-            >
-              <div className="text-base text-center">🖼️</div>
-              <div className="font-medium">{t('galeria') || 'Galería'}</div>
-            </Link>
-
-            {/* Editar (Link estilizado como botón) */}
-            <Link
-              href={`/matches/${matchId}/edit`}
-              className="w-full responsive-submit-button inline-flex items-center justify-center rounded-lg bg-emerald-600 px-3 py-3 font-semibold text-white hover:bg-emerald-700"
-            >
-              {t('editar') || 'Editar'}
-            </Link>
-
-            {/* Guardar manual */}
-            <Submit
-              onClick={flushNow as any}
-              text={t('guardar') || 'Guardar'}
-              loadingText={t('guardando') || 'Guardando…'}
-              loading={isSaving}
-              className="responsive-submit-button"
-            />
-          </div>
-        </div>
-      </div>
 
             {/* Modal eliminar */}
             {deleteOpen && (
