@@ -23,8 +23,7 @@ export const metadata: Metadata = {
       { url: '/icons/favicon-16x16.png', sizes: '16x16', type: 'image/png' }
     ],
     apple: [{ url: '/icons/apple-touch-icon-180.png', sizes: '180x180' }]
-  },
-  themeColor: '#0EA5E9'
+  }
 };
 
 export const viewport: Viewport = { themeColor: '#0EA5E9' };
@@ -82,5 +81,3 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         </html>
     );
 }
-
- 

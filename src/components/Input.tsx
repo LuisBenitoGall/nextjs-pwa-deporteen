@@ -31,6 +31,7 @@ export default function Input({ label, error, containerClassName, className, typ
         </label>
       )}
       <input
+        suppressHydrationWarning
         id={controlId}
         name={name}
         type={type}

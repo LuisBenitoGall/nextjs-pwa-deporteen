@@ -66,6 +66,11 @@ export default function SubscriptionPage() {
   const [paidPlans, setPaidPlans] = useState<Plan[]>([]);
   const [selectedPlanId, setSelectedPlanId] = useState<string>('');
   const [loadingPlans, setLoadingPlans] = useState(true);
+  const [subActive, setSubActive] = useState(false);
+  const [subPlanId, setSubPlanId] = useState<string>('');
+  const [subEndsAt, setSubEndsAt] = useState<string>('');
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [statusBanner, setStatusBanner] = useState<'success' | 'cancel' | ''>('');
 
   useEffect(() => {
     let alive = true;
@@ -84,7 +89,7 @@ export default function SubscriptionPage() {
 
       setLoadingPlans(true);
       const { data, error } = await supabase
-        .from('subscription_plans')
+        .from('subscription_plans_view')
         .select('id, name, days, price_cents, currency, active, free')
         .eq('active', true)
         .eq('free', false)
@@ -102,10 +107,57 @@ export default function SubscriptionPage() {
       setPaidPlans(visibles);
 
       if (visibles.length === 1) setSelectedPlanId(visibles[0].id);
+
+      const { data: latest, error: subErr } = await supabase
+        .from('subscriptions')
+        .select('plan_id, current_period_end, status, user_id')
+        .eq('user_id', user.id)
+        .order('current_period_end', { ascending: false })
+        .limit(1);
+      
+      if (subErr) {
+        console.error('[SubscriptionPage] Error fetching subscription:', subErr);
+      }
+      const s = Array.isArray(latest) ? latest[0] : null;
+      if (s) {
+        const end = s.current_period_end ? new Date(s.current_period_end) : null;
+        const statusBool = s.status === true || String(s.status || '').toLowerCase() === 'active';
+        const isActive = Boolean(end && end.getTime() > Date.now() && statusBool);
+        setSubActive(isActive);
+        if (isActive) {
+          if (s.plan_id) {
+            setSubPlanId(s.plan_id);
+            setSelectedPlanId(s.plan_id);
+          }
+          setSubEndsAt(end ? end.toISOString() : '');
+        }
+      }
       setLoadingPlans(false);
     })();
     return () => { alive = false; };
-  }, [supabase, t]);
+  }, [supabase, t, refreshKey]);
+
+  // Confirmar sesión de Stripe al volver de Checkout (?status=success&session_id=...)
+  useEffect(() => {
+    const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
+    const status = params.get('status');
+    const sessionId = params.get('session_id');
+    if (status === 'success') setStatusBanner('success');
+    else if (status === 'cancel') setStatusBanner('cancel');
+
+    if (status === 'success' && sessionId) {
+      (async () => {
+        try {
+          await fetch('/api/stripe/confirm-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session_id: sessionId })
+          });
+          setRefreshKey((x) => x + 1);
+        } catch {}
+      })();
+    }
+  }, []);
 
   // Checkout Stripe
   const goStripe = async () => {
@@ -121,6 +173,7 @@ export default function SubscriptionPage() {
         return;
       }
 
+      // Iniciar Checkout con el plan seleccionado
       const res = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -149,7 +202,7 @@ export default function SubscriptionPage() {
 
       if (!FAKE_MODE) {
         const { data: plan, error: planErr } = await supabase
-          .from('subscription_plans')
+          .from('subscription_plans_view')
           .select('id')
           .eq('free', true)
           .eq('active', true)
@@ -192,11 +245,22 @@ export default function SubscriptionPage() {
     const isMultiPlan = paidPlans.length > 1;
     //const stripeDisabled = isMultiPlan && !selectedPlanId;
 
+    const formatDate = (iso?: string) => {
+      if (!iso) return '';
+      try { const d = new Date(iso); return d.toLocaleDateString(); } catch { return iso; }
+    };
+
     return (
         <div>
             <TitleH1>{t('suscripcion')}</TitleH1>
 
             <div className="p-4 space-y-4">
+                {/* Estado de suscripción */}
+                {subActive && (
+                  <div className="rounded-lg border border-green-600 bg-green-50 px-4 py-3 text-green-800">
+                    {t('suscripcion')} activa. Fin del periodo: {formatDate(subEndsAt)}
+                  </div>
+                )}
                 <p>{t('suscripcion_texto1')}</p>
 
                 {/* Cantidad de deportistas */}
@@ -216,7 +280,7 @@ export default function SubscriptionPage() {
                 {/* Si solo 1 deportista, opción de código */}
                 {units === 1 && (
                 <>
-                    <form onSubmit={useCode} className="flex gap-2">
+                    <form onSubmit={useCode} className="flex gap-2" suppressHydrationWarning>
                     <Input
                         value={code}
                         onChange={(e: any) => setCode(e.target.value)}
@@ -256,16 +320,19 @@ export default function SubscriptionPage() {
                             onClick={() => setSelectedPlanId(p.id)}
                             aria-pressed={selected}
                             className={[
-                                'relative text-left rounded-xl border p-5 transition flex flex-col justify-start',
-                                // borde verde SIEMPRE
-                                'border-green-600',
-                                // hover: solo cambia el fondo
-                                'hover:bg-green-50',
-                                // seleccionado: refuerzo visual
-                                selected ? 'ring-2 ring-green-700 bg-green-50' : ''
+                              'relative text-left rounded-xl border p-5 transition flex flex-col justify-start',
+                              // borde verde SIEMPRE
+                              'border-green-600',
+                              // hover: solo cambia el fondo
+                              'hover:bg-green-50',
+                              // seleccionado: refuerzo visual
+                              selected ? 'ring-2 ring-green-700 bg-green-50' : ''
                             ].join(' ')}
                             >
                             <div className="text-sm text-gray-700">{p.name}</div>
+                            {subPlanId === p.id && (
+                              <span className="absolute top-3 right-3 inline-flex items-center rounded bg-green-600 px-2 py-0.5 text-xs font-semibold text-white">Activo</span>
+                            )}
 
                             {/* Precio TOTAL grande */}
                             <div className="mt-2 text-3xl font-extrabold">
@@ -294,7 +361,7 @@ export default function SubscriptionPage() {
                     onClick={goStripe}
                     text={t('suscripcion_stripe')}
                     loadingText={t('enviando') ?? t('suscripcion_stripe')}
-                    disabled={isMultiPlan && !selectedPlanId}
+                    disabled={subActive || (isMultiPlan && !selectedPlanId)}
                     />
 
                     <div className="mt-4 px-4 py-6 rounded-lg bg-gray-200 text-gray-700">
@@ -306,6 +373,12 @@ export default function SubscriptionPage() {
                     </div>
                 </div>
 
+                {statusBanner === 'success' && (
+                  <div className="rounded border p-3 bg-green-50 text-green-800">Pago completado. Tu suscripción se ha activado.</div>
+                )}
+                {statusBanner === 'cancel' && (
+                  <div className="rounded border p-3 bg-yellow-50 text-yellow-800">Pago cancelado.</div>
+                )}
                 {error && <div className="rounded border p-3 bg-red-50 text-red-700">{error}</div>}
             </div>
         </div>

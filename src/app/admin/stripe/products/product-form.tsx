@@ -26,6 +26,8 @@ export default function CreateProductForm() {
   const [createPrice, setCreatePrice] = useState(false);
   const [priceAmount, setPriceAmount] = useState('');
   const [priceCurrency, setPriceCurrency] = useState('eur');
+  const [days, setDays] = useState('');
+  const [free, setFree] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,6 +46,11 @@ export default function CreateProductForm() {
         setError(t('stripe_price_error_amount_required') || 'Introduce un importe válido.');
         return;
       }
+      const parsedDays = Number(days);
+      if (!Number.isFinite(parsedDays) || parsedDays <= 0) {
+        setError('Introduce un número de días válido (> 0).');
+        return;
+      }
     }
 
     setLoading(true);
@@ -57,6 +64,8 @@ export default function CreateProductForm() {
           createPrice,
           priceAmount: createPrice ? Number(priceAmount.replace(',', '.')) : undefined,
           priceCurrency: createPrice ? priceCurrency : undefined,
+          days: createPrice ? Number(days) : undefined,
+          free: createPrice ? free : undefined,
         }),
       });
       const data = await res.json();
@@ -69,6 +78,8 @@ export default function CreateProductForm() {
       setCreatePrice(false);
       setPriceAmount('');
       setPriceCurrency('eur');
+      setDays('');
+      setFree(false);
       setOpen(false);
       router.refresh();
     } catch (err: any) {
@@ -181,6 +192,29 @@ export default function CreateProductForm() {
                   <p className="text-xs text-slate-400">
                     {t('stripe_product_currency_hint') || 'Moneda por defecto: EUR.'}
                   </p>
+                </div>
+
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="product-days">Duración en días</Label>
+                  <Input
+                    id="product-days"
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={days}
+                    onChange={(event) => setDays(event.target.value)}
+                    placeholder="365"
+                  />
+                  <div className="flex items-center gap-2 pt-1">
+                    <input
+                      id="product-free"
+                      type="checkbox"
+                      checked={free}
+                      onChange={(e) => setFree(e.target.checked)}
+                      className="h-4 w-4 rounded border-slate-700 bg-slate-950/60"
+                    />
+                    <Label htmlFor="product-free">Plan gratuito (oculto para códigos)</Label>
+                  </div>
                 </div>
               </div>
             )}
