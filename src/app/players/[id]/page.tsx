@@ -460,12 +460,12 @@ export default async function PlayerDetailPage({
                                                     })}
                                                     ariaLabel={t('eliminar') || 'Eliminar'}
                                                     confirmTitle={t('competicion_eliminar_confirmar') || 'Confirmar eliminación de competición'}
-      confirmMessage={
-        t('competicion_eliminar_confirmar_texto') ||
-        'Confirma que deseas eliminar esta competición. Se eliminarán los datos asociados. Esta acción es irreversible.'
-      }
-      confirmCta={t('borrado_confirmar') || 'Confirmar borrado'}
-      cancelCta={t('cancelar') || 'Cancelar'}
+                                                    confirmMessage={
+                                                        t('competicion_eliminar_confirmar_texto') ||
+                                                        'Confirma que deseas eliminar esta competición. Se eliminarán los datos asociados. Esta acción es irreversible.'
+                                                    }
+                                                    confirmCta={t('borrado_confirmar') || 'Confirmar borrado'}
+                                                    cancelCta={t('cancelar') || 'Cancelar'}
 
                                                     className="inline-flex items-center rounded-xl bg-red-100 border border-red-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-red-50 whitespace-nowrap"
                                                 />

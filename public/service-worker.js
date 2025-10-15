@@ -1,85 +1,112 @@
-const CACHE_PREFIX = 'pwa-esports';
-const CACHE_VERSION = 'v1';
-const CACHE_NAME = `${CACHE_PREFIX}-${CACHE_VERSION}`;
-const BLOCK_SITE = false;     //Bloqueo de todo el site = true
+/* eslint-env serviceworker */
+// public/service-worker.js
+
+const CACHE_PREFIX  = 'pwa-esports';
+const CACHE_VERSION = 'v2';                // << súbelo para forzar actualización
+const CACHE_NAME    = `${CACHE_PREFIX}-${CACHE_VERSION}`;
+const BLOCK_SITE    = false;
 
 self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
+  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('install', () => {
-  console.log('Service Worker instalado');
+  // Aquí podrías precachear si quieres
   self.skipWaiting();
 });
 
-self.addEventListener('activate', event => {
-  console.log('Service Worker activado');
-  // Limpia cachés antiguas y reclama control
-  event.waitUntil(
-    (async () => {
-      const keys = await caches.keys();
-      await Promise.all(
-        keys.map((key) => {
-          if (key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-        })
-      );
-      await self.clients.claim();
-      // Fuerza recarga de todas las pestañas para garantizar
-      // que el fetch de navegación quede bajo control del SW.
-      const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-      for (const client of clients) {
-        try {
-          await client.navigate(client.url);
-        } catch {
-          // Navegar puede fallar en algunos navegadores si no está visible; ignorar.
-        }
-      }
-    })()
-  );
+self.addEventListener('activate', (event) => {
+  event.waitUntil((async () => {
+    // Limpia caches antiguas
+    const keys = await caches.keys();
+    await Promise.all(
+      keys.map((key) => (key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME) ? caches.delete(key) : null)
+    );
+    await self.clients.claim();
+    // Nada de navegar a la fuerza todas las pestañas. Demasiado agresivo.
+  })());
 });
 
+// ============ FETCH: ÚNICO HANDLER ============
 self.addEventListener('fetch', (event) => {
-  // Bloqueo de prueba (prioritario). Asegúrate de tener un único handler.
-  if (typeof BLOCK_SITE !== 'undefined' && BLOCK_SITE === true) {
-    if (event.request.mode === 'navigate' || event.request.destination === 'document') {
-      event.respondWith(
-        new Response(`<!doctype html>
-<html lang="es"><head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Bloqueado por Service Worker</title>
-<style>
-  :root { color-scheme: dark; }
-  body { margin:0; height:100vh; display:flex; align-items:center; justify-content:center; background:#0b0b0b; color:#fff; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-  .box { max-width:720px; padding:28px; border:2px dashed #ff4d4f; border-radius:16px; text-align:center; }
-  h1 { margin:0 0 8px; font-size:28px; }
-  p { margin:6px 0; }
-  .small { opacity:.8; font-size:12px; }
-  code { background:#222; padding:2px 6px; border-radius:6px; }
-  a { color:#61dafb; }
-  </style>
-</head><body>
-  <div class="box">
-    <h1>DeporTeen ha sido bloqueado temporalmente.</h1>
-    <p>El site ha sido bloqueado temporalmente por razones técnicas. Prueba de nuevo en unos instantes. Disculpa las molestias.</p>
-  </div>
-</body></html>`,
-          { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } }
-        )
-      );
-      return;
+  const req = event.request;
+  const url = new URL(req.url);
+
+  // 0) Bloqueo total (debug)
+  if (BLOCK_SITE === true) {
+    if (req.mode === 'navigate' || req.destination === 'document') {
+      event.respondWith(new Response(`<!doctype html><meta charset="utf-8"><title>Bloqueado</title>`, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } }));
+    } else {
+      event.respondWith(new Response('', { status: 418, statusText: 'Blocked by Service Worker' }));
     }
-    // Bloquea también otros recursos si se desea (opcional)
-    event.respondWith(new Response('', { status: 418, statusText: 'Blocked by Service Worker' }));
     return;
   }
 
-  // Estrategia por defecto (cache-first con fallback a red)
-  event.respondWith(
-    caches.match(event.request).then((response) => response || fetch(event.request))
-  );
+  // 1) Ignora cross-origin y SUPABASE (REST + Storage). No interceptar.
+  const isCrossOrigin = url.origin !== self.location.origin;
+  const isSupabase = url.hostname.endsWith('.supabase.co') || url.hostname.endsWith('.supabase.net');
+  if (isCrossOrigin || isSupabase) return;
+
+  // 2) Solo cachea GET. Todo lo demás, que pase directo.
+  if (req.method !== 'GET') return;
+
+  // 3) Estrategias:
+  //    - Navegación (document): network-first para no servir app vieja
+  //    - Assets estáticos: cache-first
+  //    - Resto: network-first con fallback a cache
+  if (req.mode === 'navigate' || req.destination === 'document') {
+    event.respondWith(networkFirst(req));
+    return;
+  }
+
+  const isStaticAsset =
+    url.pathname.startsWith('/_next/') ||
+    url.pathname.startsWith('/icons/') ||
+    url.pathname.endsWith('.css') ||
+    url.pathname.endsWith('.js') ||
+    url.pathname.endsWith('.png') ||
+    url.pathname.endsWith('.jpg') ||
+    url.pathname.endsWith('.webp') ||
+    url.pathname.endsWith('.svg');
+
+  if (isStaticAsset) {
+    event.respondWith(cacheFirst(req));
+  } else {
+    event.respondWith(networkFirst(req));
+  }
+});
+
+async function cacheFirst(request) {
+  const cache = await caches.open(CACHE_NAME);
+  const cached = await cache.match(request);
+  if (cached) return cached;
+  const resp = await fetch(request);
+  // evita cachear respuestas opaques de cosas raras
+  if (resp && resp.status === 200 && resp.type !== 'opaque') {
+    cache.put(request, resp.clone());
+  }
+  return resp;
+}
+
+async function networkFirst(request) {
+  const cache = await caches.open(CACHE_NAME);
+  try {
+    const resp = await fetch(request);
+    if (resp && resp.status === 200 && resp.type !== 'opaque') {
+      cache.put(request, resp.clone());
+    }
+    return resp;
+  } catch {
+    const cached = await cache.match(request);
+    if (cached) return cached;
+    // fallback mínimo
+    return new Response('', { status: 504, statusText: 'Offline' });
+  }
+}
+
+// Background Sync (opcional; no toca Supabase)
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'media-sync') {
+    event.waitUntil(fetch('/api/media/sync', { method: 'POST' }).catch(() => {}));
+  }
 });
