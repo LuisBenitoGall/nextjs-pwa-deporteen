@@ -21,7 +21,8 @@
 	RESTART IDENTITY CASCADE;
 	COMMIT;
 
-
+## VARIABLES DE ENTORNO:
+	- NEXT_PUBLIC_CLOUD_MEDIA=0   Con valor 1 permite subir los archivos a Cloud
 
 
 

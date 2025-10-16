@@ -1,7 +1,9 @@
 // src/lib/uploadMatchMedia.ts
 import { supabaseBrowser } from '@/lib/supabase/client';
 import { idbPut } from '@/lib/mediaLocal';
-import { enqueue, trySyncAll } from '@/lib/mediaSync';
+
+// Nube OFF por defecto. Actívala poniendo NEXT_PUBLIC_CLOUD_MEDIA=1 en .env.local
+const CLOUD_ENABLED = process.env.NEXT_PUBLIC_CLOUD_MEDIA === '1';
 
 export function guessExt(mime: string): string {
   if (!mime) return '';
@@ -11,7 +13,7 @@ export function guessExt(mime: string): string {
   if (m.includes('webp')) return '.webp';
   if (m.includes('gif'))  return '.gif';
   if (m.includes('mp4'))  return '.mp4';
-  if (m.includes('quicktime')) return '.mov'; // iOS Safari
+  if (m.includes('quicktime')) return '.mov'; // iOS
   if (m.includes('webm')) return '.webm';
   return '';
 }
@@ -51,36 +53,35 @@ export function probeVideo(blob: Blob): Promise<{ duration_ms?: number; width?: 
 }
 
 /**
- * Sube un medio de partido:
- * - Guarda en IndexedDB
- * - Inserta en match_media
- * - Sube a Storage (bucket 'matches') con prefijo auth.uid()
- * - Actualiza storage_path + synced_at
+ * Flujo:
+ * 1) Guarda blob en IndexedDB (device_uri)
+ * 2) Inserta metadatos en match_media (storage_path NULL, synced_at NULL)
+ * 3) (Opcional) Si CLOUD_ENABLED, sube a Storage y actualiza storage_path/synced_at
  */
 export async function uploadMatchMedia(params: {
   matchId: string;
   playerId?: string | null;
   file: File;
-  kind: 'image' | 'video';
-  // Si no pasas metadatos, los calculo yo
+  kind: 'image' | 'video'; // se re-normaliza por MIME igualmente
   width?: number;
   height?: number;
   duration_ms?: number;
 }) {
-  const { matchId, playerId = null, file, kind } = params;
-  let { width, height, duration_ms } = params;
+  const { matchId, playerId = null, file } = params;
+
+  // Normaliza kind por MIME por si el llamador se equivoca
+  const kind: 'image' | 'video' =
+    file.type?.startsWith('video/') ? 'video'
+    : file.type?.startsWith('image/') ? 'image'
+    : params.kind;
 
   const supabase = supabaseBrowser();
   const { data: authData, error: authErr } = await supabase.auth.getUser();
   if (authErr || !authData?.user?.id) throw new Error('No autenticado');
   const uid = authData.user.id;
 
-  const mime = file.type || (kind === 'image' ? 'image/jpeg' : 'video/mp4');
-  const ext  = guessExt(mime) || (kind === 'image' ? '.jpg' : '.mp4');
-  const mediaId = (crypto?.randomUUID?.() ?? `m_${Math.random().toString(36).slice(2)}${Date.now()}`);
-  const deviceKey = `media:${mediaId}`;
-
-  // Metadatos si faltan
+  // Metadatos
+  let { width, height, duration_ms } = params;
   if (kind === 'image' && (!width || !height)) {
     const meta = await probeImage(file);
     width = meta.width; height = meta.height;
@@ -89,11 +90,16 @@ export async function uploadMatchMedia(params: {
     width = meta.width; height = meta.height; duration_ms = meta.duration_ms;
   }
 
+  // Identificadores y clave local
+  const mediaId = (crypto?.randomUUID?.() ?? `m_${Math.random().toString(36).slice(2)}${Date.now()}`);
+  const deviceKey = `media:${mediaId}`;
+
   // 1) Guardar local
   await idbPut(deviceKey, file);
 
-  // 2) Insert en BD
-  const ins = await supabase
+  // 2) Insert en BD (sin nube)
+  const mime = file.type || (kind === 'image' ? 'image/jpeg' : 'video/mp4');
+  const insertRes = await supabase
     .from('match_media')
     .insert({
       id: mediaId,
@@ -111,24 +117,29 @@ export async function uploadMatchMedia(params: {
     .select('id')
     .single();
 
-  if (ins.error) throw new Error(ins.error.message || 'No se pudo insertar en match_media');
+  if (insertRes.error) throw new Error(insertRes.error.message || 'No se pudo insertar en match_media');
 
-  // 3) Sube a Storage con prefijo obligatorio
-  const storagePath = `${uid}/matches/${matchId}/${mediaId}${ext}`;
-  const up = await supabase.storage.from('matches').upload(storagePath, file, { upsert: true, contentType: mime });
+  // 3) Subida opcional a Storage (solo si activas el flag)
+  let storagePath: string | null = null;
 
-  if (!up.error) {
-    await supabase
-      .from('match_media')
-      .update({ storage_path: storagePath, synced_at: new Date().toISOString() })
-      .eq('id', mediaId);
-  } else {
-    // Encola para reintentar
-    enqueue({ id: mediaId, key: deviceKey, matchId, ext, mime });
-    try { await trySyncAll(); } catch {}
+  if (CLOUD_ENABLED) {
+    const ext = guessExt(mime) || (kind === 'image' ? '.jpg' : '.mp4');
+    storagePath = `${uid}/matches/${matchId}/${mediaId}${ext}`;
+
+    const up = await supabase.storage
+      .from('matches')
+      .upload(storagePath, file, { upsert: true, contentType: mime });
+
+    if (!up.error) {
+      await supabase
+        .from('match_media')
+        .update({ storage_path: storagePath, synced_at: new Date().toISOString() })
+        .eq('id', mediaId);
+    } else {
+      // Si quisieras cola de reintentos, aquí la meterías… pero NO mientras la nube esté desactivada.
+      storagePath = null;
+    }
   }
-
-  if (navigator.onLine) { try { await trySyncAll(); } catch {} }
 
   return { id: mediaId, storagePath };
 }

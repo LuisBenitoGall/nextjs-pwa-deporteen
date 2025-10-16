@@ -9,17 +9,20 @@ import { useParams } from 'next/navigation';
 import { getCurrentSeasonId } from '@/lib/seasons';
 import { getSportIconPath } from '@/lib/sports';
 import { useWakeLock } from '@/lib/useWakeLock';
-import { guessExt, probeImage, probeVideo } from '@/lib/uploadMatchMedia';
-import { enqueue, trySyncAll } from '@/lib/mediaSync';
-import { idbPut } from '@/lib/mediaLocal';
+//import { guessExt, probeImage, probeVideo } from '@/lib/uploadMatchMedia';
+import { uploadMatchMedia } from '@/lib/uploadMatchMedia';
+//import { enqueue, trySyncAll } from '@/lib/mediaSync';
+//import { idbPut } from '@/lib/mediaLocal';
 import { useT } from '@/i18n/I18nProvider';
 import Image from 'next/image';
-
-import Input from '@/components/Input';
 import Link from 'next/link';
+
+//Components
+import BlockingLoader from '@/components/BlockingLoader';
+import Input from '@/components/Input';
+import Submit from '@/components/Submit';
 import Textarea from '@/components/Textarea';
 import TitleH1 from '@/components/TitleH1';
-import Submit from '@/components/Submit';
 
 type MatchRow = {
   id: string;
@@ -76,105 +79,30 @@ export default function LiveMatchPage() {
     const [stats, setStats]           = useState<Record<string, any>>({});
 
     const [busyMedia, setBusyMedia] = useState(false);
+    const [busyMsg] = useState<string | undefined>(undefined);
     //const [uploadStep, setUploadStep] = useState<string | null>(null);
 
     const onFilesSelected = useCallback(async (fileList: FileList | null, kind: 'image'|'video', inputEl?: HTMLInputElement | null) => {
         if (!fileList || !fileList.length || !match) return;
 
         setBusyMedia(true);
-        //setUploadStep('auth');
         setError(null);
-
         try {
-            // Usa el supabase YA MEMOIZADO del componente
-            const { data: authData, error: authErr } = await supabase.auth.getUser();
-            if (authErr || !authData?.user?.id) {
-                throw new Error('No autenticado. Abre sesión y vuelve a intentarlo.');
-            }
-            const uid = authData.user.id;
-
             for (const file of Array.from(fileList)) {
-                const mime = file.type || (kind === 'image' ? 'image/jpeg' : 'video/mp4');
-                const ext  = guessExt(mime) || (kind === 'image' ? '.jpg' : '.mp4');
-                const mediaId   = (crypto?.randomUUID?.() ?? `m_${Math.random().toString(36).slice(2)}${Date.now()}`);
-                const deviceKey = `media:${mediaId}`;
-
-                //setUploadStep('save-local');
-                await idbPut(deviceKey, file);
-
-                // Metadatos
-                let width: number | undefined, height: number | undefined, duration_ms: number | undefined;
-                if (kind === 'image') {
-                    const meta = await probeImage(file);
-                    width = meta.width; height = meta.height;
-                } else {
-                    const meta = await probeVideo(file);
-                    width = meta.width; height = meta.height; duration_ms = meta.duration_ms;
-                }
-
-                // INSERT en match_media (RLS valida por matches.player_id → players.user_id)
-                //setUploadStep('insert-db');
-                const ins = await supabase.from('match_media').insert({
-                    id: mediaId,
-                    match_id: match.id,
-                    player_id: match.player_id ?? null,
-                    kind,
-                    mime_type: mime,
-                    size_bytes: file.size,
-                    width, height, duration_ms,
-                    device_uri: deviceKey,
-                    storage_path: null,
-                    synced_at: null,
-                    taken_at: new Date().toISOString()
-                }).select('id').single();
-
-                if (ins.error) {
-                    console.error('INSERT match_media error:', ins.error);
-                    throw new Error(ins.error.message || 'RLS/INSERT falló en match_media');
-                }
-
-                // Upload a Storage con prefijo obligatorio
-                const storagePath = `${uid}/matches/${match.id}/${mediaId}${ext}`;
-                //setUploadStep('upload-storage');
-                const up = await supabase.storage.from('matches').upload(storagePath, file, { upsert: true, contentType: mime });
-
-                if (up.error) {
-                    console.warn('Storage.upload fallo, encolando para sync:', up.error);
-                    enqueue({ id: mediaId, key: deviceKey, matchId: match.id, ext, mime });
-                } else {
-                    // Marca sincronizado
-                    //setUploadStep('update-db');
-                    const upRes = await supabase.from('match_media')
-                    .update({ storage_path: storagePath, synced_at: new Date().toISOString() })
-                    .eq('id', mediaId);
-
-                    if (upRes.error) {
-                    console.error('UPDATE storage_path error:', upRes.error);
-                    // encolamos si el UPDATE falla por cualquier chorrada
-                    enqueue({ id: mediaId, key: deviceKey, matchId: match.id, ext, mime });
-                    }
-                }
+            await uploadMatchMedia({
+                matchId: match.id,
+                playerId: match.player_id ?? null,
+                file,
+                kind // el helper normaliza por MIME igualmente
+            });
             }
-
-            // Reintento de sync por si había red
-            //setUploadStep('sync-try');
-            if (navigator.onLine) {
-            try { await trySyncAll(); } catch (e) { console.warn('trySyncAll warning:', e); }
-            }
-
-            //setUploadStep('done');
-            console.info('✅ Media procesada');
         } catch (e: any) {
-            console.error('onFilesSelected error:', e);
             setError(e?.message || 'Error al procesar los ficheros');
         } finally {
-            // Reset del input para poder volver a elegir el MISMO archivo sin que el change se ignore
             if (inputEl) inputEl.value = '';
             setBusyMedia(false);
-            // breve limpieza del paso
-            //setTimeout(() => setUploadStep(null), 2000);
         }
-    }, [match, supabase]);
+    }, [match]);
 
     // Debounce SOLO para notas/stats
     const savingRef = useRef<NodeJS.Timeout | null>(null);
@@ -570,32 +498,34 @@ export default function LiveMatchPage() {
 
                         {/* Foto */}
                         <label className="block responsive-button">
-                          <input
-                            type="file"
-                            accept="image/*"
-                            capture="environment"
-                            className="hidden"
-                            onChange={(e) => onFilesSelected(e.currentTarget.files, 'image', e.currentTarget)}
-                          />
-                          <span className="grid place-content-center gap-1 border border-gray-300 rounded-lg text-xs">
-                            <div className="text-base text-center">{busyMedia ? '⏳' : '📷'}</div>
-                            <div className="font-medium">{t('foto') || 'Foto'}</div>
-                          </span>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                capture="environment"
+                                className="hidden"
+                                disabled={busyMedia}
+                                onChange={(e) => onFilesSelected(e.currentTarget.files, 'image', e.currentTarget)}
+                            />
+                            <span className={`grid place-content-center gap-1 border rounded-lg text-xs ${busyMedia ? 'opacity-60 pointer-events-none' : ''} border-gray-300`}>
+                                <div className="text-base text-center">{busyMedia ? '⏳' : '📷'}</div>
+                                <div className="font-medium">{t('foto') || 'Foto'}</div>
+                            </span>
                         </label>
 
                         {/* Vídeo */}
                         <label className="block responsive-button">
-                          <input
-                            type="file"
-                            accept="video/*"
-                            capture
-                            className="hidden"
-                            onChange={(e) => onFilesSelected(e.currentTarget.files, 'video', e.currentTarget)}
-                          />
-                          <span className="grid place-content-center gap-1 border border-gray-300 rounded-lg text-xs">
-                            <div className="text-base text-center">{busyMedia ? '⏳' : '🎥'}</div>
-                            <div className="font-medium">{t('video') || 'Vídeo'}</div>
-                          </span>
+                            <input
+                                type="file"
+                                accept="video/*"
+                                capture
+                                className="hidden"
+                                disabled={busyMedia}
+                                onChange={(e) => onFilesSelected(e.currentTarget.files, 'video', e.currentTarget)}
+                            />
+                            <span className={`grid place-content-center gap-1 border rounded-lg text-xs ${busyMedia ? 'opacity-60 pointer-events-none' : ''} border-gray-300`}>
+                                <div className="text-base text-center">{busyMedia ? '⏳' : '🎥'}</div>
+                                <div className="font-medium">{t('video') || 'Vídeo'}</div>
+                            </span>
                         </label>
 
                         {/* Galería */}
@@ -626,6 +556,12 @@ export default function LiveMatchPage() {
                     </div>
                 </div>
             </div>
+
+            <BlockingLoader
+                open={busyMedia}
+                title={busyMsg || (t('guardando_archivo') || 'Guardando archivo…')}
+                subtitle={t('no_cierres_app') || 'No cierres la aplicación ni bloquees la pantalla.'}
+            />
 
             {/* Modal eliminar */}
             {deleteOpen && (
