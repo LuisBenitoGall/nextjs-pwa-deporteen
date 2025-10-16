@@ -156,7 +156,6 @@ export default function MatchGalleryPage() {
   };
 }, [media, supabase]);
 
-
  // Re-genera signed URLs al recuperar foco (por si caducan)
  useEffect(() => {
    const onFocus = () => {
@@ -168,49 +167,49 @@ export default function MatchGalleryPage() {
  }, []);
   
 
-  async function handleDelete(id: string) {
-    try {
-      //setDeletingId(id);
-      const res = await fetch(`/api/match-media/${id}`, { method: 'DELETE' });
-      if (!res.ok) {
-        const { error: errMsg } = await res.json().catch(() => ({ error: 'Error' }));
-        setError(errMsg || t('error_eliminar') || 'No se pudo eliminar');
-        return;
-      }
-      setMedia(prev => prev.filter(item => item.id !== id));
-      if (selected?.id === id) {
-        setSelected(null);
-      }
-    } finally {
-      //setDeletingId(null);
-    }
-  }
-
-  function renderThumb(item: MediaRow) {
-    const src = urls[item.id];
-    if (!src) {
-      return (
-        <div className="w-full h-28 bg-gray-100 border border-dashed border-gray-300 flex items-center justify-center text-xs text-gray-500">
-          {t('sin_preview') || 'Sin vista previa'}
-        </div>
-      );
+    async function handleDelete(id: string) {
+        try {
+            //setDeletingId(id);
+            const res = await fetch(`/api/match-media/${id}`, { method: 'DELETE' });
+            if (!res.ok) {
+                const { error: errMsg } = await res.json().catch(() => ({ error: 'Error' }));
+                setError(errMsg || t('error_eliminar') || 'No se pudo eliminar');
+                return;
+            }
+            setMedia(prev => prev.filter(item => item.id !== id));
+            if (selected?.id === id) {
+                setSelected(null);
+            }
+        } finally {
+        //setDeletingId(null);
+        }
     }
 
-    if (item.kind === 'video') {
-   return <video src={src} className="w-full h-full object-cover rounded-lg bg-black" muted loop playsInline />;
- }
- // el contenedor del thumbnail ya es `relative w-full h-40`
- return (
-   <Image
-     src={src}
-     alt={item.mime_type ?? 'media'}
-     fill
-     unoptimized
-     sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 33vw"
-     className="object-cover rounded-lg"
-   />
- );
-  }
+    function renderThumb(item: MediaRow) {
+        const src = urls[item.id];
+        if (!src) {
+            return (
+                <div className="w-full h-28 bg-gray-100 p-3 border border-dashed border-gray-300 flex items-center justify-center text-xs text-gray-500">
+                {t('sin_preview') || 'Sin vista previa'}
+                </div>
+            );
+        }
+
+        if (item.kind === 'video') {
+            return <video src={src} className="w-full h-full object-cover rounded-lg bg-black" muted loop playsInline />;
+        }
+        // el contenedor del thumbnail ya es `relative w-full h-40`
+        return (
+            <Image
+            src={src}
+            alt={item.mime_type ?? 'media'}
+            fill
+            unoptimized
+            sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 33vw"
+            className="object-cover rounded-lg"
+        />
+        );
+    }
 
     if (loading) return <div className="p-6">{t('cargando') || 'Cargando…'}</div>;
     if (error) return <div className="p-6 text-red-600">{error}</div>;
@@ -282,70 +281,85 @@ export default function MatchGalleryPage() {
                             </button>
 
                             <div className="flex items-center justify-between text-xs text-gray-500">
-  <span>
-    {item.taken_at
-      ? new Date(item.taken_at).toLocaleString()
-      : new Date(item.created_at ?? '').toLocaleString()}
-  </span>
+                                <span>
+                                    {item.taken_at
+                                    ? new Date(item.taken_at).toLocaleString()
+                                    : new Date(item.created_at ?? '').toLocaleString()}
+                                </span>
 
-  <ConfirmDeleteButton
-    onConfirm={() => handleDelete(item.id)}
-    ariaLabel={t('eliminar') || 'Eliminar'}
-    confirmTitle={t('media_eliminar_confirmar') || 'Confirmar eliminación'}
-    confirmMessage={
-      t('media_eliminar_confirmar_texto') ||
-      'Si eliminas este archivo, se borrará definitivamente. Esta acción es irreversible.'
-    }
-    confirmCta={t('borrado_confirmar') || 'Confirmar borrado'}
-    cancelCta={t('cancelar') || 'Cancelar'}
-    className="inline-flex items-center rounded-xl bg-red-100 border border-red-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-red-50 whitespace-nowrap"
-  />
-</div>
-
-
-                            
+                                <ConfirmDeleteButton
+                                    onConfirm={() => handleDelete(item.id)}
+                                    ariaLabel={t('eliminar') || 'Eliminar'}
+                                    confirmTitle={t('media_eliminar_confirmar') || 'Confirmar eliminación'}
+                                    confirmMessage={
+                                    t('media_eliminar_confirmar_texto') ||
+                                    'Si eliminas este archivo, se borrará definitivamente. Esta acción es irreversible.'
+                                    }
+                                    confirmCta={t('borrado_confirmar') || 'Confirmar borrado'}
+                                    cancelCta={t('cancelar') || 'Cancelar'}
+                                    className="inline-flex items-center rounded-xl bg-red-100 border border-red-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-red-50 whitespace-nowrap"
+                                />
+                            </div>
                         </div>
                     ))}
                 </div>
             )}
 
+            {/* Modal para vista previa de medios */}
             {selected && (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
                     onClick={() => setSelected(null)}
                     role="dialog"
                     aria-modal="true"
+                    aria-label={t('galeria_detalle') || 'Detalle de la galería'}
+                    tabIndex={-1}
+                    onKeyDown={(e) => { if (e.key === 'Escape') setSelected(null); }}
                 >
                     <div
-                        className="relative max-h-full max-w-4xl w-full"
-                        onClick={e => e.stopPropagation()}
+                    className="relative max-h-full max-w-4xl w-full"
+                    onClick={e => e.stopPropagation()}
+                    role="document"
                     >
-                        <button
+                    {/* Botón cerrar: z-index alto y pointer-events habilitados */}
+                    <button
                         type="button"
                         onClick={() => setSelected(null)}
-                        className="absolute right-2 top-2 rounded-full bg-black/70 px-3 py-1 text-sm text-white hover:bg-black"
-                        >
+                        aria-label={t('cerrar') || 'Cerrar'}
+                        className="absolute right-2 top-2 z-20 pointer-events-auto rounded-full bg-black/70 px-3 py-1 text-sm text-white hover:bg-black focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    >
                         ✕
-                        </button>
-                        <div className="rounded-lg bg-black">
-                            {selected.kind === 'video' ? (
-   <video src={urls[selected.id]} className="max-h-[80vh] w-full rounded-lg bg-black" controls playsInline />
- ) : (
-   <div className="relative w-full h-[70vh]">
-     <Image
-       src={urls[selected.id]}
-       alt={selected.mime_type ?? 'media'}
-       fill
-       unoptimized
-       sizes="100vw"
-       className="object-contain rounded-lg"
-     />
-   </div>
- )}
+                    </button>
+
+                    <div className="relative rounded-lg bg-black">
+                        {selected.kind === 'video' ? (
+                        <video
+                            src={urls[selected.id]}
+                            className="max-h-[80vh] w-full rounded-lg bg-black"
+                            controls
+                            playsInline
+                        />
+                        ) : (
+                        <div className="relative w-full h-[70vh]">
+                            <Image
+                            src={urls[selected.id]}
+                            alt={selected.mime_type ?? 'media'}
+                            fill
+                            unoptimized
+                            sizes="100vw"
+                            className="object-contain rounded-lg"
+                            />
                         </div>
-                        <div className="mt-3 text-sm text-gray-200">
-                            {selected.taken_at ? new Date(selected.taken_at).toLocaleString() : selected.created_at ? new Date(selected.created_at).toLocaleString() : ''}
-                        </div>
+                        )}
+                    </div>
+
+                    <div className="mt-3 text-sm text-gray-200">
+                        {selected.taken_at
+                        ? new Date(selected.taken_at).toLocaleString()
+                        : selected.created_at
+                        ? new Date(selected.created_at).toLocaleString()
+                        : ''}
+                    </div>
                     </div>
                 </div>
             )}
