@@ -42,10 +42,15 @@ export default function SubscriptionPage() {
     // Código (solo visible si units === 1)
     const [code, setCode] = useState('');
 
-    // Planes de pago (ya con name traducido)
-    const [paidPlans, setPaidPlans] = useState<PlanChoice[]>([]);
-    const [selectedPlanId, setSelectedPlanId] = useState<string>('');
-    const [loadingPlans, setLoadingPlans] = useState(true);
+  // Planes de pago
+  const [paidPlans, setPaidPlans] = useState<Plan[]>([]);
+  const [selectedPlanId, setSelectedPlanId] = useState<string>('');
+  const [loadingPlans, setLoadingPlans] = useState(true);
+  const [subActive, setSubActive] = useState(false);
+  const [subPlanId, setSubPlanId] = useState<string>('');
+  const [subEndsAt, setSubEndsAt] = useState<string>('');
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [statusBanner, setStatusBanner] = useState<'success' | 'cancel' | ''>('');
 
     // Carga de planes (remoto con fallback local) y resolución i18n
     useEffect(() => {
@@ -81,6 +86,13 @@ export default function SubscriptionPage() {
             .eq('active', true)
             .eq('free', false)
             .order('days', { ascending: true });
+      setLoadingPlans(true);
+      const { data, error } = await supabase
+        .from('subscription_plans_view')
+        .select('id, name, days, price_cents, currency, active, free')
+        .eq('active', true)
+        .eq('free', false)
+        .order('days', { ascending: true });
 
         if (error) {
             // fallback local si falla la BD
@@ -95,15 +107,58 @@ export default function SubscriptionPage() {
         const visibles = plans.filter((p) => p.active && !p.free);
         const translated = applyI18nToPlans(visibles, t);
 
-        setPaidPlans(translated);
-        if (translated.length === 1) setSelectedPlanId(translated[0].id);
-        setLoadingPlans(false);
-        })();
+      if (visibles.length === 1) setSelectedPlanId(visibles[0].id);
 
-        return () => {
-        alive = false;
-        };
-    }, [supabase, t]);
+      const { data: latest, error: subErr } = await supabase
+        .from('subscriptions')
+        .select('plan_id, current_period_end, status, user_id')
+        .eq('user_id', user.id)
+        .order('current_period_end', { ascending: false })
+        .limit(1);
+      
+      if (subErr) {
+        console.error('[SubscriptionPage] Error fetching subscription:', subErr);
+      }
+      const s = Array.isArray(latest) ? latest[0] : null;
+      if (s) {
+        const end = s.current_period_end ? new Date(s.current_period_end) : null;
+        const statusBool = s.status === true || String(s.status || '').toLowerCase() === 'active';
+        const isActive = Boolean(end && end.getTime() > Date.now() && statusBool);
+        setSubActive(isActive);
+        if (isActive) {
+          if (s.plan_id) {
+            setSubPlanId(s.plan_id);
+            setSelectedPlanId(s.plan_id);
+          }
+          setSubEndsAt(end ? end.toISOString() : '');
+        }
+      }
+      setLoadingPlans(false);
+    })();
+    return () => { alive = false; };
+  }, [supabase, t, refreshKey]);
+
+  // Confirmar sesión de Stripe al volver de Checkout (?status=success&session_id=...)
+  useEffect(() => {
+    const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
+    const status = params.get('status');
+    const sessionId = params.get('session_id');
+    if (status === 'success') setStatusBanner('success');
+    else if (status === 'cancel') setStatusBanner('cancel');
+
+    if (status === 'success' && sessionId) {
+      (async () => {
+        try {
+          await fetch('/api/stripe/confirm-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session_id: sessionId })
+          });
+          setRefreshKey((x) => x + 1);
+        } catch {}
+      })();
+    }
+  }, []);
 
     // Checkout Stripe
     const goStripe = async () => {
@@ -125,23 +180,20 @@ export default function SubscriptionPage() {
             return;
         }
 
-        const res = await fetch('/api/stripe/create-checkout-session', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ planId, units }),
-        });
-
-        const { url, error } = await res.json();
-        if (error) {
-            setError(error);
-            return;
-        }
-        if (url) window.location.href = url;
-        else router.replace('/players/bulk-new?units=' + units);
-        } catch (e: any) {
-        setError(e?.message ?? t('checkout_error'));
-        }
-    };
+      // Iniciar Checkout con el plan seleccionado
+      const res = await fetch('/api/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId, units })
+      });
+      const { url, error } = await res.json();
+      if (error) { setError(error); return; }
+      if (url) window.location.href = url;
+      else router.replace('/players/bulk-new?units=' + units);
+    } catch (e: any) {
+      setError(e?.message ?? 'No se pudo iniciar el checkout.');
+    }
+  };
 
     // Suscripción con código (solo units === 1)
     const useCode = async (e: React.FormEvent) => {
@@ -161,14 +213,14 @@ export default function SubscriptionPage() {
         try {
         let planIdForCode: string | null = null;
 
-        if (!FAKE_MODE) {
-            const { data: plan, error: planErr } = await supabase
-            .from('subscription_plans')
-            .select('id')
-            .eq('free', true)
-            .eq('active', true)
-            .limit(1)
-            .maybeSingle();
+      if (!FAKE_MODE) {
+        const { data: plan, error: planErr } = await supabase
+          .from('subscription_plans_view')
+          .select('id')
+          .eq('free', true)
+          .eq('active', true)
+          .limit(1)
+          .maybeSingle();
 
             if (!planErr && plan?.id) planIdForCode = plan.id;
         }
@@ -207,12 +259,24 @@ export default function SubscriptionPage() {
     };
 
     const isMultiPlan = paidPlans.length > 1;
+    //const stripeDisabled = isMultiPlan && !selectedPlanId;
+
+    const formatDate = (iso?: string) => {
+      if (!iso) return '';
+      try { const d = new Date(iso); return d.toLocaleDateString(); } catch { return iso; }
+    };
 
     return (
         <div>
             <TitleH1>{t('suscripcion')}</TitleH1>
 
             <div className="p-4 space-y-4">
+                {/* Estado de suscripción */}
+                {subActive && (
+                  <div className="rounded-lg border border-green-600 bg-green-50 px-4 py-3 text-green-800">
+                    {t('suscripcion')} activa. Fin del periodo: {formatDate(subEndsAt)}
+                  </div>
+                )}
                 <p>{t('suscripcion_texto1')}</p>
 
                 {/* Cantidad de deportistas */}
@@ -232,7 +296,7 @@ export default function SubscriptionPage() {
                 {/* Si solo 1 deportista, opción de código */}
                 {units === 1 && (
                 <>
-                    <form onSubmit={useCode} className="flex gap-2">
+                    <form onSubmit={useCode} className="flex gap-2" suppressHydrationWarning>
                     <Input
                         value={code}
                         onChange={(e: any) => setCode(e.target.value)}
@@ -275,13 +339,19 @@ export default function SubscriptionPage() {
                             onClick={() => setSelectedPlanId(p.id)}
                             aria-pressed={selected}
                             className={[
-                                'relative text-left rounded-xl border p-5 transition flex flex-col justify-start',
-                                'border-green-600',
-                                'hover:bg-green-50',
-                                selected ? 'ring-2 ring-green-700 bg-green-50' : '',
+                              'relative text-left rounded-xl border p-5 transition flex flex-col justify-start',
+                              // borde verde SIEMPRE
+                              'border-green-600',
+                              // hover: solo cambia el fondo
+                              'hover:bg-green-50',
+                              // seleccionado: refuerzo visual
+                              selected ? 'ring-2 ring-green-700 bg-green-50' : ''
                             ].join(' ')}
                             >
                             <div className="text-sm text-gray-700">{p.name}</div>
+                            {subPlanId === p.id && (
+                              <span className="absolute top-3 right-3 inline-flex items-center rounded bg-green-600 px-2 py-0.5 text-xs font-semibold text-white">Activo</span>
+                            )}
 
                             <div className="mt-2 text-3xl font-extrabold">
                                 {total}€
@@ -309,10 +379,10 @@ export default function SubscriptionPage() {
                 {/* Botón Stripe */}
                 <div>
                     <Submit
-                        onClick={goStripe}
-                        text={t('suscripcion_stripe')}
-                        loadingText={t('enviando') ?? t('suscripcion_stripe')}
-                        disabled={isMultiPlan && !selectedPlanId}
+                    onClick={goStripe}
+                    text={t('suscripcion_stripe')}
+                    loadingText={t('enviando') ?? t('suscripcion_stripe')}
+                    disabled={subActive || (isMultiPlan && !selectedPlanId)}
                     />
 
                     <div className="mt-4 px-4 py-6 rounded-lg bg-gray-200 text-gray-700">
@@ -326,6 +396,12 @@ export default function SubscriptionPage() {
                     </div>
                 </div>
 
+                {statusBanner === 'success' && (
+                  <div className="rounded border p-3 bg-green-50 text-green-800">Pago completado. Tu suscripción se ha activado.</div>
+                )}
+                {statusBanner === 'cancel' && (
+                  <div className="rounded border p-3 bg-yellow-50 text-yellow-800">Pago cancelado.</div>
+                )}
                 {error && <div className="rounded border p-3 bg-red-50 text-red-700">{error}</div>}
             </div>
         </div>
