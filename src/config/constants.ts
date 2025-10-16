@@ -89,3 +89,6 @@ export const I18N_DEFAULTS = {
 } as const;
 
 export type AppConstants = typeof APP & typeof ROUTES & typeof CONTACT & typeof LIMITS;
+
+// Días permitidos previos a renovación:
+export const RENEW_WINDOW_DAYS = 15;
