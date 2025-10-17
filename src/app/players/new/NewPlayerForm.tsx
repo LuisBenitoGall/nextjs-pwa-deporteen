@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState, ChangeEvent } from 'react';
+import { useEffect, useRef, useState, ChangeEvent } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { getCurrentSeasonId } from '@/lib/seasons';
 import { LIMITS } from '@/config/constants';
@@ -32,6 +32,11 @@ export default function NewPlayerForm({
     const t = useT();
     const router = useRouter();
     const params = useSearchParams();
+
+    const topRef = useRef<HTMLDivElement>(null);
+    function scrollErrorToTop() {
+        try { topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch {}
+    }
 
     // Estado base
     const total = Math.max(1, parseInt(params.get('units') || '1', 10));
@@ -178,13 +183,14 @@ export default function NewPlayerForm({
         return `local://avatars/${playerId}/${seasonId}/${encodeURIComponent(file.name)}`;
     }
 
-    function scrollToTopSmooth() {
-        try {
-            requestAnimationFrame(() => {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            });
-        } catch {}
-    }
+    // function scrollToTopSmooth() {
+    //     try {
+    //         const el = document.scrollingElement || document.documentElement;
+    //         el.scrollTo({ top: 0, behavior: 'smooth' });
+    //         // fallback por si el navegador ignora 'smooth' con overlays
+    //         setTimeout(() => el.scrollTo({ top: 0 }), 300);
+    //     } catch {}
+    // }
 
     // Submit
     const createOne = async (e: React.FormEvent) => {
@@ -371,25 +377,24 @@ export default function NewPlayerForm({
         setInfo(`Acceso activado hasta ${new Date(data.ends_at).toLocaleDateString()}.`);
     }
     } else {
-    // Sin código: consumir asiento como ya hacías
-    const { data: seatData, error: seatErr } = await supabase.rpc('assign_free_seat_to_player', {
-        p_user_id: user.id,
-        p_player_id: playerId,
-    });
-    if (seatErr || !seatData?.ok) throw new Error(seatData?.message || t('plazas_disponibles_sin'));
-    setSeatsRemaining((s) => (typeof s === 'number' ? Math.max(0, s - 1) : s));
-    }
-
+        // Sin código: consumir asiento como ya hacías
+        const { data: seatData, error: seatErr } = await supabase.rpc('assign_free_seat_to_player', {
+            p_user_id: user.id,
+            p_player_id: playerId,
+        });
+        if (seatErr || !seatData?.ok) throw new Error(seatData?.message || t('plazas_disponibles_sin'));
+        setSeatsRemaining((s) => (typeof s === 'number' ? Math.max(0, s - 1) : s));
+        }
 
         // ✅ Redirección a Mi Panel (independiente de unidades)
         router.replace('/dashboard');
         return;
 
         } catch (e:any) {
-        setErr(e?.message ?? t('deportista_crear_error'));
-        scrollToTopSmooth();
+            setErr(e?.message ?? t('deportista_crear_error'));
+            scrollErrorToTop();
         } finally {
-        setBusy(false);
+            setBusy(false);
         }
     };
 
@@ -405,6 +410,7 @@ export default function NewPlayerForm({
 
     return (
         <div className="max-w-xl mx-auto relative">
+            <div ref={topRef} />
             <TitleH1>{t('deportista_nuevo')}</TitleH1>
 
             <div className="mt-2 mb-4 rounded border p-3 bg-blue-50 text-blue-900 text-sm">
