@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { RENEW_WINDOW_DAYS } from '@/config/constants';
 import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { tServer } from '@/i18n/server';
@@ -163,6 +164,11 @@ export default async function AccountPage() {
         };
     });
 
+    // Aviso de renovación si alguna suscripción vence en ≤ ventana de días
+    const WINDOW_DAYS = RENEW_WINDOW_DAYS ?? 15;
+    const horizon = new Date(Date.now() + WINDOW_DAYS * 24 * 60 * 60 * 1000);
+    const needsRenewBanner = subs.some(s => s.end && new Date(s.end) <= horizon);
+
     const locale = me?.locale || 'es-ES';
 
     // Server Action: borrado lógico + invalidación global de sesiones + signOut + redirect
@@ -274,6 +280,29 @@ export default async function AccountPage() {
     return (
         <div>
             <TitleH1>{t('cuenta_mi')}</TitleH1>
+
+            {/* Aviso de renovación si alguna suscripción vence en ≤ ventana de días */}
+            {needsRenewBanner && (
+                <div className="mt-4 rounded-2xl border border-amber-300 bg-amber-50 p-4 sm:p-5 shadow-sm">
+                    <div className="flex items-center justify-between gap-4">
+                        <div>
+                            <div className="text-sm font-semibold text-amber-900">
+                            {t('renovacion_proxima_titulo') || 'Tu suscripción vence pronto'}
+                            </div>
+                            <div className="text-sm text-amber-800">
+                            {t('renovacion_proxima_texto', { dias: String(WINDOW_DAYS) }) ||
+                                `Puedes renovar hasta ${WINDOW_DAYS} días antes del vencimiento.`}
+                            </div>
+                        </div>
+                        <Link
+                            href="/billing/renew"
+                            className="inline-flex items-center justify-center rounded-xl bg-green-600 px-3 py-2 text-sm font-semibold text-white hover:bg-green-700"
+                        >
+                            {t('renovar')}
+                        </Link>
+                    </div>
+                </div>
+            )}
 
             {/* Tarjeta de datos personales */}
             <section className="mt-6 rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm">

@@ -215,11 +215,11 @@ export default function LiveMatchPage() {
         let nextRival = rivalScore;
 
         if (leftIsHome) {
-        if (side === 'left') nextMy = Math.max(0, myScore + deltaLeft);
-        else                 nextRival = Math.max(0, rivalScore + deltaLeft);
+            if (side === 'left') nextMy = Math.max(0, myScore + deltaLeft);
+            else                 nextRival = Math.max(0, rivalScore + deltaLeft);
         } else {
-        if (side === 'left') nextRival = Math.max(0, rivalScore + deltaLeft);
-        else                 nextMy = Math.max(0, myScore + deltaLeft);
+            if (side === 'left') nextRival = Math.max(0, rivalScore + deltaLeft);
+            else                 nextMy = Math.max(0, myScore + deltaLeft);
         }
 
         // Optimistic UI
@@ -251,73 +251,73 @@ export default function LiveMatchPage() {
 
     const backToListUrl = `/players/${match?.player_id}/competitions/${match?.competition_id}/matches`;
 
-  async function handleDeleteConfirm() {
-    setIsDeleting(true);
-    try {
-      const res = await fetch(`/api/matches/${matchId}`, { method: 'DELETE' });
-      if (!res.ok) {
-        const { error: errMsg } = await res.json().catch(() => ({ error: 'Error' }));
-        setError(errMsg || 'No se pudo eliminar');
+    async function handleDeleteConfirm() {
+        setIsDeleting(true);
+        try {
+        const res = await fetch(`/api/matches/${matchId}`, { method: 'DELETE' });
+        if (!res.ok) {
+            const { error: errMsg } = await res.json().catch(() => ({ error: 'Error' }));
+            setError(errMsg || 'No se pudo eliminar');
+            setIsDeleting(false);
+            return;
+        }
+        window.location.href = backToListUrl;
+        } catch (e: any) {
+        setError(e?.message || 'No se pudo eliminar');
         setIsDeleting(false);
-        return;
-      }
-      window.location.href = backToListUrl;
-    } catch (e: any) {
-      setError(e?.message || 'No se pudo eliminar');
-      setIsDeleting(false);
+        }
     }
-  }
 
-  if (loading) return <div className="p-6">{t('cargando') || 'Cargando…'}</div>;
-  if (error)   return <div className="p-6 text-red-600">{error}</div>;
-  if (!match)  return <div className="p-6">{t('no_encontrado') || 'No encontrado'}</div>;
+    if (loading) return <div className="p-6">{t('cargando') || 'Cargando…'}</div>;
+    if (error)   return <div className="p-6 text-red-600">{error}</div>;
+    if (!match)  return <div className="p-6">{t('no_encontrado') || 'No encontrado'}</div>;
 
-  const myTeamName = myTeam?.name || (t('mi_equipo') || 'Mi equipo');
-  const leftLabel  = leftIsHome ? myTeamName : (match.rival_team_name || t('equipo_rival') || 'Equipo rival');
-  const rightLabel = leftIsHome ? (match.rival_team_name || t('equipo_rival') || 'Equipo rival') : myTeamName;
+    const myTeamName = myTeam?.name || (t('mi_equipo') || 'Mi equipo');
+    const leftLabel  = leftIsHome ? myTeamName : (match.rival_team_name || t('equipo_rival') || 'Equipo rival');
+    const rightLabel = leftIsHome ? (match.rival_team_name || t('equipo_rival') || 'Equipo rival') : myTeamName;
 
-  const seasonLabel =
+    const seasonLabel =
     season?.year_start && season?.year_end
       ? `${season.year_start}-${season.year_end}`
       : (t('temporada') || 'Temporada');
 
-  const leftScore  = leftIsHome ? myScore    : rivalScore;
-  const rightScore = leftIsHome ? rivalScore : myScore;
+    const leftScore  = leftIsHome ? myScore    : rivalScore;
+    const rightScore = leftIsHome ? rivalScore : myScore;
 
-  const statDefs: Array<{ key: string; label: string; type: 'number' | 'text' | 'boolean' }> = (() => {
-    const raw = sport?.stats;
-    if (!raw) return [];
-    const normalizeType = (value: unknown): 'number' | 'text' | 'boolean' => {
-      const text = String(value ?? '').toLowerCase();
-      if (text.includes('bool')) return 'boolean';
-      if (text.includes('int') || text.includes('num') || text.includes('float')) return 'number';
-      return 'text';
-    };
-    const fields: Array<{ key: string; label: string; type: 'number' | 'text' | 'boolean' }> = [];
-    const pushField = (f: any) => {
-      const key = f?.key ?? f?.name ?? f?.id;
-      if (!key) return;
-      const label = f?.label && String(f.label).trim().length ? f.label : key;
-      fields.push({ key, label, type: normalizeType(f?.type) });
-    };
-    if (Array.isArray((raw as any)?.fields)) (raw as any).fields.forEach(pushField);
-    else if (Array.isArray(raw)) (raw as any[]).forEach(pushField);
-    else if (raw && typeof raw === 'object') Object.values(raw as Record<string, any>).forEach(pushField);
-    return fields;
-  })();
+    const statDefs: Array<{ key: string; label: string; type: 'number' | 'text' | 'boolean' }> = (() => {
+        const raw = sport?.stats;
+        if (!raw) return [];
+        const normalizeType = (value: unknown): 'number' | 'text' | 'boolean' => {
+            const text = String(value ?? '').toLowerCase();
+            if (text.includes('bool')) return 'boolean';
+            if (text.includes('int') || text.includes('num') || text.includes('float')) return 'number';
+            return 'text';
+        };
+        const fields: Array<{ key: string; label: string; type: 'number' | 'text' | 'boolean' }> = [];
+        const pushField = (f: any) => {
+            const key = f?.key ?? f?.name ?? f?.id;
+            if (!key) return;
+            const label = f?.label && String(f.label).trim().length ? f.label : key;
+            fields.push({ key, label, type: normalizeType(f?.type) });
+        };
+        if (Array.isArray((raw as any)?.fields)) (raw as any).fields.forEach(pushField);
+        else if (Array.isArray(raw)) (raw as any[]).forEach(pushField);
+        else if (raw && typeof raw === 'object') Object.values(raw as Record<string, any>).forEach(pushField);
+        return fields;
+    })();
 
-  function setStat(key: string, type: 'number' | 'text' | 'boolean', value: any) {
-    setStats(prev => {
-      const next = { ...(prev || {}) };
-      let casted: any = value;
-      if (type === 'number') { casted = value === '' ? null : Number(value); if (Number.isNaN(casted)) casted = null; }
-      else if (type === 'boolean') { casted = !!value; }
-      if (casted === null || casted === undefined || (type === 'text' && casted === '')) delete next[key];
-      else next[key] = casted;
-      return next;
-    });
-    scheduleSave();
-  }
+    function setStat(key: string, type: 'number' | 'text' | 'boolean', value: any) {
+        setStats(prev => {
+        const next = { ...(prev || {}) };
+        let casted: any = value;
+        if (type === 'number') { casted = value === '' ? null : Number(value); if (Number.isNaN(casted)) casted = null; }
+        else if (type === 'boolean') { casted = !!value; }
+        if (casted === null || casted === undefined || (type === 'text' && casted === '')) delete next[key];
+        else next[key] = casted;
+        return next;
+        });
+        scheduleSave();
+    }
 
     async function flushNow() {
         setIsSaving(true);
