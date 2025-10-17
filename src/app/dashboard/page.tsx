@@ -75,6 +75,7 @@ export default async function DashboardPage() {
     .from('players')
     .select('id, full_name, created_at')
     .eq('user_id', userId)
+    .eq('status', true)
     .order('created_at', { ascending: false });
 
     // Para evitar N+1 viajes, intentamos una sola query a player_seasons filtrando por jugadores y is_current = true

@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { tServer } from '@/i18n/server';
 import { getSeatStatus } from '@/lib/seats';
+//import { revalidatePath } from 'next/cache';
 
 // Components
 import ConfirmDeleteButton from '../../components/ConfirmDeleteButton';
@@ -74,10 +75,11 @@ export default async function AccountPage() {
     };
 
     const { data: playersRaw, error: playersErr } = await supabase
-        .from('players')
-        .select('id, full_name, created_at')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false }) as unknown as { data: RawPlayer[] | null; error: any };
+    .from('players')
+    .select('id, full_name, created_at')
+    .eq('user_id', userId)
+    .eq('status', true)           
+    .order('created_at', { ascending: false }) as unknown as { data: RawPlayer[] | null; error: any };
 
     if (playersErr) {
         console.error('players error', playersErr);
@@ -266,11 +268,11 @@ export default async function AccountPage() {
 
         const { getSupabaseAdmin } = await import('@/lib/supabase/admin');
         const admin = getSupabaseAdmin();
-        const nowIso = new Date().toISOString();
 
+        // tu esquema: players.status (boolean)
         await admin
             .from('players')
-            .update({ deleted_at: nowIso, active: false })
+            .update({ status: false })      // <- esto libera asiento porque el RPC ya no contará al jugador
             .eq('id', playerId)
             .eq('user_id', user.id);
 
@@ -475,7 +477,8 @@ export default async function AccountPage() {
                             <thead>
                               <tr className="text-left text-gray-500">
                                 {/* Columna pegajosa */}
-                                <th className="py-2 pr-4 sticky left-0 z-10 bg-white">{t('nombre') || 'Nombre'}</th>
+                                {/* <th className="py-2 pr-4 sticky left-0 z-10 bg-white">{t('nombre') || 'Nombre'}</th> */}
+                                <th className="py-2 pr-4">{t('nombre') || 'Nombre'}</th>
                                 <th className="py-2 pr-4 text-center">{t('fecha_alta') || 'Fecha de alta'}</th>
                                 <th className="py-2 pr-4 text-center">{t('acciones') || 'Acciones'}</th>
                               </tr>
