@@ -122,8 +122,8 @@ export default async function RenewPage() {
                 <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 auto-rows-fr">
                     {plans.map((p) => {
                         const yrs = yearsFromDays(p.days);
-                        const total = euros(p.price_cents);
-                        const perYear = (p.price_cents / 100 / (yrs || 1)).toFixed(2);
+                        const total = euros(p.amount_cents);
+                        const perYear = (p.amount_cents / 100 / (yrs || 1)).toFixed(2);
                         const lifetime = isLifetime(p);
                         return (
                             <form
@@ -193,8 +193,8 @@ export default async function RenewPage() {
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {plans.map((p) => {
                         const yrs = yearsFromDays(p.days);
-                        const total = euros(p.price_cents);
-                        const perYear = (p.price_cents / 100 / (yrs || 1)).toFixed(2);
+                        const total = euros(p.amount_cents);
+                        const perYear = (p.amount_cents / 100 / (yrs || 1)).toFixed(2);
                         const lifetime = isLifetime(p);
                         return (
                             <label key={p.id} className="rounded-xl border border-green-600 p-5 hover:bg-green-50 transition cursor-pointer">

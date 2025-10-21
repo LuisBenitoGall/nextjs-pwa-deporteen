@@ -62,14 +62,13 @@ export default function NewPlayerForm({
     // Helpers
     function labelWithGender(c: Category) {
         switch (c.gender) {
-            case 'masculino': return `${c.name} (Masculino)`;
-            case 'femenino':  return `${c.name} (Femenino)`;
-            case 'mixto':     return `${c.name} (Mixto)`;
-            default:          return `${c.name} (Mixto)`;
+        case 'masculino': return `${c.name} (Masculino)`;
+        case 'femenino':  return `${c.name} (Femenino)`;
+        case 'mixto':     return `${c.name} (Mixto)`;
+        default:          return `${c.name} (Mixto)`;
         }
     }
 
-    // Cargar catálogos + consolidar código de acceso
     useEffect(() => {
         (async () => {
         const { data: sportsRaw, error: e1 } = await supabase
@@ -102,7 +101,6 @@ export default function NewPlayerForm({
             setErr(e2.message);
         }
 
-        // Código: preferimos el prop, si no, storage
         const code =
             initialCode ||
             (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('pending_access_code') : '') ||
@@ -113,7 +111,6 @@ export default function NewPlayerForm({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // Refrescar seats de forma no bloqueante
     useEffect(() => {
         let mounted = true;
         (async () => {
@@ -134,92 +131,89 @@ export default function NewPlayerForm({
         return () => { mounted = false; };
     }, []);
 
-    // Temporada vigente:
     useEffect(() => {
         const now = new Date();
         const y = now.getFullYear();
-        const aug1 = new Date(y, 7, 1); // 1 de agosto
+        const aug1 = new Date(y, 7, 1);
         const title = now >= aug1 ? `${y}-${y + 1}` : `${y - 1}-${y}`;
         setSeasonTitle(title);
     }, []);
 
-    // Handlers de bloques
     const addBlock = () => {
         setErr(null);
         setInfo(null);
         setBlocks((b) => {
-            if (b.length >= MAX_BLOCKS) {
-                setErr(`Máximo ${MAX_BLOCKS} participaciones por deportista.`);
-                return b;
-            }
-            return [...b, { sportId: '', competitionName: '', clubName: '', teamName: '', categoryId: null, avatarFile: null, avatarPath: null }];
+        if (b.length >= MAX_BLOCKS) {
+            setErr(`Máximo ${MAX_BLOCKS} participaciones por deportista.`);
+            return b;
+        }
+        return [...b, { sportId: '', competitionName: '', clubName: '', teamName: '', categoryId: null, avatarFile: null, avatarPath: null }];
         });
     };
     const removeBlock = (idx: number) => setBlocks((b) => b.filter((_, i) => i !== idx));
     const setBlock = <K extends keyof MembershipBlock>(i: number, key: K, value: MembershipBlock[K]) => {
         setBlocks((prev) => {
-            const copy = [...prev];
-            copy[i] = { ...copy[i], [key]: value };
-            return copy;
+        const copy = [...prev];
+        copy[i] = { ...copy[i], [key]: value };
+        return copy;
         });
     };
 
-    // Guardado local de avatar
     async function saveAvatarLocally(file: File, playerId: string, seasonId: string) {
         try {
+        // @ts-expect-error experimental API
+        if (window.showSaveFilePicker) {
             // @ts-expect-error experimental API
-            if (window.showSaveFilePicker) {
-                // @ts-expect-error experimental API
-                const handle = await window.showSaveFilePicker({
-                suggestedName: `${playerId}-${seasonId}-${file.name}`,
-                types: [{ description: 'Imagen', accept: { [file.type || 'image/*']: ['.jpg', '.jpeg', '.png', '.webp'] } }],
-                });
-                const writable = await handle.createWritable();
-                await writable.write(await file.arrayBuffer());
-                await writable.close();
-                return `fsapi://${handle.name}`;
-            }
+            const handle = await window.showSaveFilePicker({
+            suggestedName: `${playerId}-${seasonId}-${file.name}`,
+            types: [{ description: 'Imagen', accept: { [file.type || 'image/*']: ['.jpg', '.jpeg', '.png', '.webp'] } }],
+            });
+            const writable = await handle.createWritable();
+            await writable.write(await file.arrayBuffer());
+            await writable.close();
+            return `fsapi://${handle.name}`;
+        }
         } catch { /* noop */ }
         return `local://avatars/${playerId}/${seasonId}/${encodeURIComponent(file.name)}`;
     }
 
-    // function scrollToTopSmooth() {
-    //     try {
-    //         const el = document.scrollingElement || document.documentElement;
-    //         el.scrollTo({ top: 0, behavior: 'smooth' });
-    //         // fallback por si el navegador ignora 'smooth' con overlays
-    //         setTimeout(() => el.scrollTo({ top: 0 }), 300);
-    //     } catch {}
-    // }
-
-    // Submit
+    // Submit ---------------------------------------------------------------
     const createOne = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (blocks.length > MAX_BLOCKS) {
-        setErr(`Máximo ${MAX_BLOCKS} participaciones por deportista.`);
-        return;
-        }
-        setErr(null);
-        setInfo(null);
 
+        // Validación
         if (!name.trim()) {
         setErr('Introduce un nombre.');
+        scrollErrorToTop();
         return;
         }
-
+        if (blocks.length > MAX_BLOCKS) {
+        setErr(`Máximo ${MAX_BLOCKS} participaciones por deportista.`);
+        scrollErrorToTop();
+        return;
+        }
         for (let i = 0; i < blocks.length; i++) {
         if (!blocks[i].sportId) {
             setErr(`Selecciona el deporte en el bloque ${i + 1}.`);
+            scrollErrorToTop();
+            return;
+        }
+        if (!blocks[i].competitionName || !blocks[i].competitionName.trim()) {
+            setErr(`Introduce el nombre de la competición en el bloque ${i + 1}.`);
+            scrollErrorToTop();
             return;
         }
         }
 
+        setErr(null);
+        setInfo(null);
         setBusy(true);
+
         try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('No autenticado.');
 
-        // 0) Barrera seats si NO hay código
+        // 0) Barrera seats solo si NO hay código
         if (!pendingCode && seatsRemaining !== null && seatsRemaining <= 0) {
             throw new Error('No te quedan plazas disponibles para crear deportistas.');
         }
@@ -230,51 +224,30 @@ export default function NewPlayerForm({
             if (ensureErr) throw new Error(`No se pudo garantizar el perfil de usuario: ${ensureErr.message}`);
         }
 
-        // 2) Si hay código: aseguramos/creamos la suscripción ANTES de crear el jugador
-        if (pendingCode) {
-            // intenta obtener plan free desde BD
-            let freePlanId: string | null = null;
-            const { data: planFree } = await supabase
-            .from('subscription_plans')
-            .select('id')
-            .eq('free', true)
-            .eq('active', true)
-            .limit(1)
-            .maybeSingle();
-            if (planFree?.id) freePlanId = planFree.id;
-
-            // fallback a tu plan local oculto si no hubiera fila en BD
-            if (!freePlanId) freePlanId = 'free-code-hidden';
-
-            const { data: subRes, error: subErr } = await supabase.rpc('create_code_subscription', {
-            p_code: pendingCode,
-            p_plan_id: freePlanId
-            });
-            if (subErr) throw subErr;
-            const ok = Array.isArray(subRes) ? subRes[0]?.ok : subRes?.ok;
-            const msg = Array.isArray(subRes) ? subRes[0]?.message : subRes?.message;
-            if (!ok) throw new Error(msg || 'No se pudo crear/asegurar la suscripción con el código.');
-        }
-
-        // 3) A partir de aquí ya es seguro crear el jugador
+        // 2) Crear jugador + suscripción (con o sin código) en la misma operación
         const seasonId = await getCurrentSeasonId(supabase);
 
-        const { data: p, error: insErr } = await supabase
-            .from('players')
-            .insert({ full_name: name, user_id: user.id })
-            .select('id')
-            .single();
-        if (insErr) throw insErr;
-        const playerId = p!.id as string;
+        const { data: rows, error: rpcErr } = await supabase.rpc(
+            'create_player_link_subscription',
+            {
+                p_full_name: name.trim(),
+                p_birthday: null,                 // si no capturas fecha en el formulario
+                p_status: true,
+                p_code_text: pendingCode?.trim() || null
+            }
+        );
+        if (rpcErr || !rows) throw rpcErr || new Error('No se pudo crear el deportista');
 
-        // --- Avatar y participación/club/equipo/competición (tu lógica existente) ---
+        const row = Array.isArray(rows) ? rows[0] : rows;
+        const playerId: string = row.player_id;
+        //const subscriptionId: string = row.subscription_id; // por si lo quieres para algo posterior
+
+        // Avatar + player_seasons
         const firstBlock = blocks[0];
         let avatarPath: string | null = null;
         if (firstBlock?.avatarFile) {
             avatarPath = await saveAvatarLocally(firstBlock.avatarFile, playerId, seasonId);
         }
-
-        // player_seasons upsert
         {
             const { error: psErr } = await supabase
             .from('player_seasons')
@@ -285,7 +258,7 @@ export default function NewPlayerForm({
             if (psErr) throw psErr;
         }
 
-        // participations -> clubs/teams/competitions
+        // clubs/teams/competitions
         for (const b of blocks) {
             // club
             let clubId: string | null = null;
@@ -309,12 +282,7 @@ export default function NewPlayerForm({
             const { data: teamUpsert, error: teamUpErr } = await supabase
                 .from('teams')
                 .upsert(
-                {
-                    name: b.teamName.trim(),
-                    club_id: clubId,
-                    sport_id: b.sportId,
-                    player_id: playerId,
-                },
+                { name: b.teamName.trim(), club_id: clubId, sport_id: b.sportId, player_id: playerId },
                 { onConflict: 'player_id,club_id,sport_id,name' }
                 )
                 .select('id')
@@ -323,7 +291,7 @@ export default function NewPlayerForm({
             teamId = teamUpsert!.id;
             }
 
-            // competition
+            // competition (requerida ya validada)
             const payload = {
             player_id: playerId,
             season_id: seasonId,
@@ -331,70 +299,19 @@ export default function NewPlayerForm({
             club_id: clubId,
             team_id: teamId,
             category_id: b.categoryId ?? null,
-            name: b.competitionName?.trim() || null,
+            name: b.competitionName!.trim(),
             };
             const { error: cmpErr } = await supabase.from('competitions').insert(payload);
             if (cmpErr) throw cmpErr;
         }
-        // --- fin bloques de participación ---
 
-        // 4) asignación final: canjear código o consumir asiento
-    if (pendingCode) {
-    const { data, error: rpcErr } = await supabase.rpc('redeem_access_code_for_player', {
-        p_code: pendingCode,
-        p_user_id: user.id,
-        p_player_id: playerId,
-    });
-    if (rpcErr) throw rpcErr;
-
-    if (!data?.ok) {
-        const msg = String(data?.message || '').toLowerCase();
-
-        // Fallback: si el RPC dice "ya has usado este código", intenta asignar asiento de la suscripción activa
-        if (msg.includes('ya has usado') || msg.includes('ya ha usado') || msg.includes('already used')) {
-        const { data: seatData, error: seatErr } = await supabase.rpc('assign_free_seat_to_player', {
-            p_user_id: user.id,
-            p_player_id: playerId,
-        });
-        if (seatErr || !seatData?.ok) {
-            throw new Error(data?.message || t('suscripcion_codigo_error'));
-        }
-        // éxito por fallback → limpia el código
-        try {
-            sessionStorage.removeItem('pending_access_code');
-            localStorage.removeItem('pending_access_code');
-        } catch {}
-        } else {
-        // Otro motivo de fallo: muestra el mensaje original
-        throw new Error(data?.message || t('suscripcion_codigo_error'));
-        }
-    } else {
-        // Canje normal correcto
-        try {
-        sessionStorage.removeItem('pending_access_code');
-        localStorage.removeItem('pending_access_code');
-        } catch {}
-        setInfo(`Acceso activado hasta ${new Date(data.ends_at).toLocaleDateString()}.`);
-    }
-    } else {
-        // Sin código: consumir asiento como ya hacías
-        const { data: seatData, error: seatErr } = await supabase.rpc('assign_free_seat_to_player', {
-            p_user_id: user.id,
-            p_player_id: playerId,
-        });
-        if (seatErr || !seatData?.ok) throw new Error(seatData?.message || t('plazas_disponibles_sin'));
-        setSeatsRemaining((s) => (typeof s === 'number' ? Math.max(0, s - 1) : s));
-        }
-
-        // ✅ Redirección a Mi Panel (independiente de unidades)
         router.replace('/dashboard');
         return;
-
-        } catch (e:any) {
-            setErr(e?.message ?? t('deportista_crear_error'));
-            scrollErrorToTop();
+        } catch (e: any) {
+        setErr(e?.message ?? t('deportista_crear_error'));
+        scrollErrorToTop();
         } finally {
-            setBusy(false);
+        setBusy(false);
         }
     };
 
@@ -427,6 +344,7 @@ export default function NewPlayerForm({
                 onChange={(e: any) => setName(e.target.value)}
                 label={t('deportista_nombre')}
                 placeholder={t('nombre')}
+                required
                 />
 
                 <p>{t('player_nuevo_texto2')}</p>
@@ -466,6 +384,7 @@ export default function NewPlayerForm({
                             label={t('competicion')}
                             placeholder={t('competicion_nombre')}
                             helpText={t('competicion_nombre_info')}
+                            required
                         />
                         </div>
 
@@ -553,7 +472,6 @@ export default function NewPlayerForm({
                 </div>
             </form>
 
-            {/* Spinner/overlay global mientras busy */}
             {busy && (
                 <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-white/60 backdrop-blur-sm">
                 <svg className="animate-spin h-8 w-8" viewBox="0 0 24 24" fill="none" aria-hidden="true">
