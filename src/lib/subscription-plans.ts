@@ -10,7 +10,7 @@ export type Plan = {
     name?: string;
 
     days: number;
-    price_cents: number;
+    amount_cents: number;
     currency: Currency;
     active: boolean;
     free: boolean;
@@ -66,7 +66,7 @@ export const LOCAL_FREE_PLAN: Plan = {
     id: 'free-code-hidden',
     nameKey: 'plan_codigo_oculto',
     days: 15,           
-    price_cents: 0,
+    amount_cents: 0,
     currency: 'EUR',
     active: true,
     free: true,
@@ -77,7 +77,7 @@ export const LOCAL_PAID_PLANS: Plan[] = [
         id: 'plan-1y',
         nameKey: 'plan_anual',
         days: 365,
-        price_cents: 300,
+        amount_cents: 300,
         currency: 'EUR' as const,
         active: true,
         free: false,
@@ -86,7 +86,7 @@ export const LOCAL_PAID_PLANS: Plan[] = [
         id: 'plan-3y',
         nameKey: 'plan_trianual',
         days: 1095,
-        price_cents: 750,
+        amount_cents: 750,
         currency: 'EUR' as const,
         active: true,
         free: false,
@@ -95,7 +95,7 @@ export const LOCAL_PAID_PLANS: Plan[] = [
         id: 'plan-lt',
         nameKey: 'plan_siempre',
         days: 100000,
-        price_cents: 2790,
+        amount_cents: 2790,
         currency: 'EUR' as const,
         active: true,
         free: false,

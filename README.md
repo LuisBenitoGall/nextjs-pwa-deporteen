@@ -10,16 +10,33 @@
 ## QUERIES:
 	- Truncate de tablas:
 	BEGIN;
+
 	TRUNCATE TABLE
-	  public.competitions,
-	  public.teams,
+	  public.access_code_usages,
 	  public.clubs,
+	  public.competitions,
+	  public.match_media,
+	  public.payments,
 	  public.player_seasons,
 	  public.players,
-	  public.access_code_usages,
-	  public.subscriptions
+	  public.subscription_players,
+	  public.subscriptions,
+	  public.teams,
+	  public.users
 	RESTART IDENTITY CASCADE;
+
 	COMMIT;
+
+
+
+	pg_dump "postgresql://postgres:1DeP*/4rT^eEn2@db.mddziwvraoxfrytgvplk.supabase.co:5432/postgres" -f supabase_dump.sql
+
+	pg_dump "postgresql://postgres:1DeP*/4rT^eEn2@db.mddziwvraoxfrytgvplk.supabase.co:5432/postgres" -f supabase_dump.sql
+
+
+
+
+
 
 ## VARIABLES DE ENTORNO:
 	- NEXT_PUBLIC_CLOUD_MEDIA=0   Con valor 1 permite subir los archivos a Cloud

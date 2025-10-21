@@ -171,10 +171,17 @@ export default function HeroSection() {
                 </div>
             </div>
 
+            {/* Texto */}
+            <div className="max-w-7xl mx-auto grid grid-cols-1 items-center rounded-lg bg-orange-50 my-8 py-8 px-6">
+                <p className="font-bold text-gray-600 text-md text-justify">
+                    {t('home_main_text1')}
+                </p>
+            </div>
+
             {/* Bloque deportes */}
             <div className="max-w-7xl mx-auto grid grid-cols-1 items-center rounded-lg bg-green-50 my-8 py-8 px-6" id="block-sports">
                 <h2 className="text-3xl font-bold text-foreground text-center mb-3 w-full">{ t('deportes') }</h2>
-                <p className="text-center m-0 font-bold text-gray-500">Registra el historial deportivo de estos deportes</p>
+                <p className="text-center m-0 font-bold text-gray-500">{t('home_deportes_texto')}</p>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-6 mt-8">
                     {SPORT_NAMES.map((sport) => {
