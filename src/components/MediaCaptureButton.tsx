@@ -8,6 +8,8 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { cn } from '@/lib/utils';
 import { saveMedia } from '@/lib/indexeddb';
+import { isAndroid } from 'react-device-detect';
+import { useGooglePicker, fetchGoogleDriveFile } from '@/hooks/useGooglePicker';
 // Custom Tabs implementation
 const Tabs = ({ 
   value, 
@@ -131,6 +133,7 @@ export interface MediaCaptureButtonProps {
   maxSizeMB?: number;
   className?: string;
   enableRecording?: boolean; // enable video recording with MediaRecorder
+  enableDrive?: boolean;
 }
 
 export function MediaCaptureButton({ 
@@ -140,7 +143,10 @@ export function MediaCaptureButton({
   maxSizeMB = 10,
   className = '',
   enableRecording = true,
+  enableDrive = true,
 }: MediaCaptureButtonProps) {
+  const GOOGLE_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
+  const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
   const { setValue, watch, register } = useFormContext<Record<string, any>>();
   const localIdFieldName = `${name}_localId`;
   const [preview, setPreview] = useState<string | null>(null);
@@ -149,11 +155,39 @@ export function MediaCaptureButton({
   const [activeTab, setActiveTab] = useState('camera');
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const driveInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
   const [isRecording, setIsRecording] = useState(false);
+
+  const handleDriveFilePicked = async (file: any) => {
+    try {
+      const blob = await fetchGoogleDriveFile(file);
+      const driveFile = new File([blob], file.name, { type: file.mimeType });
+      processFile(driveFile);
+    } catch (err) {
+      console.error('Error processing Google Drive file:', err);
+      setError('No se pudo descargar el archivo de Google Drive.');
+    }
+  };
+
+  const { 
+    openPicker: openDrivePicker, 
+    isPickerReady: isDrivePickerReady,
+    error: drivePickerError
+  } = useGooglePicker({
+    apiKey: GOOGLE_API_KEY || '',
+    clientId: GOOGLE_CLIENT_ID || '',
+    onFilePicked: handleDriveFilePicked,
+  });
+
+  useEffect(() => {
+    if (drivePickerError) {
+      setError(drivePickerError);
+    }
+  }, [drivePickerError]);
 
   // Watch for changes to the field value
   const fieldValue = watch(name);
@@ -402,12 +436,47 @@ export function MediaCaptureButton({
           }}
           onChange={handleFileChange}
         />
+
+        {enableDrive && isAndroid && GOOGLE_API_KEY && GOOGLE_CLIENT_ID && (
+          <>
+            <button
+              type="button"
+              onClick={openDrivePicker}
+              disabled={!isDrivePickerReady}
+              className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground"
+            >
+              <Upload className="h-4 w-4" />
+              Google Drive
+            </button>
+          </>
+        )}
       </div>
 
       {error && (
         <p className="text-sm text-red-500">{error}</p>
       )}
-
+      
+      <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 cursor-pointer hover:bg-gray-50 transition-colors"
+        onClick={() => fileInputRef.current?.click()}
+      >
+        <Upload className="mb-4 h-12 w-12 text-muted-foreground" />
+        <p className="mb-4 text-center">
+          Arrastra y suelta un archivo aquí,<br />o haz clic para seleccionar
+        </p>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            fileInputRef.current?.click();
+          }}
+          className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground"
+        >
+          Seleccionar archivo
+        </button>
+        <p className="mt-2 text-sm text-muted-foreground text-center">
+          Formatos: JPG, PNG, GIF, MP4 (máx. {maxSizeMB}MB)
+        </p>
+      </div>
       {preview && (
         <div className="mt-3 relative">
           {file?.type.startsWith('image/') ? (

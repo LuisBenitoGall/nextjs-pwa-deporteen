@@ -51,10 +51,10 @@ export default async function ReceiptsPage({
 }) {
     const supabase = await createSupabaseServerClient();
 
-    // Sesión desde el servidor (cookies)
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) redirect('/login');
-    const userId = session.user.id;
+    // Usuario autenticado (validado por el servidor de Auth)
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) redirect('/login');
+    const userId = user.id;
 
     // locale del usuario (si no tiene, 'es')
     const { data: me } = await supabase
@@ -64,10 +64,6 @@ export default async function ReceiptsPage({
     .maybeSingle();
 
     const { t } = await tServer(me?.locale || undefined);
-
-    // Usuario
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) redirect('/login');
 
     const resolvedSearchParams = await searchParams;
     const sid = resolvedSearchParams?.sid || null;
@@ -109,7 +105,7 @@ export default async function ReceiptsPage({
                 <Link href="/account">
                     <button className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-3 py-2 rounded-lg shadow transition">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                            <path d="M15 18L9 12L15 6" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M15 18L9 12L15 6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                         <span>{t('cuenta_mi_volver')}</span>
                     </button>

@@ -3,14 +3,15 @@ import Stripe from 'stripe';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-//const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2024-06-20' });
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2025-08-27.basil' });
 
 export async function POST(req: NextRequest) {
   const { session_id } = await req.json();
   if (!session_id) return NextResponse.json({ ok: false, error: 'Missing session_id' }, { status: 400 });
 
-  const session = await stripe.checkout.sessions.retrieve(session_id);
+  const session = await stripe.checkout.sessions.retrieve(session_id, {
+    expand: ['subscription']
+  });
   if (session.payment_status !== 'paid') {
     return NextResponse.json({ ok: false, error: 'Unpaid session' }, { status: 400 });
   }
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
   // Leemos el plan (días y divisa)
   const { data: plan, error: planErr } = await supabase
     .from('subscription_plans')
-    .select('id, days, currency, price_cents')
+    .select('id, days, currency, amount_cents, stripe_price_id')
     .eq('id', plan_id)
     .maybeSingle();
 
@@ -40,10 +41,18 @@ export async function POST(req: NextRequest) {
   }
 
   const now = new Date();
-  const end = new Date(now.getTime() + (plan.days ?? 365) * 86400 * 1000);
+  const subscription = session.subscription as Stripe.Subscription | null;
+  const subscriptionPeriodEndUnix = subscription && typeof (subscription as any).current_period_end === 'number'
+    ? (subscription as any).current_period_end as number
+    : null;
+  const periodEnd = subscriptionPeriodEndUnix
+    ? new Date(subscriptionPeriodEndUnix * 1000)
+    : new Date(now.getTime() + (plan.days ?? 365) * 86400 * 1000);
 
   // Idempotencia: si ya existe fila con este stripe_session/subscription, no insertes
-  const extId = (session.subscription as string) || session.id;
+  const extId = typeof session.subscription === 'string'
+    ? session.subscription
+    : subscription?.id || session.id;
 
   const { data: existing } = await supabase
     .from('subscriptions')
@@ -55,15 +64,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, id: existing[0].id, already: true });
   }
 
-  const amount_total_cents = session.amount_total ?? (plan.price_cents * seats);
-  const currency = (session.currency || plan.currency || 'EUR').toUpperCase();
+  const amount_total_cents = session.amount_total ?? (plan.amount_cents ?? 0) * seats;
+  const currency = (session.currency || subscription?.currency || plan.currency || 'EUR').toUpperCase();
 
   const insertPayload = {
     user_id,
     plan_id,
     seats,
-    status: true,
-    current_period_end: end.toISOString(),
+    status: 'active',
+    current_period_end: periodEnd.toISOString(),
     stripe_customer_id: session.customer ? String(session.customer) : null,
     stripe_subscription_id: extId,
     amount: amount_total_cents,

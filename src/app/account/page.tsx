@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { tServer } from '@/i18n/server';
 import { getSeatStatus } from '@/lib/seats';
+import Stripe from 'stripe';
 //import { revalidatePath } from 'next/cache';
 
 // Components
@@ -23,6 +24,59 @@ function formatDate(d: string | Date | null | undefined, locale: string) {
     }).format(date);
 }
 
+async function openBillingPortal() {
+    'use server';
+
+    const supabase = await createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) redirect('/login');
+
+    const secret = process.env.STRIPE_SECRET_KEY;
+    if (!secret) {
+        throw new Error('Missing STRIPE_SECRET_KEY');
+    }
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+    if (!siteUrl) {
+        throw new Error('Missing NEXT_PUBLIC_SITE_URL');
+    }
+
+    const stripe = new Stripe(secret, { apiVersion: '2025-08-27.basil' });
+
+    let stripeCustomerId: string | undefined;
+    const { data: existing } = await supabase
+        .from('subscriptions')
+        .select('stripe_customer_id')
+        .eq('user_id', user.id)
+        .not('stripe_customer_id', 'is', null)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+    if (existing?.stripe_customer_id) {
+        stripeCustomerId = existing.stripe_customer_id;
+    } else {
+        const customers = await stripe.customers.list({ email: user.email || undefined, limit: 1 });
+        const customer = customers.data.find((c) => !('deleted' in c) && (c.metadata as any)?.supabase_user_id === user.id)
+            || customers.data.find((c) => !('deleted' in c))
+            || await stripe.customers.create({
+                email: user.email || undefined,
+                metadata: { supabase_user_id: user.id },
+            });
+        stripeCustomerId = customer.id;
+    }
+
+    if (!stripeCustomerId) {
+        throw new Error('Unable to resolve Stripe customer');
+    }
+
+    const session = await stripe.billingPortal.sessions.create({
+        customer: stripeCustomerId,
+        return_url: `${siteUrl}/account`,
+    });
+
+    redirect(session.url ?? '/account');
+}
+
 function formatAmount(cents: number | null | undefined, currency: string | null | undefined, locale: string) {
     if (cents == null) return '—';
     try {
@@ -39,6 +93,52 @@ async function renewSubscription(formData: FormData) {
     // Aquí puedes crear una Checkout Session de Stripe o abrir tu portal de facturación.
     // De momento redirigimos a una ruta que tú implementarás.
     redirect(`/billing/renew?sid=${encodeURIComponent(subId)}`);
+}
+
+async function cancelSubscription(formData: FormData) {
+    'use server';
+
+    const subId = String(formData.get('subId') || '');
+    if (!subId) {
+        redirect('/account');
+    }
+
+    const supabase = await createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) redirect('/login');
+
+    const { data: sub, error: subErr } = await supabase
+        .from('subscriptions')
+        .select('id, stripe_subscription_id, cancel_at_period_end, status')
+        .eq('id', subId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+    if (subErr || !sub) {
+        redirect('/account');
+    }
+
+    const secret = process.env.STRIPE_SECRET_KEY;
+    if (!secret) {
+        throw new Error('Missing STRIPE_SECRET_KEY');
+    }
+
+    if (sub.stripe_subscription_id) {
+        const stripe = new Stripe(secret, { apiVersion: '2025-08-27.basil' });
+        await stripe.subscriptions.update(sub.stripe_subscription_id, {
+            cancel_at_period_end: true,
+        });
+    }
+
+    const { getSupabaseAdmin } = await import('@/lib/supabase/admin');
+    const admin = getSupabaseAdmin();
+    await admin
+        .from('subscriptions')
+        .update({ cancel_at_period_end: true })
+        .eq('id', subId)
+        .eq('user_id', user.id);
+
+    redirect('/account');
 }
 
 export default async function AccountPage() {
@@ -112,6 +212,7 @@ export default async function AccountPage() {
         canceled_at?: string | null;
         cancel_at_period_end?: boolean | null;
         seats?: number | null;
+        stripe_subscription_id?: string | null;
     };
 
     const { data: subsRaw, error: subsErr } = await supabase
@@ -125,7 +226,8 @@ export default async function AccountPage() {
         'current_period_end',
         'created_at',
         'cancel_at_period_end',
-        'seats'
+        'seats',
+        'stripe_subscription_id'
       ].join(',')
     )
     .eq('user_id', userId)
@@ -144,10 +246,10 @@ export default async function AccountPage() {
         const start = s.created_at || null;
         const end = s.current_period_end || null;
 
-        // status activo si: status === true (o "active") y no ha pasado la fecha de fin
-        const statusBool = s?.status === true || String(s?.status || '').toLowerCase() === 'active';
+        const statusStr = String(s?.status || '').toLowerCase();
+        const statusActive = statusStr === 'active' || statusStr === 'trialing';
         const activeByDate = end ? new Date(end) >= now : true;
-        const active = statusBool && activeByDate;
+        const active = statusActive && activeByDate;
 
         // amount en céntimos -> number
         const amountCents = s.amount == null
@@ -156,13 +258,54 @@ export default async function AccountPage() {
 
         return {
             id: s.id,
-            status: active ? t('activo') : t('inactivo'),     // para la píldora de estado
             amount: amountCents,                         // en céntimos
             currency: 'EUR',                             // tu tabla no tiene currency; forzamos EUR
             start,
             end,
             active,
-            cancelAtPeriodEnd: (s as any).cancel_at_period_end === true
+            cancelAtPeriodEnd: (s as any).cancel_at_period_end === true,
+            statusLabel: active
+                ? s.cancel_at_period_end
+                    ? t('cancelada_fin_periodo') || 'Se cancelará al final del periodo'
+                    : t('activo')
+                : t('inactivo'),
+            stripeSubscriptionId: s.stripe_subscription_id || null,
+        };
+    });
+
+    type RawPayment = {
+        id: string;
+        amount_cents?: number | string | null;
+        amount?: number | string | null;
+        currency?: string | null;
+        paid_at?: string | null;
+        receipt_url?: string | null;
+        description?: string | null;
+        provider?: string | null;
+    };
+
+    const { data: paymentsRaw, error: paymentsErr } = await supabase
+        .from('payments')
+        .select('id, amount_cents, currency, paid_at, receipt_url, description, provider')
+        .eq('user_id', userId)
+        .order('paid_at', { ascending: false })
+        .limit(5) as unknown as { data: RawPayment[] | null; error: any };
+
+    if (paymentsErr) {
+        console.error('payments error', paymentsErr);
+    }
+
+    const payments = (paymentsRaw || []).map((p) => {
+        const centsRaw = p.amount_cents ?? null;
+        const cents = centsRaw == null ? null : Number(typeof centsRaw === 'string' ? centsRaw : centsRaw);
+        return {
+            id: p.id,
+            amount: cents,
+            currency: (p.currency || 'EUR')?.toUpperCase(),
+            paidAt: p.paid_at || null,
+            receiptUrl: p.receipt_url || null,
+            description: p.description || null,
+            provider: p.provider || 'stripe',
         };
     });
 
@@ -387,7 +530,7 @@ export default async function AccountPage() {
                                                 s.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                                                 }`}
                                             >
-                                                {s.active ? t('activo') : t('inactivo')}
+                                                {s.statusLabel}
                                             </span>
                                         </td>
 
@@ -416,6 +559,22 @@ export default async function AccountPage() {
                                                 {t('renovar')}
                                               </button>
                                             </form>
+                                            {s.active && !s.cancelAtPeriodEnd && s.stripeSubscriptionId && (
+                                              <form action={cancelSubscription} className="mt-2">
+                                                <input type="hidden" name="subId" value={s.id} />
+                                                <button
+                                                  type="submit"
+                                                  className="rounded-xl border border-red-300 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
+                                                >
+                                                  {t('cancelar_suscripcion') || 'Cancelar suscripción'}
+                                                </button>
+                                              </form>
+                                            )}
+                                            {s.cancelAtPeriodEnd && (
+                                              <div className="mt-2 text-xs text-amber-600">
+                                                {t('cancelada_fin_periodo_detalle') || 'La suscripción se cancelará automáticamente al finalizar el periodo actual.'}
+                                              </div>
+                                            )}
                                         </td>
                                     </tr>
                                  ))}
@@ -428,6 +587,88 @@ export default async function AccountPage() {
                     {t('recibos_ver_question')}{' '}
                     <Link href="/billing/receipts" className="underline">{t('historial_completo_ver')}</Link>.
                 </p>
+            </section>
+
+            {/* Pagos recientes y facturación */}
+            <section className="mt-8 rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <h2 className="text-base font-semibold text-gray-800">
+                        {t('pagos_recientes') || 'Pagos recientes'}
+                    </h2>
+                    <div className="flex flex-wrap gap-3">
+                        <form action={openBillingPortal}>
+                            <button
+                                type="submit"
+                                className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                            >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                    <path d="M12 3l7 4v10l-7 4-7-4V7l7-4z" stroke="currentColor" strokeWidth="1.5" />
+                                </svg>
+                                <span>{t('gestionar_en_stripe') || 'Gestionar en Stripe'}</span>
+                            </button>
+                        </form>
+                        <Link
+                            href="/billing/receipts"
+                            className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-3 py-2 text-sm font-semibold text-white hover:bg-green-700"
+                        >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                            <span>{t('ver_todos_recibos') || 'Ver todos los recibos'}</span>
+                        </Link>
+                    </div>
+                </div>
+
+                {payments.length === 0 ? (
+                    <p className="mt-4 text-sm text-gray-500">
+                        {t('cuenta_sin_recibos') || 'Aún no hay pagos registrados.'}
+                    </p>
+                ) : (
+                    <div className="mt-4 overflow-x-auto">
+                        <table className="min-w-full text-sm">
+                            <thead>
+                                <tr className="text-left text-gray-500">
+                                    <th className="py-2 pr-4">{t('fecha') || 'Fecha'}</th>
+                                    <th className="py-2 pr-4">{t('importe') || 'Importe'}</th>
+                                    <th className="py-2 pr-4">{t('descripcion') || 'Descripción'}</th>
+                                    <th className="py-2 pr-4">{t('acciones') || 'Acciones'}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {payments.map((p) => (
+                                    <tr key={p.id} className="border-t border-gray-100">
+                                        <td className="py-3 pr-4">{formatDate(p.paidAt, locale)}</td>
+                                        <td className="py-3 pr-4">
+                                            {p.amount == null
+                                                ? '—'
+                                                : formatAmount(p.amount, p.currency || 'EUR', locale)}
+                                        </td>
+                                        <td className="py-3 pr-4 text-gray-700">
+                                            {p.description || 'Stripe checkout'}
+                                        </td>
+                                        <td className="py-3 pr-4">
+                                            {p.receiptUrl ? (
+                                                <a
+                                                    href={p.receiptUrl}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="inline-flex items-center gap-1 rounded-xl border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                                                >
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                        <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                                                    </svg>
+                                                    {t('recibo_descargar') || 'Ver recibo'}
+                                                </a>
+                                            ) : (
+                                                <span className="text-gray-400">—</span>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </section>
 
             {/* Jugadores registrados */}

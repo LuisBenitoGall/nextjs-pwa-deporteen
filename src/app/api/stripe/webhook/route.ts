@@ -143,7 +143,7 @@ export async function POST(req: Request) {
         // Upsert espejo en subscriptions con periodo simple (para acceso)
         const { error: subErr } = await supabaseAdmin.from('subscriptions').upsert({
           user_id: userId,
-          status: true,
+          status: 'active',
           current_period_end: endsAt,
           cancel_at_period_end: false,
           amount: plan.amount_cents,

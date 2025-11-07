@@ -9,9 +9,9 @@ type SeatStatus = {
 export async function getSeatStatus(userId?: string): Promise<SeatStatus> {
     const supabase = await createSupabaseServerClient();
 
-    const { data: { session } } = await supabase.auth.getSession();
-    const uid = userId ?? session?.user?.id;
-    if (!uid) throw new Error('No session');
+    const { data: { user } } = await supabase.auth.getUser();
+    const uid = userId ?? user?.id;
+    if (!uid) throw new Error('No user');
 
     const { data, error } = await supabase.rpc('seats_remaining', { p_user_id: uid });
 

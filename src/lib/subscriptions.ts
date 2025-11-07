@@ -16,12 +16,13 @@ export async function getSubscriptionState(userId: string) {
   // Activa si:
   // 1) existe suscripción y
   // 2) current_period_end es futura y
-  // 3) status es true (o “active” por si algún día migra)
+  // 3) status es 'active' o 'trialing'
   let active = false;
   if (latest) {
     const end = latest.current_period_end ? new Date(latest.current_period_end) : null;
-    const statusBool = latest.status === true || String(latest.status || '').toLowerCase() === 'active';
-    active = Boolean(end && end.getTime() > Date.now() && statusBool);
+    const statusStr = String(latest.status || '').toLowerCase();
+    const isActiveStatus = statusStr === 'active' || statusStr === 'trialing';
+    active = Boolean(end && end.getTime() > Date.now() && isActiveStatus);
   }
 
   return { hasAnySubscription: hasAny, isActiveSubscription: active };
