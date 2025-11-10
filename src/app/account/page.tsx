@@ -5,6 +5,8 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { tServer } from '@/i18n/server';
 import { getSeatStatus } from '@/lib/seats';
 import Stripe from 'stripe';
+import { resolveStripeCustomerId } from '@/lib/stripe-customer';
+import { fetchUserPayments } from '@/lib/stripe-payments';
 //import { revalidatePath } from 'next/cache';
 
 // Components
@@ -42,28 +44,12 @@ async function openBillingPortal() {
 
     const stripe = new Stripe(secret, { apiVersion: '2025-08-27.basil' });
 
-    let stripeCustomerId: string | undefined;
-    const { data: existing } = await supabase
-        .from('subscriptions')
-        .select('stripe_customer_id')
-        .eq('user_id', user.id)
-        .not('stripe_customer_id', 'is', null)
-        .order('updated_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-    if (existing?.stripe_customer_id) {
-        stripeCustomerId = existing.stripe_customer_id;
-    } else {
-        const customers = await stripe.customers.list({ email: user.email || undefined, limit: 1 });
-        const customer = customers.data.find((c) => !('deleted' in c) && (c.metadata as any)?.supabase_user_id === user.id)
-            || customers.data.find((c) => !('deleted' in c))
-            || await stripe.customers.create({
-                email: user.email || undefined,
-                metadata: { supabase_user_id: user.id },
-            });
-        stripeCustomerId = customer.id;
-    }
+    const stripeCustomerId = await resolveStripeCustomerId({
+        supabase,
+        stripe,
+        userId: user.id,
+        userEmail: user.email,
+    });
 
     if (!stripeCustomerId) {
         throw new Error('Unable to resolve Stripe customer');
@@ -95,51 +81,7 @@ async function renewSubscription(formData: FormData) {
     redirect(`/billing/renew?sid=${encodeURIComponent(subId)}`);
 }
 
-async function cancelSubscription(formData: FormData) {
-    'use server';
-
-    const subId = String(formData.get('subId') || '');
-    if (!subId) {
-        redirect('/account');
-    }
-
-    const supabase = await createSupabaseServerClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) redirect('/login');
-
-    const { data: sub, error: subErr } = await supabase
-        .from('subscriptions')
-        .select('id, stripe_subscription_id, cancel_at_period_end, status')
-        .eq('id', subId)
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-    if (subErr || !sub) {
-        redirect('/account');
-    }
-
-    const secret = process.env.STRIPE_SECRET_KEY;
-    if (!secret) {
-        throw new Error('Missing STRIPE_SECRET_KEY');
-    }
-
-    if (sub.stripe_subscription_id) {
-        const stripe = new Stripe(secret, { apiVersion: '2025-08-27.basil' });
-        await stripe.subscriptions.update(sub.stripe_subscription_id, {
-            cancel_at_period_end: true,
-        });
-    }
-
-    const { getSupabaseAdmin } = await import('@/lib/supabase/admin');
-    const admin = getSupabaseAdmin();
-    await admin
-        .from('subscriptions')
-        .update({ cancel_at_period_end: true })
-        .eq('id', subId)
-        .eq('user_id', user.id);
-
-    redirect('/account');
-}
+// Función cancelSubscription eliminada - Los pagos únicos no requieren cancelación
 
 export default async function AccountPage() {
     const supabase = await createSupabaseServerClient();
@@ -273,40 +215,13 @@ export default async function AccountPage() {
         };
     });
 
-    type RawPayment = {
-        id: string;
-        amount_cents?: number | string | null;
-        amount?: number | string | null;
-        currency?: string | null;
-        paid_at?: string | null;
-        receipt_url?: string | null;
-        description?: string | null;
-        provider?: string | null;
-    };
-
-    const { data: paymentsRaw, error: paymentsErr } = await supabase
-        .from('payments')
-        .select('id, amount_cents, currency, paid_at, receipt_url, description, provider')
-        .eq('user_id', userId)
-        .order('paid_at', { ascending: false })
-        .limit(5) as unknown as { data: RawPayment[] | null; error: any };
-
-    if (paymentsErr) {
-        console.error('payments error', paymentsErr);
-    }
-
-    const payments = (paymentsRaw || []).map((p) => {
-        const centsRaw = p.amount_cents ?? null;
-        const cents = centsRaw == null ? null : Number(typeof centsRaw === 'string' ? centsRaw : centsRaw);
-        return {
-            id: p.id,
-            amount: cents,
-            currency: (p.currency || 'EUR')?.toUpperCase(),
-            paidAt: p.paid_at || null,
-            receiptUrl: p.receipt_url || null,
-            description: p.description || null,
-            provider: p.provider || 'stripe',
-        };
+    const secretForStripe = process.env.STRIPE_SECRET_KEY;
+    const { payments } = await fetchUserPayments({
+        supabase,
+        userId,
+        userEmail: user.email,
+        stripeSecret: secretForStripe,
+        limit: 5,
     });
 
     // Aviso de renovación si alguna suscripción vence en ≤ ventana de días
@@ -559,22 +474,6 @@ export default async function AccountPage() {
                                                 {t('renovar')}
                                               </button>
                                             </form>
-                                            {s.active && !s.cancelAtPeriodEnd && s.stripeSubscriptionId && (
-                                              <form action={cancelSubscription} className="mt-2">
-                                                <input type="hidden" name="subId" value={s.id} />
-                                                <button
-                                                  type="submit"
-                                                  className="rounded-xl border border-red-300 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
-                                                >
-                                                  {t('cancelar_suscripcion') || 'Cancelar suscripción'}
-                                                </button>
-                                              </form>
-                                            )}
-                                            {s.cancelAtPeriodEnd && (
-                                              <div className="mt-2 text-xs text-amber-600">
-                                                {t('cancelada_fin_periodo_detalle') || 'La suscripción se cancelará automáticamente al finalizar el periodo actual.'}
-                                              </div>
-                                            )}
                                         </td>
                                     </tr>
                                  ))}
@@ -589,12 +488,17 @@ export default async function AccountPage() {
                 </p>
             </section>
 
-            {/* Pagos recientes y facturación */}
+            {/* Facturas recientes */}
             <section className="mt-8 rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm">
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                    <h2 className="text-base font-semibold text-gray-800">
-                        {t('pagos_recientes') || 'Pagos recientes'}
-                    </h2>
+                    <div>
+                        <h2 className="text-base font-semibold text-gray-900">
+                            {t('facturas_recientes') || 'Facturas recientes'}
+                        </h2>
+                        <p className="mt-1 text-sm text-gray-500">
+                            {t('facturas_recientes_detalle') || 'Últimos pagos procesados en tu cuenta.'}
+                        </p>
+                    </div>
                     <div className="flex flex-wrap gap-3">
                         <form action={openBillingPortal}>
                             <button
@@ -614,59 +518,116 @@ export default async function AccountPage() {
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                                 <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                             </svg>
-                            <span>{t('ver_todos_recibos') || 'Ver todos los recibos'}</span>
+                            <span>{t('ver_todas_facturas') || 'Ver todas las facturas'}</span>
                         </Link>
                     </div>
                 </div>
 
                 {payments.length === 0 ? (
-                    <p className="mt-4 text-sm text-gray-500">
-                        {t('cuenta_sin_recibos') || 'Aún no hay pagos registrados.'}
-                    </p>
+                    <div className="mt-6 rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-center">
+                        <p className="text-sm font-medium text-gray-600">
+                            {t('facturas_vacias_titulo') || 'Aún no registramos pagos'}
+                        </p>
+                        <p className="mt-1 text-xs text-gray-500">
+                            {t('facturas_vacias_detalle') || 'Cuando completes un pago aparecerá aquí tu comprobante.'}
+                        </p>
+                    </div>
                 ) : (
-                    <div className="mt-4 overflow-x-auto">
-                        <table className="min-w-full text-sm">
-                            <thead>
-                                <tr className="text-left text-gray-500">
-                                    <th className="py-2 pr-4">{t('fecha') || 'Fecha'}</th>
-                                    <th className="py-2 pr-4">{t('importe') || 'Importe'}</th>
-                                    <th className="py-2 pr-4">{t('descripcion') || 'Descripción'}</th>
-                                    <th className="py-2 pr-4">{t('acciones') || 'Acciones'}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {payments.map((p) => (
-                                    <tr key={p.id} className="border-t border-gray-100">
-                                        <td className="py-3 pr-4">{formatDate(p.paidAt, locale)}</td>
-                                        <td className="py-3 pr-4">
-                                            {p.amount == null
-                                                ? '—'
-                                                : formatAmount(p.amount, p.currency || 'EUR', locale)}
-                                        </td>
-                                        <td className="py-3 pr-4 text-gray-700">
-                                            {p.description || 'Stripe checkout'}
-                                        </td>
-                                        <td className="py-3 pr-4">
+                    <div className="mt-6 flex flex-col gap-3">
+                        {payments.map((p) => {
+                            const currency = p.currency || 'EUR';
+                            const amountCents = p.amount ?? null;
+                            const refundCents = p.refundedAmount ?? 0;
+                            const statusRaw = (p.status || '').toLowerCase();
+                            const hasRefund = refundCents > 0 || statusRaw.includes('refund');
+                            const fullRefund = hasRefund && ((amountCents != null && amountCents > 0 && refundCents >= amountCents) || statusRaw === 'refunded');
+                            const partialRefund = hasRefund && !fullRefund;
+
+                            let badgeClass = 'bg-green-100 text-green-700';
+                            let badgeLabel = t('estado_pagada') || 'Pagada';
+                            if (fullRefund) {
+                                badgeClass = 'bg-red-100 text-red-700';
+                                badgeLabel = t('estado_reembolsada') || 'Reembolsada';
+                            } else if (partialRefund) {
+                                badgeClass = 'bg-amber-100 text-amber-700';
+                                badgeLabel = t('estado_reembolso_parcial') || 'Reembolso parcial';
+                            }
+
+                            const refundAmountForDisplay = fullRefund
+                                ? (refundCents > 0 ? refundCents : amountCents ?? null)
+                                : partialRefund
+                                    ? refundCents
+                                    : null;
+
+                            const refundAmountText = refundAmountForDisplay != null
+                                ? formatAmount(refundAmountForDisplay, currency, locale)
+                                : null;
+
+                            const refundDescription = refundAmountText
+                                ? fullRefund
+                                    ? (t('facturas_reembolso_total', { AMOUNT: refundAmountText }) as string) || `Reembolso total de ${refundAmountText}`
+                                    : (t('facturas_reembolso_parcial', { AMOUNT: refundAmountText }) as string) || `Reembolso parcial de ${refundAmountText}`
+                                : null;
+
+                            return (
+                                <div
+                                    key={p.id}
+                                    className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm"
+                                >
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 text-green-700">
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                    <path d="M12 21c4.5 0 8-3.5 8-8s-3.5-8-8-8-8 3.5-8 8 3.5 8 8 8Z" stroke="currentColor" strokeWidth="1.5" />
+                                                    <path d="M9.5 13.5 11 15l3.5-3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-medium text-gray-900">
+                                                    {amountCents == null
+                                                        ? '—'
+                                                        : formatAmount(amountCents, currency, locale)}
+                                                </p>
+                                                <p className="text-xs text-gray-500">
+                                                    {formatDate(p.paidAt, locale)} · {p.description || 'Stripe checkout'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${badgeClass}`}>
+                                                {badgeLabel}
+                                            </span>
                                             {p.receiptUrl ? (
-                                                <a
+                                                <Link
                                                     href={p.receiptUrl}
                                                     target="_blank"
-                                                    rel="noreferrer"
-                                                    className="inline-flex items-center gap-1 rounded-xl border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:bg-gray-50"
                                                 >
                                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                                        <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                                                        <path d="M12 5l7 7-7 7M19 12H5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                                                     </svg>
-                                                    {t('recibo_descargar') || 'Ver recibo'}
-                                                </a>
+                                                    {t('ver_factura') || 'Ver factura'}
+                                                </Link>
                                             ) : (
-                                                <span className="text-gray-400">—</span>
+                                                <span className="text-xs text-gray-400">
+                                                    {t('factura_sin_enlace') || 'Sin enlace disponible'}
+                                                </span>
                                             )}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                        </div>
+                                    </div>
+                                    {refundDescription && (
+                                        <div className="flex items-center gap-2 text-xs text-amber-700 sm:pl-13">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                <path d="M12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9Z" stroke="currentColor" strokeWidth="1.5" />
+                                                <path d="M8.5 12H12l-.5 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                            </svg>
+                                            <span>{refundDescription}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 )}
             </section>
