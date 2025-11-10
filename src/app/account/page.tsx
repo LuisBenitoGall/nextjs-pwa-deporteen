@@ -4,6 +4,9 @@ import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { tServer } from '@/i18n/server';
 import { getSeatStatus } from '@/lib/seats';
+import Stripe from 'stripe';
+import { resolveStripeCustomerId } from '@/lib/stripe-customer';
+import { fetchUserPayments } from '@/lib/stripe-payments';
 //import { revalidatePath } from 'next/cache';
 
 // Components
@@ -23,6 +26,43 @@ function formatDate(d: string | Date | null | undefined, locale: string) {
     }).format(date);
 }
 
+async function openBillingPortal() {
+    'use server';
+
+    const supabase = await createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) redirect('/login');
+
+    const secret = process.env.STRIPE_SECRET_KEY;
+    if (!secret) {
+        throw new Error('Missing STRIPE_SECRET_KEY');
+    }
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+    if (!siteUrl) {
+        throw new Error('Missing NEXT_PUBLIC_SITE_URL');
+    }
+
+    const stripe = new Stripe(secret, { apiVersion: '2025-08-27.basil' });
+
+    const stripeCustomerId = await resolveStripeCustomerId({
+        supabase,
+        stripe,
+        userId: user.id,
+        userEmail: user.email,
+    });
+
+    if (!stripeCustomerId) {
+        throw new Error('Unable to resolve Stripe customer');
+    }
+
+    const session = await stripe.billingPortal.sessions.create({
+        customer: stripeCustomerId,
+        return_url: `${siteUrl}/account`,
+    });
+
+    redirect(session.url ?? '/account');
+}
+
 function formatAmount(cents: number | null | undefined, currency: string | null | undefined, locale: string) {
     if (cents == null) return '—';
     try {
@@ -40,6 +80,8 @@ async function renewSubscription(formData: FormData) {
     // De momento redirigimos a una ruta que tú implementarás.
     redirect(`/billing/renew?sid=${encodeURIComponent(subId)}`);
 }
+
+// Función cancelSubscription eliminada - Los pagos únicos no requieren cancelación
 
 export default async function AccountPage() {
     const supabase = await createSupabaseServerClient();
@@ -112,6 +154,7 @@ export default async function AccountPage() {
         canceled_at?: string | null;
         cancel_at_period_end?: boolean | null;
         seats?: number | null;
+        stripe_subscription_id?: string | null;
     };
 
     const { data: subsRaw, error: subsErr } = await supabase
@@ -125,7 +168,8 @@ export default async function AccountPage() {
         'current_period_end',
         'created_at',
         'cancel_at_period_end',
-        'seats'
+        'seats',
+        'stripe_subscription_id'
       ].join(',')
     )
     .eq('user_id', userId)
@@ -144,10 +188,10 @@ export default async function AccountPage() {
         const start = s.created_at || null;
         const end = s.current_period_end || null;
 
-        // status activo si: status === true (o "active") y no ha pasado la fecha de fin
-        const statusBool = s?.status === true || String(s?.status || '').toLowerCase() === 'active';
+        const statusStr = String(s?.status || '').toLowerCase();
+        const statusActive = statusStr === 'active' || statusStr === 'trialing';
         const activeByDate = end ? new Date(end) >= now : true;
-        const active = statusBool && activeByDate;
+        const active = statusActive && activeByDate;
 
         // amount en céntimos -> number
         const amountCents = s.amount == null
@@ -156,14 +200,28 @@ export default async function AccountPage() {
 
         return {
             id: s.id,
-            status: active ? t('activo') : t('inactivo'),     // para la píldora de estado
             amount: amountCents,                         // en céntimos
             currency: 'EUR',                             // tu tabla no tiene currency; forzamos EUR
             start,
             end,
             active,
-            cancelAtPeriodEnd: (s as any).cancel_at_period_end === true
+            cancelAtPeriodEnd: (s as any).cancel_at_period_end === true,
+            statusLabel: active
+                ? s.cancel_at_period_end
+                    ? t('cancelada_fin_periodo') || 'Se cancelará al final del periodo'
+                    : t('activo')
+                : t('inactivo'),
+            stripeSubscriptionId: s.stripe_subscription_id || null,
         };
+    });
+
+    const secretForStripe = process.env.STRIPE_SECRET_KEY;
+    const { payments } = await fetchUserPayments({
+        supabase,
+        userId,
+        userEmail: user.email,
+        stripeSecret: secretForStripe,
+        limit: 5,
     });
 
     // Aviso de renovación si alguna suscripción vence en ≤ ventana de días
@@ -387,7 +445,7 @@ export default async function AccountPage() {
                                                 s.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                                                 }`}
                                             >
-                                                {s.active ? t('activo') : t('inactivo')}
+                                                {s.statusLabel}
                                             </span>
                                         </td>
 
@@ -428,6 +486,150 @@ export default async function AccountPage() {
                     {t('recibos_ver_question')}{' '}
                     <Link href="/billing/receipts" className="underline">{t('historial_completo_ver')}</Link>.
                 </p>
+            </section>
+
+            {/* Facturas recientes */}
+            <section className="mt-8 rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <h2 className="text-base font-semibold text-gray-900">
+                            {t('facturas_recientes') || 'Facturas recientes'}
+                        </h2>
+                        <p className="mt-1 text-sm text-gray-500">
+                            {t('facturas_recientes_detalle') || 'Últimos pagos procesados en tu cuenta.'}
+                        </p>
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                        <form action={openBillingPortal}>
+                            <button
+                                type="submit"
+                                className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                            >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                    <path d="M12 3l7 4v10l-7 4-7-4V7l7-4z" stroke="currentColor" strokeWidth="1.5" />
+                                </svg>
+                                <span>{t('gestionar_en_stripe') || 'Gestionar en Stripe'}</span>
+                            </button>
+                        </form>
+                        <Link
+                            href="/billing/receipts"
+                            className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-3 py-2 text-sm font-semibold text-white hover:bg-green-700"
+                        >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                            <span>{t('ver_todas_facturas') || 'Ver todas las facturas'}</span>
+                        </Link>
+                    </div>
+                </div>
+
+                {payments.length === 0 ? (
+                    <div className="mt-6 rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-center">
+                        <p className="text-sm font-medium text-gray-600">
+                            {t('facturas_vacias_titulo') || 'Aún no registramos pagos'}
+                        </p>
+                        <p className="mt-1 text-xs text-gray-500">
+                            {t('facturas_vacias_detalle') || 'Cuando completes un pago aparecerá aquí tu comprobante.'}
+                        </p>
+                    </div>
+                ) : (
+                    <div className="mt-6 flex flex-col gap-3">
+                        {payments.map((p) => {
+                            const currency = p.currency || 'EUR';
+                            const amountCents = p.amount ?? null;
+                            const refundCents = p.refundedAmount ?? 0;
+                            const statusRaw = (p.status || '').toLowerCase();
+                            const hasRefund = refundCents > 0 || statusRaw.includes('refund');
+                            const fullRefund = hasRefund && ((amountCents != null && amountCents > 0 && refundCents >= amountCents) || statusRaw === 'refunded');
+                            const partialRefund = hasRefund && !fullRefund;
+
+                            let badgeClass = 'bg-green-100 text-green-700';
+                            let badgeLabel = t('estado_pagada') || 'Pagada';
+                            if (fullRefund) {
+                                badgeClass = 'bg-red-100 text-red-700';
+                                badgeLabel = t('estado_reembolsada') || 'Reembolsada';
+                            } else if (partialRefund) {
+                                badgeClass = 'bg-amber-100 text-amber-700';
+                                badgeLabel = t('estado_reembolso_parcial') || 'Reembolso parcial';
+                            }
+
+                            const refundAmountForDisplay = fullRefund
+                                ? (refundCents > 0 ? refundCents : amountCents ?? null)
+                                : partialRefund
+                                    ? refundCents
+                                    : null;
+
+                            const refundAmountText = refundAmountForDisplay != null
+                                ? formatAmount(refundAmountForDisplay, currency, locale)
+                                : null;
+
+                            const refundDescription = refundAmountText
+                                ? fullRefund
+                                    ? (t('facturas_reembolso_total', { AMOUNT: refundAmountText }) as string) || `Reembolso total de ${refundAmountText}`
+                                    : (t('facturas_reembolso_parcial', { AMOUNT: refundAmountText }) as string) || `Reembolso parcial de ${refundAmountText}`
+                                : null;
+
+                            return (
+                                <div
+                                    key={p.id}
+                                    className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm"
+                                >
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 text-green-700">
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                    <path d="M12 21c4.5 0 8-3.5 8-8s-3.5-8-8-8-8 3.5-8 8 3.5 8 8 8Z" stroke="currentColor" strokeWidth="1.5" />
+                                                    <path d="M9.5 13.5 11 15l3.5-3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-medium text-gray-900">
+                                                    {amountCents == null
+                                                        ? '—'
+                                                        : formatAmount(amountCents, currency, locale)}
+                                                </p>
+                                                <p className="text-xs text-gray-500">
+                                                    {formatDate(p.paidAt, locale)} · {p.description || 'Stripe checkout'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${badgeClass}`}>
+                                                {badgeLabel}
+                                            </span>
+                                            {p.receiptUrl ? (
+                                                <Link
+                                                    href={p.receiptUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:bg-gray-50"
+                                                >
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                        <path d="M12 5l7 7-7 7M19 12H5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                                    </svg>
+                                                    {t('ver_factura') || 'Ver factura'}
+                                                </Link>
+                                            ) : (
+                                                <span className="text-xs text-gray-400">
+                                                    {t('factura_sin_enlace') || 'Sin enlace disponible'}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    {refundDescription && (
+                                        <div className="flex items-center gap-2 text-xs text-amber-700 sm:pl-13">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                <path d="M12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9Z" stroke="currentColor" strokeWidth="1.5" />
+                                                <path d="M8.5 12H12l-.5 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                            </svg>
+                                            <span>{refundDescription}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </section>
 
             {/* Jugadores registrados */}
