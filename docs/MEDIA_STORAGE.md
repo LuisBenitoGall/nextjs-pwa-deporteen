@@ -20,10 +20,11 @@ import { MediaCaptureButton } from '@/components/MediaCaptureButton';
 
 // 2. Úsalo en tu formulario
 <MediaCaptureButton
-  name="fotoPartido"  // Nombre del campo
-  label="Añadir foto"  // Texto del botón
-  maxSizeMB={10}      // Tamaño máximo en MB
-  enableRecording={true} // Activar grabación de video
+  name="fotoPartido"
+  label="Añadir foto"
+  maxSizeMB={10}
+  enableRecording={true}
+  enableDrive={true} // Activar Google Drive en Android
 />
 ```
 
@@ -95,7 +96,24 @@ await createMatchMediaRecord({
 });
 ```
 
-## 6. Solución de Problemas
+## 6. Integración con Google Drive
+
+Para habilitar la selección de archivos desde Google Drive en dispositivos Android, sigue estos pasos:
+
+1.  **Crea un proyecto en Google Cloud Console**.
+2.  **Habilita las APIs "Google Picker API" y "Google Drive API"**.
+3.  **Crea credenciales**: Necesitarás una **API Key** y un **OAuth 2.0 Client ID**.
+    -   En la configuración del Client ID, añade `http://localhost:3000` (para desarrollo) y la URL de tu sitio en producción a las "Authorized JavaScript origins".
+4.  **Añade las credenciales a tu proyecto**:
+    Crea un archivo `.env.local` en la raíz y añade:
+    ```
+    NEXT_PUBLIC_GOOGLE_API_KEY=TU_API_KEY
+    NEXT_PUBLIC_GOOGLE_CLIENT_ID=TU_CLIENT_ID
+    ```
+
+El botón de Google Drive aparecerá automáticamente en Android si la prop `enableDrive` está a `true` y las variables de entorno están configuradas.
+
+## 7. Solución de Problemas
 
 - **No se ve la previsualización**: Revisa la consola del navegador (F12)
 - **Error al subir**: Verifica la conexión a internet

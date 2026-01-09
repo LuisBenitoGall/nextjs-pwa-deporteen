@@ -114,10 +114,10 @@ export default function SubscriptionPage() {
         const s = Array.isArray(latest) ? latest[0] : null;
         if (s) {
             const end = s.current_period_end ? new Date(s.current_period_end) : null;
-            const statusBool =
-            s.status === true || String(s.status || '').toLowerCase() === 'active';
+            const statusStr = String(s.status || '').toLowerCase();
+            const isActiveStatus = statusStr === 'active' || statusStr === 'trialing';
             const isActive =
-            !!statusBool &&
+            isActiveStatus &&
             (!s.current_period_end || (end && end.getTime() > Date.now()));
             setSubActive(!!isActive);
             if (isActive) {
