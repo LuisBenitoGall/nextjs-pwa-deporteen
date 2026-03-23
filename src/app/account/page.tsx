@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { tServer } from '@/i18n/server';
 import { getSeatStatus } from '@/lib/seats';
+import { isSubscriptionActive } from '@/lib/subscriptions';
 import Stripe from 'stripe';
 import { resolveStripeCustomerId } from '@/lib/stripe-customer';
 import { fetchUserPayments } from '@/lib/stripe-payments';
@@ -187,11 +188,7 @@ export default async function AccountPage() {
     const subs = (subsRaw || []).map((s) => {
         const start = s.created_at || null;
         const end = s.current_period_end || null;
-
-        const statusStr = String(s?.status || '').toLowerCase();
-        const statusActive = statusStr === 'active' || statusStr === 'trialing';
-        const activeByDate = end ? new Date(end) >= now : true;
-        const active = statusActive && activeByDate;
+        const active = isSubscriptionActive(s);
 
         // amount en céntimos -> number
         const amountCents = s.amount == null

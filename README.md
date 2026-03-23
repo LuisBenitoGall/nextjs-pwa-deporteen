@@ -46,7 +46,8 @@
 	- url: https://nextjs-pwa-deporteen-five.vercel.app/
 
 
-
+## COMANDOS:
+	- pnpm i18n:sync   Sirve para la sincronización de los archivos de traducciones.
 
 
 

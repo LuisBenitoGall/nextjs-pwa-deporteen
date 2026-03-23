@@ -55,6 +55,7 @@ Sistema de internacionalización que soporta múltiples idiomas (español, catal
 - **Performance**: Carga eficiente de archivos de traducción
 - **Mantenibilidad**: Claves de traducción organizadas y descriptivas
 - **Completitud**: Todas las cadenas traducidas en todos los idiomas
+- **Sincronización Automática**: Sistema automático para mantener todos los idiomas sincronizados con el idioma base
 
 ## Modelo de Datos
 
@@ -92,6 +93,46 @@ Usuario cambia idioma → Actualizar users.locale → Recargar traducciones → 
 3. **Usuario selecciona inglés**: RF-1
 4. **Sistema muestra fecha en formato local**: RF-3
 5. **Sistema muestra número en formato local**: RF-3
+6. **Desarrollador sincroniza traducciones**: RF-4
+
+## RF-4: Sincronización Automática de Traducciones
+
+**Descripción**: Sistema automático que mantiene todos los archivos de traducción sincronizados con el idioma base (español).
+
+**Criterios de Aceptación**:
+- El idioma base es `es.json` (castellano)
+- Todos los archivos de traducción deben tener la misma estructura y claves que `es.json`
+- Cuando se añade una clave en `es.json`, se añade automáticamente a todos los idiomas
+- Cuando se elimina una clave en `es.json`, se elimina de todos los idiomas
+- Las claves nuevas se traducen automáticamente usando Google Translate API
+- Las traducciones existentes se preservan (no se sobrescriben)
+- Soporta claves anidadas y arrays
+- Se ejecuta mediante `pnpm i18n:sync`
+
+**Flujo**:
+1. Desarrollador modifica `src/i18n/messages/es.json`
+2. Ejecuta `pnpm i18n:sync`
+3. El script lee `es.json` como referencia
+4. Para cada idioma (en, ca, it):
+   - Compara estructura con `es.json`
+   - Añade claves faltantes (traducidas automáticamente)
+   - Elimina claves que no existen en `es.json`
+   - Preserva traducciones existentes
+5. Actualiza los archivos de traducción
+
+**Implementación**:
+- Script: `scripts/sync-i18n.ts`
+- Comando NPM: `pnpm i18n:sync`
+- Dependencia: `@vitalets/google-translate-api`
+- Idioma base: `es` (configurado en `src/i18n/config.ts`)
+- Documentación: `scripts/README-i18n-sync.md`
+
+**Notas**:
+- Las traducciones automáticas pueden requerir revisión manual para contexto específico
+- Las claves que fallan en la traducción se marcan con `[PENDIENTE]`
+- El script incluye un delay de 500ms entre traducciones y 3 reintentos automáticos para evitar rate limiting
+- Si se alcanza el rate limit, espera unos minutos y ejecuta el script nuevamente
+- Para buscar traducciones pendientes: `grep -r "\[PENDIENTE\]" src/i18n/messages/`
 
 ## Claves de Traducción Principales
 

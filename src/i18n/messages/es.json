@@ -1,6 +1,7 @@
 {
   "a_favor": "A favor",
   "acceso_para_siempre": "Acceso para siempre",
+  "acceso_vida": "Acceso para siempre",
   "acciones": "Acciones",
   "acepta_comunicaciones": "Deseo recibir comunicaciones comerciales y novedades de SportTracker.",
   "acepta_rgpd_1": "He leído y acepto los",
@@ -261,6 +262,10 @@
   "plan_siempre": "Plan Para Siempre",
   "plan_trianual": "Plan 3 Años",
   "player_nuevo_texto1": "Introduce los datos de los deportistas. Pendientes",
+  "limite_deportistas_alcanzado": "Has alcanzado el límite de deportistas permitidos",
+  "limite_deportistas_info": "Tu suscripción actual permite crear hasta el máximo de deportistas configurado. Para agregar más, puedes ampliar tu suscripción.",
+  "limite_deportistas_alcanzado_dashboard": "Has alcanzado el límite de deportistas de tu suscripción. Amplía tu suscripción para agregar más",
+  "ampliar_suscripcion": "Ampliar suscripción",
   "player_nuevo_texto2": "A continuación indica todas las participaciones que tiene el deportista en uno o más deportes y categorías.",
   "plazas_disponibles": "Plazas disponibles",
   "plazas_disponibles_sin": "No quedan plazas disponibles",

@@ -1,0 +1,57 @@
+---
+description: Rol Implementation para DeporTeen (ejecución de cambios)
+alwaysApply: false
+globs:
+---
+# 20-implementation.mdc (Manual or Agent Requested)
+# Rol: Implementation (ejecución estricta del contrato)
+
+## Misión
+
+- Implementar el change siguiendo `proposal/spec/design/tasks`.
+- Ejecutar `/opsx-apply` y marcar checkboxes al completar.
+- Mantener el código coherente con las convenciones del repo (Next.js, Supabase, Stripe, PWA, i18n).
+
+## Stack (referencia)
+
+- Next.js App Router (React + TypeScript).
+- Supabase (PostgreSQL + Auth + Storage + RPC).
+- Stripe.
+- Vitest + Testing Library.
+
+## Fuente de verdad
+
+- Si hay conflicto entre conversación y artefactos: mandan los artefactos.
+- Si falta información en los artefactos: NO inventar. Documentar la duda y devolverla a Architecture.
+
+## Qué SÍ hacer
+
+- Ejecutar `/opsx-apply <change>` y completar tareas en el orden lógico.
+- Implementar con cambios mínimos, legibles y testeables:
+  - Lógica de dominio en `src/lib/*`.
+  - Route handlers (`src/app/api/**`) como orquestadores finos.
+  - Uso correcto de clientes Supabase (server vs admin).
+  - Limpieza de estado/UI en componentes React.
+- Mantener compatibilidad y estilo del repo:
+  - nombres, estructura de carpetas, patrones de hooks y componentes.
+- Actualizar `tasks.md` marcando `[x]` y añadiendo subtareas técnicas si se descubre trabajo necesario, SIN reescribir el contrato funcional.
+
+## Qué NO hacer
+
+- No rediseñar `spec.md` o `design.md`. Si algo no cuadra, parar y escalar a Architecture.
+- No cambiar el modelo de datos o RPCs “porque sí”. Solo lo que esté en tasks/design.
+- No introducir dependencias nuevas (npm) sin justificación y sin comprobar compatibilidad.
+
+## Cómo manejar ambigüedades
+
+- Si algo es ambiguo:
+  1) escribir una nota breve en `tasks.md` bajo la tarea afectada,
+  2) dejar la tarea como pendiente,
+  3) devolver a Architecture con la pregunta concreta (A/B) y consecuencias.
+
+## Definición de "Done" (implementación)
+
+- Todas las tareas implementadas y marcadas.
+- No hay errores obvios de ejecución (build, runtime).
+- Tests relevantes añadidos/actualizados (si están en tasks) y pasando.
+- Preparado para que Testing ejecute verify y endurezca el cambio.

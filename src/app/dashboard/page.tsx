@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { tServer } from '@/i18n/server';
 import { getSeatStatus } from '@/lib/seats';
+import { isSubscriptionActive } from '@/lib/subscriptions';
 
 //Components
 import TitleH1 from '../../components/TitleH1';
@@ -52,11 +53,8 @@ export default async function DashboardPage() {
     .order('current_period_end', { ascending: false });
 
     const hasAnySubscription = !!subs && subs.length > 0;
-
-    const nowIso = new Date().toISOString();
     const latest = subs?.[0];
-    // activa si la última vence en el futuro
-    const isActiveByDate = latest ? (latest.current_period_end && latest.current_period_end > nowIso) : false;
+    const subscribed = isSubscriptionActive(latest);
 
     // 2) Seats restantes (para el botón Agregar)
     let seatsErrMsg: string | null = null;
@@ -107,7 +105,6 @@ export default async function DashboardPage() {
 
     // UI states calculados
     const showSubscribeBanner = !hasAnySubscription; // Solo si no existe ninguna
-    const subscribed = isActiveByDate;               // Para bloques de contenido
     //const canAddPlayers = seatsRemaining === null ? false : seatsRemaining > 0;
 
     // Util: formateo seguro en servidor (igual que en account)
@@ -154,7 +151,7 @@ export default async function DashboardPage() {
             <section className="mt-6 rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm">
                 <div className="mb-6 flex items-center justify-between">
                     <h2 className="text-base font-semibold text-gray-800">{t('deportistas_mis')}</h2>
-                    {canAddPlayers ? (
+                    {canAddPlayers && (
                     <Link
                         href="/players/new"
                         className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-2 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50"
@@ -164,18 +161,6 @@ export default async function DashboardPage() {
                         </svg>
                         <span>{t('deportista_agregar') || 'Añadir deportista'}</span>
                     </Link>
-                    ) : (
-                    <button
-                        type="button"
-                        className="inline-flex items-center gap-2 cursor-not-allowed rounded-xl border border-gray-300 bg-gray-300 px-2 py-1 text-sm font-medium text-white"
-                        title={t('sin_asientos_disponibles')}
-                        aria-disabled="true"
-                    >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" />
-                        </svg>
-                        <span>{t('deportista_agregar') || 'Añadir deportista'}</span>
-                    </button>
                     )}
                 </div>
 
@@ -189,6 +174,20 @@ export default async function DashboardPage() {
                         {t('tienes')} <span className="font-semibold text-gray-900">{pendingPlayers}</span>{' '}
                         {pendingPlayers === 1 ? t('deportista_pendiente') : t('deportistas_pendientes')} {t('pendientes_alta')}.
                     </p>
+                    )}
+
+                    {pendingPlayers === 0 && (
+                    <div className="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-yellow-900">
+                        <p className="text-sm font-medium">
+                            {t('limite_deportistas_alcanzado_dashboard') ?? 'Has alcanzado el límite de deportistas de tu suscripción. Amplía tu suscripción para agregar más'}
+                        </p>
+                        <Link 
+                            href="/subscription" 
+                            className="mt-2 inline-block text-sm font-medium text-yellow-800 underline hover:text-yellow-900"
+                        >
+                            {t('ampliar_suscripcion') ?? 'Ampliar suscripción'}
+                        </Link>
+                    </div>
                     )}
 
                     {players && players.length > 0 && (
@@ -236,7 +235,7 @@ export default async function DashboardPage() {
 
             {/* Aviso: tienes deportistas pero no hay suscripción activa */}
             {!subscribed && hasAnySubscription && (
-                <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:p-6 text-amber-900 shadow-sm">
+                <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:p-6 text-amber-900 shadow-sm">
                     <div className="flex items-start justify-between gap-4">
                         <div>
                             <h3 className="font-semibold">{t('suscripcion_inactiva_titulo')}</h3>

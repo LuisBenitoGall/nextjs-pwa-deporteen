@@ -1,6 +1,26 @@
 // src/lib/subscriptions.ts
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
+/** Subscription row shape used for active check (status is text per Stripe). */
+export type SubscriptionForActiveCheck = {
+  status?: string | boolean | null;
+  current_period_end?: string | null;
+};
+
+/**
+ * Determines if a subscription is considered active (canonical criterion).
+ * Active when: status IN ('active','trialing') AND (current_period_end == null OR current_period_end > now()).
+ * Pure function for easy unit testing.
+ */
+export function isSubscriptionActive(sub: SubscriptionForActiveCheck | null | undefined): boolean {
+  if (!sub) return false;
+  const statusStr = String(sub.status ?? '').toLowerCase();
+  const isActiveStatus = statusStr === 'active' || statusStr === 'trialing';
+  if (!isActiveStatus) return false;
+  const end = sub.current_period_end ? new Date(sub.current_period_end) : null;
+  return end === null || end.getTime() > Date.now();
+}
+
 export async function getSubscriptionState(userId: string) {
   const supabase = await createSupabaseServerClient();
 
@@ -12,18 +32,7 @@ export async function getSubscriptionState(userId: string) {
 
   const hasAny = !!subs?.length;
   const latest = subs?.[0] || null;
-
-  // Activa si:
-  // 1) existe suscripción y
-  // 2) current_period_end es futura y
-  // 3) status es 'active' o 'trialing'
-  let active = false;
-  if (latest) {
-    const end = latest.current_period_end ? new Date(latest.current_period_end) : null;
-    const statusStr = String(latest.status || '').toLowerCase();
-    const isActiveStatus = statusStr === 'active' || statusStr === 'trialing';
-    active = Boolean(end && end.getTime() > Date.now() && isActiveStatus);
-  }
+  const active = isSubscriptionActive(latest);
 
   return { hasAnySubscription: hasAny, isActiveSubscription: active };
 }

@@ -13,6 +13,7 @@ import {
     yearsFromDays,
     isLifetime
 } from '@/lib/subscription-plans';
+import { isSubscriptionActive } from '@/lib/subscriptions';
 import { useT } from '@/i18n/I18nProvider';
 
 // UI
@@ -113,13 +114,9 @@ export default function SubscriptionPage() {
 
         const s = Array.isArray(latest) ? latest[0] : null;
         if (s) {
+            const isActive = isSubscriptionActive(s);
             const end = s.current_period_end ? new Date(s.current_period_end) : null;
-            const statusStr = String(s.status || '').toLowerCase();
-            const isActiveStatus = statusStr === 'active' || statusStr === 'trialing';
-            const isActive =
-            isActiveStatus &&
-            (!s.current_period_end || (end && end.getTime() > Date.now()));
-            setSubActive(!!isActive);
+            setSubActive(isActive);
             if (isActive) {
             if (s.plan_id) {
                 setSubPlanId(s.plan_id);
@@ -239,12 +236,27 @@ export default function SubscriptionPage() {
             if (!planIdForCode) planIdForCode = LOCAL_FREE_PLAN.id;
 
             // 3) Crea la suscripción con la RPC (NO pases p_user_id)
+            // NOTA: La función RPC create_code_subscription debe insertar status='active' 
+            // para cumplir con el constraint subscriptions_status_check que solo permite
+            // valores como 'active', 'trialing', 'past_due', 'canceled', etc.
             const { data, error: rpcErr } = await supabase.rpc('create_code_subscription', {
             p_code: trimmed,
             p_plan_id: planIdForCode,
             // p_user_id -> omitido; la función usa auth.uid()
             });
-            if (rpcErr) { setError(rpcErr.message || t('suscripcion_codigo_error')); return; }
+            if (rpcErr) {
+                // Detectar específicamente el error de constraint de status
+                // Este error ocurre cuando la función RPC intenta insertar un valor de status
+                // que no cumple con el constraint subscriptions_status_check
+                if (rpcErr.message?.includes('subscriptions_status_check') || 
+                    rpcErr.message?.includes('violates check constraint')) {
+                    console.error('[create_code_subscription] Constraint error - La función RPC debe usar status="active":', rpcErr);
+                    setError('Error al crear la suscripción. El código introducido no es válido o hubo un problema con la configuración del sistema.');
+                } else {
+                    setError(rpcErr.message || t('suscripcion_codigo_error'));
+                }
+                return;
+            }
 
             const res = Array.isArray(data) ? data[0] : data;
             if (!res?.ok || !res?.subscription_id) {
@@ -357,33 +369,33 @@ export default function SubscriptionPage() {
                                     selected ? 'ring-2 ring-green-700 bg-green-50' : '',
                                 ].join(' ')}
                                 >
-                                <div className="text-sm text-gray-700">{p.name}</div>
-                                {subPlanId === p.id && (
-                                    <span className="absolute top-3 right-3 inline-flex items-center rounded bg-green-600 px-2 py-0.5 text-xs font-semibold text-white">
-                                    Activo
-                                    </span>
-                                )}
-
-                                <div className="mt-2 text-3xl font-extrabold">
-                                    {total}€
-                                    <span className="text-sm ml-2 font-normal text-gray-600">
-                                    x {t('jugador')}
-                                    </span>
-                                </div>
-
-                                <div className="mt-1 text-xs text-gray-600">
-                                    {lifetime ? (
-                                    <>{t('acceso_vida')}</>
-                                    ) : (
-                                    <>
-                                        ≈ {perYear} € / {t('any')} · {t('duracion')}: {p.days} {t('dias')}{' '}
-                                        {yrs >= 1 ? `(≈${yrs} ${t('años')})` : null}
-                                    </>
+                                    <div className="text-sm text-gray-700">{p.name}</div>
+                                    {subPlanId === p.id && (
+                                        <span className="absolute top-3 right-3 inline-flex items-center rounded bg-green-600 px-2 py-0.5 text-xs font-semibold text-white">
+                                        Activo
+                                        </span>
                                     )}
-                                </div>
+
+                                    <div className="mt-2 text-3xl font-extrabold">
+                                        {total}€
+                                        <span className="text-sm ml-2 font-normal text-gray-600">
+                                        x {t('jugador')}
+                                        </span>
+                                    </div>
+
+                                    <div className="mt-1 text-xs text-gray-600">
+                                        {lifetime ? (
+                                        <>{t('acceso_vida')}</>
+                                        ) : (
+                                        <>
+                                            ≈ {perYear} € / {t('any')} · {t('duracion')}: {p.days} {t('dias')}{' '}
+                                            {yrs >= 1 ? `(≈${yrs} ${t('años')})` : null}
+                                        </>
+                                        )}
+                                    </div>
                                 </button>
                             );
-                            })}
+                        })}
                     </div>
                 )}
 
@@ -409,12 +421,12 @@ export default function SubscriptionPage() {
 
                 {statusBanner === 'success' && (
                     <div className="rounded border p-3 bg-green-50 text-green-800">
-                        Pago completado. Tu suscripción se ha activado.
+                        {t('pago_completado')}
                     </div>
                 )}
                 {statusBanner === 'cancel' && (
                     <div className="rounded border p-3 bg-yellow-50 text-yellow-800">
-                        Pago cancelado.
+                        {t('pago_cancelado')}
                     </div>
                 )}
                 {error && <div className="rounded border p-3 bg-red-50 text-red-700">{error}</div>}

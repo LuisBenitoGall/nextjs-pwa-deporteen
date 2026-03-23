@@ -107,13 +107,21 @@ Sistema para crear, gestionar y visualizar jugadores (deportistas) asociados a u
 
 ## Modelo de Datos
 
-### Tabla `players`
-- `id` (UUID, PK)
-- `user_id` (UUID, FK a users)
-- `full_name` (text)
-- `birthday` (date, nullable)
-- `status` (boolean)
-- `created_at` (timestamp)
+### Tabla `players` (Schema Real Verificado)
+
+**Columnas:**
+- `id` (UUID, PK): Identificador único del jugador
+- `user_id` (UUID, FK, NOT NULL): Referencia al usuario propietario (FOREIGN KEY -> auth.users.id)
+- `full_name` (text, NOT NULL): Nombre completo del jugador
+- `birthday` (date, nullable): Fecha de nacimiento del jugador (puede ser NULL)
+- `status` (boolean, DEFAULT true, NOT NULL): Estado del jugador (true = activo, false = inactivo/soft delete)
+- `created_at` (timestamp with time zone, DEFAULT now()): Fecha y hora de creación del registro
+- `updated_at` (timestamp with time zone, DEFAULT now()): Fecha y hora de última actualización
+
+**Notas importantes:**
+- La columna de usuario propietario se llama `user_id` (verificado en schema real)
+- El campo `status` es boolean, no text
+- RLS aplicado: usuarios solo pueden ver/modificar sus propios jugadores
 
 ### Tabla `player_seasons`
 - `player_id` (UUID, FK)
