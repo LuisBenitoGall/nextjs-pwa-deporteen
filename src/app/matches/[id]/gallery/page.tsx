@@ -12,6 +12,8 @@ import { useWakeLock } from '@/lib/useWakeLock';
 //Componentes
 import ConfirmDeleteButton from '@/components/ConfirmDeleteButton';
 import TitleH1 from '@/components/TitleH1';
+import { R2FileUploader } from '@/components/storage/R2FileUploader';
+import type { UploadResult } from '@/hooks/useR2Upload';
 
 type MatchRow = {
   id: string;
@@ -39,6 +41,7 @@ export default function MatchGalleryPage() {
   const [match, setMatch] = useState<MatchRow | null>(null);
   const [media, setMedia] = useState<MediaRow[]>([]);
   const [selected, setSelected] = useState<MediaRow | null>(null);
+  const [hasStorageAddon, setHasStorageAddon] = useState(false);
   //const [deletingId, setDeletingId] = useState<string | null>(null);
     const [urls, setUrls] = useState<Record<string, string>>({}); // id -> src usable
     const blobUrlsRef = useRef<string[]>([]);
@@ -64,6 +67,14 @@ export default function MatchGalleryPage() {
       window.removeEventListener('keydown', onFirst);
     };
   }, [wakeRequest]);
+
+  // Verificar add-on de R2 Storage
+  useEffect(() => {
+    fetch('/api/storage/addon-status')
+      .then(r => r.json())
+      .then(d => setHasStorageAddon(d?.hasAddon === true))
+      .catch(() => setHasStorageAddon(false));
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -259,6 +270,31 @@ export default function MatchGalleryPage() {
 
             <div className="bg-gray-200 rounded-xl p-3 mb-4">
                 <p className="font-xs">{t('galeria_aviso')}</p>
+            </div>
+
+            {/* Subida a Cloudflare R2 — solo usuarios con add-on */}
+            <div className="mb-6">
+              <R2FileUploader
+                matchId={matchId}
+                playerId={match?.player_id ?? null}
+                hasStorageAddon={hasStorageAddon}
+                onUploadComplete={(result: UploadResult) => {
+                  // Añadir el nuevo media al estado local sin recargar
+                  const newItem: MediaRow = {
+                    id: result.id,
+                    kind: 'image',
+                    storage_path: result.objectKey,
+                    device_uri: null,
+                    mime_type: null,
+                    taken_at: new Date().toISOString(),
+                    created_at: new Date().toISOString(),
+                  };
+                  setMedia(prev => [newItem, ...prev]);
+                }}
+                onUpgradeClick={() => {
+                  window.location.href = '/billing';
+                }}
+              />
             </div>
 
             {media.length === 0 ? (
