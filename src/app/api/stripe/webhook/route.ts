@@ -102,6 +102,30 @@ export async function POST(req: Request) {
         }
       }
     }
+
+    // ── Activar add-on de Cloudflare R2 Storage ────────────────────────────
+    const r2AddonPriceId = process.env.STRIPE_R2_ADDON_PRICE_ID;
+    if (userId && price?.id && r2AddonPriceId && price.id === r2AddonPriceId) {
+      const { error: addonErr } = await supabaseAdmin
+        .from('storage_addons')
+        .upsert(
+          {
+            user_id: userId,
+            status: 'active',
+            stripe_price_id: price.id,
+            stripe_charge_id: full.payment_intent as string | null,
+            activated_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'user_id' }
+        );
+
+      if (addonErr) {
+        console.error('[Webhook] Error activating R2 storage addon:', addonErr);
+      } else {
+        console.log('[Webhook] R2 Storage add-on activated for user:', userId);
+      }
+    }
   }
 
   // Pago fallido
