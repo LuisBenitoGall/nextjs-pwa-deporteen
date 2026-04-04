@@ -1,3 +1,7 @@
+## Documentación
+
+- Visión global del repositorio (stack, carpetas, rutas): [`docs/PROJECT-OVERVIEW.md`](docs/PROJECT-OVERVIEW.md).
+
 ## PNPM:
 	- Comandos reinstalación:
 		- npx -y pnpm@8.15.4 install
@@ -27,15 +31,13 @@
 
 	COMMIT;
 
+	# Copia de seguridad (usar la cadena de conexión del panel de Supabase; no commitear credenciales):
+	# pg_dump "postgresql://postgres:***@db.<ref>.supabase.co:5432/postgres" -f supabase_dump.sql
 
-
-	pg_dump "postgresql://postgres:1DeP*/4rT^eEn2@db.mddziwvraoxfrytgvplk.supabase.co:5432/postgres" -f supabase_dump.sql
-
-	pg_dump "postgresql://postgres:1DeP*/4rT^eEn2@db.mddziwvraoxfrytgvplk.supabase.co:5432/postgres" -f supabase_dump.sql
-
-
-
-
+## SUPABASE:
+	- Rol Auditor: 
+		- user: auditor_user
+		- pwd: 71DptR*/En$
 
 
 ## VARIABLES DE ENTORNO:
@@ -69,7 +71,7 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+You can start editing the page by modifying `src/app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 

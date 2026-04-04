@@ -1,7 +1,8 @@
+import 'server-only';
 import { type User } from '@supabase/supabase-js';
 
 function parseAdminEmails(): string[] {
-  const raw = process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? process.env.ADMIN_EMAILS ?? '';
+  const raw = process.env.ADMIN_EMAILS ?? '';
   if (!raw) return [];
   return raw
     .split(',')

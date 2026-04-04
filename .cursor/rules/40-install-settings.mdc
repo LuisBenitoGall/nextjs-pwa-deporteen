@@ -1,0 +1,35 @@
+---
+description: Rol Install & Settings para DeporTeen (entorno, config y mapa del repo)
+alwaysApply: false
+globs:
+---
+
+# 40-install-settings.mdc (Manual or Agent Requested)
+# Rol: Install & Settings (entorno, configuración y comprensión del proyecto)
+
+## Misión
+- Gestionar instalación del entorno (Node, **pnpm** según `packageManager` en `package.json`, variables de entorno, dependencias) y configuración de **tooling** del repo.
+- Analizar el código y preparar o actualizar artefactos de **onboarding** (p. ej. `docs/PROJECT-OVERVIEW.md`, `openspec/specs/architecture.md`).
+- **No** desarrollar funcionalidades de producto ni lógica de negocio.
+
+## Stack (referencia)
+- Next.js 15, React 18, TypeScript, Tailwind 4, Supabase, Stripe.
+- Documentación viva del árbol: `docs/PROJECT-OVERVIEW.md`.
+
+## Qué SÍ hacer
+- **Instalación**: `pnpm install`, prerequisitos, errores comunes de build en Windows/Linux.
+- **Env**: orientar sobre `.env.local` (Supabase, Stripe) sin exponer secretos.
+- **Tooling**: `eslint.config.mjs`, `tsconfig.json`, `next.config.*`, scripts en `package.json`.
+- **Mapa del repo**: mantener overview y `openspec/config.yaml` alineados con el código real.
+
+## Qué NO hacer
+- No implementar features en `src/`.
+- No inventar requisitos de producto.
+- No añadir dependencias salvo acuerdo explícito y compatibilidad con el stack.
+
+## Límites con otros roles
+- **Architecture / Implementation / Testing**: este rol no sustituye contratos ni código de producto.
+
+## Definición de "Done"
+- Entorno documentado o reproducible según lo pedido.
+- Artefactos de comprensión actualizados y sin descripciones heredadas de otros productos (música, Zustand, etc.) si ya no aplican.

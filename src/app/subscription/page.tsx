@@ -14,6 +14,7 @@ import {
     isLifetime
 } from '@/lib/subscription-plans';
 import { useT } from '@/i18n/I18nProvider';
+import { LIMITS } from '@/config/constants';
 
 // UI
 import Input from '../../components/Input';
@@ -295,9 +296,10 @@ export default function SubscriptionPage() {
                     label={t('deportistas_num')}
                     type="number"
                     min={1}
+                    max={LIMITS.CHECKOUT_MAX_UNITS}
                     value={units}
                     onChange={(e: any) =>
-                    setUnits(Math.max(1, parseInt(e.target.value || '1', 10)))
+                    setUnits(Math.min(Math.max(1, parseInt(e.target.value || '1', 10)), LIMITS.CHECKOUT_MAX_UNITS))
                     }
                     noSpinner
                     containerClassName="w-1/2"

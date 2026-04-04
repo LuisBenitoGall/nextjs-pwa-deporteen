@@ -1,0 +1,9 @@
+schema: spec-driven
+
+# Contexto del proyecto (OpenSpec / IA)
+context: |
+  DeporTeen: PWA Next.js 15 (App Router) para estadísticas deportivas (jugadores,
+  partidos, competiciones), Supabase Auth + datos, Stripe para suscripciones/pagos.
+  Código en src/ (@/ alias). i18n propio ES/EN/CA en src/i18n/. Sin Zustand en el
+  stack actual. PWA: manifest + service worker. Tests: Vitest en dependencias.
+  Documentación de alto nivel: docs/PROJECT-OVERVIEW.md; reglas: .cursor/rules/00-project.mdc.

@@ -299,7 +299,33 @@ export default async function AccountPage() {
             .eq('user_id', user_id);
         if (pErr) console.error('deleteAccount: players update error', pErr);
 
-        // TODO: añade aquí otras tablas relacionadas (teams, subscriptions, media, etc.)
+        // Cancelar suscripciones activas
+        const { error: subErr } = await admin
+            .from('subscriptions')
+            .update({ status: 'cancelled', cancel_at_period_end: true, updated_at: nowIso })
+            .eq('user_id', user_id);
+        if (subErr) console.error('deleteAccount: subscriptions cancel error', subErr);
+
+        // Borrado lógico de match_media
+        const { error: mediaErr } = await admin
+            .from('match_media')
+            .update({ deleted_at: nowIso } as any)
+            .eq('user_id', user_id);
+        if (mediaErr) console.error('deleteAccount: match_media delete error', mediaErr);
+
+        // Desvincular teams del usuario
+        const { error: teamsErr } = await admin
+            .from('teams')
+            .update({ user_id: null } as any)
+            .eq('user_id', user_id);
+        if (teamsErr) console.error('deleteAccount: teams unlink error', teamsErr);
+
+        // Desvincular competitions del usuario
+        const { error: compErr } = await admin
+            .from('competitions')
+            .update({ user_id: null } as any)
+            .eq('user_id', user_id);
+        if (compErr) console.error('deleteAccount: competitions unlink error', compErr);
 
         // Invalidación global de sesiones (Admin API; requiere SERVICE_ROLE)
         // Invalida todas las sesiones si el SDK lo soporta; si no, continúa.

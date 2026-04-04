@@ -1,0 +1,19 @@
+---
+description: Índice de reglas DeporTeen — editar los archivos .mdc numerados
+alwaysApply: false
+globs:
+---
+
+# Reglas en `.cursor/rules/`
+
+El contenido normativo está en archivos **`.mdc`** (no duplicar aquí):
+
+| Archivo | Rol |
+|---------|-----|
+| `00-project.mdc` | Contexto global (**alwaysApply**) |
+| `10-architecture.mdc` | Contratos OpenSpec |
+| `20-implementation.mdc` | Implementación según tasks |
+| `30-testing.mdc` | Calidad y tests |
+| `40-install-settings.mdc` | Instalación, tooling, documentación de mapa |
+
+Visión general del código: `docs/PROJECT-OVERVIEW.md`.

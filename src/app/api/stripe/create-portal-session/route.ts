@@ -17,12 +17,25 @@ export async function POST() {
 
     const stripe = new Stripe(secret, { apiVersion: '2025-08-27.basil' });
 
-    // Find or create customer by email
-    const customers = await stripe.customers.list({ email: user.email || undefined, limit: 1 });
-    const customer = customers.data[0] || await stripe.customers.create({
-      email: user.email || undefined,
-      metadata: { supabase_user_id: user.id },
+    // Look up customer by supabase_user_id metadata first (deterministic),
+    // then fall back to email (legacy / manual accounts).
+    let customer: Stripe.Customer | undefined;
+    const byMeta = await stripe.customers.search({
+      query: `metadata['supabase_user_id']:'${user.id}'`,
+      limit: 1,
     });
+    if (byMeta.data.length > 0) {
+      customer = byMeta.data[0];
+    } else {
+      const byEmail = await stripe.customers.list({ email: user.email || undefined, limit: 1 });
+      customer = byEmail.data[0];
+    }
+    if (!customer) {
+      customer = await stripe.customers.create({
+        email: user.email || undefined,
+        metadata: { supabase_user_id: user.id },
+      });
+    }
 
     const returnUrl = `${siteUrl}/subscription`;
     const session = await stripe.billingPortal.sessions.create({

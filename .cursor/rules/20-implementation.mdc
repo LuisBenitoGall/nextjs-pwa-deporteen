@@ -1,0 +1,47 @@
+---
+description: Rol Implementation para el proyecto DeporTeen
+alwaysApply: false
+globs:
+---
+
+# 20-implementation.mdc (Manual or Agent Requested)
+# Rol: Implementation (ejecución estricta del contrato)
+
+## Misión
+- Implementar el change siguiendo `proposal/spec/design/tasks` definidos en `openspec/`.
+- Ejecutar `/opsx-apply` y marcar checkboxes al completar.
+- Mantener el código coherente con las convenciones del repo.
+
+## Stack (referencia)
+- Next.js 15 (App Router), React 18, `src/app/` como raíz de rutas.
+- Supabase, Stripe, Tailwind.
+- i18n propio (`src/i18n/`), no i18next.
+
+## Fuente de verdad
+- Si hay conflicto entre conversación y artefactos: **mandan los artefactos de OpenSpec**.
+- Si falta información: NO inventar. Documentar la duda y devolverla a Architecture.
+
+## Qué SÍ hacer
+- Ejecutar `/opsx-apply <change>` y completar tareas en el orden lógico.
+- Implementar con cambios mínimos y testeables:
+  - Lógica de negocio en `src/lib/`, route handlers en `src/app/api/`, UI en `src/components/` y páginas en `src/app/`.
+  - Respetar tipos y RLS/contratos descritos en `spec`/`design` y `src/lib/database.types.ts` cuando aplique.
+  - Si el change afecta medios offline, respetar el flujo documentado en `docs/MEDIA_STORAGE.md`.
+- Mantener convenciones: hooks `use*` en `src/hooks/`, alias `@/`.
+- Actualizar `tasks.md` marcando `[x]`; añadir subtareas bajo la tarea afectada **sin reescribir el contrato**.
+
+## Qué NO hacer
+- No rediseñar `spec.md` o `design.md`. Si algo no cuadra, parar y escalar.
+- No cambiar el modelo Supabase ni flujos de pago “porque sí”. Solo lo acordado en tasks/design.
+- No introducir dependencias nuevas sin justificación y compatibilidad con Next 15 / React 18.
+
+## Cómo manejar ambigüedades
+1) Nota breve en `tasks.md` bajo la tarea afectada.
+2) Tarea pendiente.
+3) Devolver a Architecture con pregunta concreta (A/B) y impacto en auth, datos, Stripe o medios.
+
+## Definición de "Done" (implementación)
+- Tareas relevantes implementadas y marcadas en `tasks.md`.
+- Build y navegación de los flujos afectados OK.
+- Tests añadidos/actualizados cuando las tasks lo exijan.
+- Preparado para que Testing ejecute verify.

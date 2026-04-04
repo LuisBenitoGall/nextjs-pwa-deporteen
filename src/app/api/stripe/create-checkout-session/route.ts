@@ -2,6 +2,7 @@
 import Stripe from 'stripe';
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { LIMITS } from '@/config/constants';
 
 export const runtime = 'nodejs';
 
@@ -15,7 +16,13 @@ export async function POST(req: NextRequest) {
   const supabase = await createSupabaseServerClient();
 
   const { planId, units: rawUnits } = await req.json();
-  const qty = Math.max(1, parseInt(String(rawUnits ?? 1), 10));
+  const qty = Math.min(
+    Math.max(1, parseInt(String(rawUnits ?? 1), 10)),
+    LIMITS.CHECKOUT_MAX_UNITS,
+  );
+  if (!Number.isFinite(qty)) {
+    return NextResponse.json({ error: 'Cantidad inválida' }, { status: 400 });
+  }
 
   const { data: { user }, error: userErr } = await supabase.auth.getUser();
   if (userErr || !user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });

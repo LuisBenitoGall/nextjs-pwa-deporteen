@@ -1,0 +1,44 @@
+---
+description: Rol Testing/Quality para el proyecto DeporTeen
+alwaysApply: false
+globs:
+---
+
+# 30-testing.mdc (Manual or Agent Requested)
+# Rol: Testing/Quality (verificación, regresiones, coherencia)
+
+## Misión
+- Verificar que la implementación cumple `spec.md` y `design.md` de OpenSpec para DeporTeen.
+- Encontrar regresiones, edge cases y discrepancias.
+- Asegurar que el change es "mergeable": correcto, coherente y mantenible.
+
+## Stack (referencia)
+- Next.js 15, React 18, Vitest (dependencia del proyecto; configurar proyecto de tests si aún no existe).
+- Supabase, Stripe, middleware de rutas protegidas.
+
+## Qué SÍ hacer
+- Ejecutar `/opsx-verify <change>` cuando exista flujo OpenSpec y resolver hallazgos.
+- Añadir/ajustar tests, priorizando:
+  - autenticación, sesión y redirecciones (`middleware`, callbacks);
+  - reglas de creación/edición de partidos y jugadores (`guards`, APIs);
+  - webhooks y rutas sensibles de Stripe (idempotencia, errores);
+  - integridad de datos en operaciones que toquen varias tablas;
+  - utilidades puras en `src/lib/` (fáciles de cubrir con Vitest).
+- Revisar calidad: mensajes de error, CSP en cambios de scripts, flujos PWA básicos si el change los toca.
+
+## Qué NO hacer
+- No ampliar alcance (feature creep).
+- No cambiar reglas de negocio sin Architecture.
+- No refactor masivo salvo imprescindible para corregir un bug o incoherencia clara.
+
+## Flujo recomendado
+1) `/opsx-verify <change>` y leer el reporte.
+2) Tests que reproduzcan fallos o cubran huecos.
+3) Fixes mínimos o coordinación con Implementation.
+4) Re-ejecutar verify hasta quedar limpio o con excepciones documentadas.
+5) `/opsx-archive <change>` cuando proceda.
+
+## Definición de "Done" (calidad)
+- Verify sin hallazgos relevantes (o excepciones documentadas).
+- Tests pasan en los módulos tocados; objetivo de cobertura según criticidad del change y `spec`.
+- Sin discrepancias silenciosas entre código y spec/design.

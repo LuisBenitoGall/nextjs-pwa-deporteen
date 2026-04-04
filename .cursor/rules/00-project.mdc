@@ -1,0 +1,77 @@
+---
+description: Contexto global del proyecto DeporTeen (PWA deporte / estadísticas)
+alwaysApply: true
+globs:
+  - "src/**"
+  - "openspec/**"
+  - "public/**"
+  - ".cursor/**"
+  - "docs/**"
+  - "supabase/**"
+---
+
+# 00-project.mdc (Always)
+# DeporTeen — Reglas globales del repositorio
+
+## Propósito del sistema
+- **DeporTeen** es una **PWA** para **resultados y estadísticas deportivas** (jugadores, clubes/equipos, competiciones, partidos), pensada para familias y clubs.
+- Prioridades: experiencia móvil usable, integridad de datos, pagos/suscripciones claros, PWA instalable.
+- Evitar “magia” difícil de depurar y soluciones que no estén respaldadas por OpenSpec cuando el cambio sea contractual.
+
+## Stack y compatibilidad (obligatoria)
+- **Runtime**: **Node 24** (CLI y toolchain), salvo que el equipo documente otra versión en `package.json` > `engines`.
+- **Frontend**: **Next.js (App Router)** en `src/app/`, **React 18**.
+- **Estilos**: **Tailwind CSS** (v4 en el proyecto) y componentes en `src/components/`.
+- **Estado**: **React** (server/client components, hooks). **No** hay Zustand en dependencias actuales; no introducirlo sin decisión en OpenSpec y `package.json`.
+- **Backend gestionado**: **Supabase** (Auth, Postgres, Storage, RPC donde existan).
+- **Pagos**: **Stripe** (checkout, webhooks, portal; panel admin en rutas `/admin/stripe/*`).
+- **i18n**: implementación **propia** en `src/i18n/` (locales **es**, **en**, **ca** en mensajes JSON). No es i18next.
+- **PWA**: `manifest` (p. ej. `src/app/manifest.ts`), Service Worker vía componente cliente, banners de instalación.
+- No introducir tooling o dependencias que rompan el build o sin actualizar el contrato en OpenSpec cuando aplique.
+
+## Convenciones de repositorio
+- **Estructura por dominios** (orientativa): autenticación y cuenta, jugadores y temporadas, partidos y medios, competiciones, suscripciones/facturación, administración Stripe.
+- **Alias**: `@/` → `src/` (`tsconfig.json`).
+- **Nombres**:
+  - Hooks: `use*` en `src/hooks/`.
+  - Clientes / helpers: `src/lib/` (p. ej. `supabase`, `stripe`, guards).
+  - Componentes UI reutilizables: `src/components/` y `src/components/ui/`.
+- Mantener responsabilidades claras; evitar utilidades globales opacas salvo que estén justificadas.
+
+## Regla de oro: no inventar requisitos
+- Si una decisión de negocio no está especificada en OpenSpec (`openspec/specs`, cambios activos en `openspec/changes` o documentación explícita del change): **no inventar**.
+- Si hay ambigüedad: proponer opciones (A/B) en artefactos OpenSpec o devolver a Architecture.
+
+## Dominio operativo (según código y datos actuales)
+- **Usuarios**: autenticación Supabase; perfiles y datos de jugador asociados al usuario.
+- **Licencias / suscripciones**: integración Stripe (planes, renovaciones, recibos); comprobar roles y env vars para admin.
+- **Partidos y medios**: fotos/vídeos con almacenamiento híbrido (IndexedDB + Supabase); ver `docs/MEDIA_STORAGE.md`.
+- **Acceso a rutas protegidas**: definido en `src/middleware.ts` (dashboard, jugadores, cuenta, suscripción, facturación).
+
+## Autorización y acceso
+- Endpoints y acciones que modifiquen datos de usuario, pagos o recursos deben validar **sesión** y **pertenencia** (p. ej. `user_id` / `player_id`) según el spec del change.
+- Panel de administración Stripe restringido a cuentas administrador (configuración por email/rol en código).
+
+## Persistencia y datos
+- **Global (Supabase)**: tablas y RPC descritas o inferidas en `src/lib/database.types.ts` y migraciones; mantener tipos alineados con la base real.
+- **Cliente (offline / medios)**: IndexedDB y estrategias en `src/lib/indexeddb.ts`, `mediaLocal.ts`, `mediaSync.ts` — ver documentación de medios.
+
+## Errores, logging y seguridad
+- Mensajes al usuario claros; detalles técnicos solo en logs.
+- No confiar en input del cliente; validar en route handlers y server actions.
+- No loguear secretos, tokens ni datos de pago.
+
+## Testing y calidad mínima
+- Cambios que toquen **auth**, **pagos**, **reglas de negocio de partidos/jugadores** o **medios** deberían ir acompañados de pruebas cuando el entorno lo permita.
+- Herramienta prevista: **Vitest** (dependencia presente). Añadir `vitest.config` / scripts si el equipo los estandariza.
+- Antes de dar por hecho: `pnpm build`, `pnpm lint`, `pnpm types` sin errores graves; flujos PWA básicos afectados siguen funcionando.
+
+## Cómo deben trabajar los agentes
+- **Architecture**: contratos OpenSpec y criterios de aceptación.
+- **Implementation**: implementación según tasks/spec/design.
+- **Testing**: verificación y cobertura donde corresponda.
+- **Install & Settings**: entorno, tooling y documentación de mapa del repo (ver `40-install-settings.mdc`).
+
+## Comunicación en commits/PRs (si aplica)
+- Commits descriptivos por unidad de trabajo.
+- En PR: impacto en dominio (jugadores, partidos, pagos, medios), migraciones y riesgos.

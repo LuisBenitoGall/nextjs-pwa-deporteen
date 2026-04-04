@@ -1,5 +1,15 @@
 import type { Transporter } from 'nodemailer';
 
+function escapeHtml(value: string | null | undefined): string {
+  if (!value) return '';
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export type ContactPayload = {
   logged_in?: string | boolean;
   user_id?: string; // ignorado en el email
@@ -61,15 +71,15 @@ export function buildEmailOptions(
     const html = `
     <div style="font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;">
       <h2 style="margin:0 0 8px 0;">Nuevo contacto</h2>
-      <p style="margin:0 0 16px 0; color:#555">${receivedAt}</p>
+      <p style="margin:0 0 16px 0; color:#555">${escapeHtml(receivedAt)}</p>
       <table cellpadding="6" cellspacing="0" style="border-collapse:collapse;">
-        ${data.email ? `<tr><td><b>Email</b></td><td>${data.email}</td></tr>` : ''}
-        ${(data as any).first_name || (data as any).name ? `<tr><td><b>Nombre</b></td><td>${(data as any).first_name ?? (data as any).name}</td></tr>` : ''}
-        ${(data as any).last_name  || (data as any).surname ? `<tr><td><b>Apellidos</b></td><td>${(data as any).last_name ?? (data as any).surname}</td></tr>` : ''}
+        ${data.email ? `<tr><td><b>Email</b></td><td>${escapeHtml(data.email)}</td></tr>` : ''}
+        ${(data as any).first_name || (data as any).name ? `<tr><td><b>Nombre</b></td><td>${escapeHtml((data as any).first_name ?? (data as any).name)}</td></tr>` : ''}
+        ${(data as any).last_name  || (data as any).surname ? `<tr><td><b>Apellidos</b></td><td>${escapeHtml((data as any).last_name ?? (data as any).surname)}</td></tr>` : ''}
 
-        ${data.phone ? `<tr><td><b>Teléfono</b></td><td>${data.phone}</td></tr>` : ''}
-        <tr><td><b>Asunto</b></td><td>${data.subject}</td></tr>
-        <tr><td style="vertical-align:top"><b>Mensaje</b></td><td><pre style="white-space:pre-wrap; font:inherit">${data.message}</pre></td></tr>
+        ${data.phone ? `<tr><td><b>Teléfono</b></td><td>${escapeHtml(data.phone)}</td></tr>` : ''}
+        <tr><td><b>Asunto</b></td><td>${escapeHtml(data.subject)}</td></tr>
+        <tr><td style="vertical-align:top"><b>Mensaje</b></td><td><pre style="white-space:pre-wrap; font:inherit">${escapeHtml(data.message)}</pre></td></tr>
       </table>
     </div>`;
 
