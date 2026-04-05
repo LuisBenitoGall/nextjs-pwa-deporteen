@@ -12,6 +12,7 @@ import { fetchUserPayments } from '@/lib/stripe-payments';
 // Components
 import ConfirmDeleteButton from '../../components/ConfirmDeleteButton';
 import TitleH1 from '../../components/TitleH1';
+import StorageSettingsSection from './StorageSettingsSection';
 
 export const runtime = 'nodejs';
 
@@ -758,6 +759,9 @@ export default async function AccountPage() {
                     <Link href="/billing" className="underline">facturación</Link>.
                 </p>
             </section>*/}
+
+            {/* Almacenamiento de medios */}
+            <StorageSettingsSection locale={locale} />
 
             {/* Cancelación de cuenta (borrado lógico) */}
             <section className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:p-6 shadow-sm">

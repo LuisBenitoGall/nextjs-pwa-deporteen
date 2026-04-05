@@ -19,6 +19,7 @@ export interface Database {
           full_name: string
           avatar_url?: string
           website?: string
+          media_provider?: 'local' | 'supabase' | 'drive' | 'r2' | null
         }
         Insert: {
           id: string
@@ -27,6 +28,7 @@ export interface Database {
           full_name: string
           avatar_url?: string
           website?: string
+          media_provider?: 'local' | 'supabase' | 'drive' | 'r2' | null
         }
         Update: {
           id?: string
@@ -35,6 +37,7 @@ export interface Database {
           full_name?: string
           avatar_url?: string
           website?: string
+          media_provider?: 'local' | 'supabase' | 'drive' | 'r2' | null
         }
       }
       players: {
@@ -148,10 +151,17 @@ export interface Database {
           match_id: string
           player_id: string | null
           kind: 'photo' | 'video' | 'file'
-          storage_path: string
+          storage_provider: 'local' | 'supabase' | 'drive' | 'r2' | null
+          storage_path: string | null
+          google_drive_file_id: string | null
+          device_uri: string | null
           mime_type: string | null
           size_bytes: number | null
+          width: number | null
+          height: number | null
+          duration_ms: number | null
           taken_at: Timestamp | null
+          synced_at: Timestamp | null
           created_at: Timestamp
         }
         Insert: {
@@ -160,10 +170,17 @@ export interface Database {
           match_id: string
           player_id?: string | null
           kind?: 'photo' | 'video' | 'file'
-          storage_path: string
+          storage_provider?: 'local' | 'supabase' | 'drive' | 'r2' | null
+          storage_path?: string | null
+          google_drive_file_id?: string | null
+          device_uri?: string | null
           mime_type?: string | null
           size_bytes?: number | null
+          width?: number | null
+          height?: number | null
+          duration_ms?: number | null
           taken_at?: Timestamp | null
+          synced_at?: Timestamp | null
           created_at?: Timestamp
         }
         Update: {
@@ -172,11 +189,100 @@ export interface Database {
           match_id?: string
           player_id?: string | null
           kind?: 'photo' | 'video' | 'file'
-          storage_path?: string
+          storage_provider?: 'local' | 'supabase' | 'drive' | 'r2' | null
+          storage_path?: string | null
+          google_drive_file_id?: string | null
+          device_uri?: string | null
           mime_type?: string | null
           size_bytes?: number | null
+          width?: number | null
+          height?: number | null
+          duration_ms?: number | null
           taken_at?: Timestamp | null
+          synced_at?: Timestamp | null
           created_at?: Timestamp
+        }
+      }
+      storage_plans: {
+        Row: {
+          id: string
+          name: string
+          name_key: string | null
+          gb_amount: number
+          amount_cents: number
+          currency: string
+          stripe_price_id: string | null
+          active: boolean
+          created_at: Timestamp
+        }
+        Insert: {
+          id?: string
+          name: string
+          name_key?: string | null
+          gb_amount: number
+          amount_cents: number
+          currency?: string
+          stripe_price_id?: string | null
+          active?: boolean
+          created_at?: Timestamp
+        }
+        Update: {
+          id?: string
+          name?: string
+          name_key?: string | null
+          gb_amount?: number
+          amount_cents?: number
+          currency?: string
+          stripe_price_id?: string | null
+          active?: boolean
+          created_at?: Timestamp
+        }
+      }
+      storage_subscriptions: {
+        Row: {
+          id: string
+          user_id: string
+          plan_id: string | null
+          gb_amount: number
+          amount_cents: number
+          currency: string
+          status: 'active' | 'expired' | 'cancelled'
+          current_period_start: Timestamp
+          current_period_end: Timestamp
+          stripe_customer_id: string | null
+          stripe_payment_intent_id: string | null
+          created_at: Timestamp
+          updated_at: Timestamp
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          plan_id?: string | null
+          gb_amount: number
+          amount_cents: number
+          currency?: string
+          status?: 'active' | 'expired' | 'cancelled'
+          current_period_start?: Timestamp
+          current_period_end: Timestamp
+          stripe_customer_id?: string | null
+          stripe_payment_intent_id?: string | null
+          created_at?: Timestamp
+          updated_at?: Timestamp
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          plan_id?: string | null
+          gb_amount?: number
+          amount_cents?: number
+          currency?: string
+          status?: 'active' | 'expired' | 'cancelled'
+          current_period_start?: Timestamp
+          current_period_end?: Timestamp
+          stripe_customer_id?: string | null
+          stripe_payment_intent_id?: string | null
+          created_at?: Timestamp
+          updated_at?: Timestamp
         }
       }
       // Add other tables as needed
