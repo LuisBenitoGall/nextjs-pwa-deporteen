@@ -1,16 +1,7 @@
 {
-<<<<<<< HEAD
   "mcpServers": {
     "vercel": {
       "url": "https://mcp.vercel.com"
     }
   }
 }
-=======
-    "mcpServers": {
-      "vercel": {
-        "url": "https://mcp.vercel.com"
-      }
-    }
-  }
->>>>>>> 4945d98 (mcp)
