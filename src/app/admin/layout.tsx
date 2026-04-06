@@ -3,41 +3,43 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getServerUser } from '@/lib/supabase/server';
 import { isAdminUser } from '@/lib/auth/roles';
-import { tServer } from '@/i18n/server';
+import AdminSidebar from '@/components/admin/AdminSidebar';
 
 export const metadata = {
-  title: 'Administración Stripe',
+  title: 'Administración — DeporTeen',
 };
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const { user } = await getServerUser();
   if (!user) {
-    redirect('/login?next=/admin/stripe');
+    redirect('/login?next=/admin');
   }
 
   if (!isAdminUser(user)) {
-    const { t } = await tServer(user.user_metadata?.locale || undefined);
     return (
       <section className="mx-auto flex min-h-[50vh] max-w-3xl flex-col items-center justify-center px-6 text-center">
-        <h1 className="text-2xl font-semibold text-red-600">
-          {t('admin_access_denied_title') || 'Acceso restringido'}
-        </h1>
-        <p className="mt-4 text-sm text-slate-600">
-          {t('admin_access_denied_message') || 'Tu cuenta no tiene permisos de administración. Contacta con el responsable del proyecto si crees que es un error.'}
+        <h1 className="text-2xl font-semibold text-red-500">Acceso restringido</h1>
+        <p className="mt-4 text-sm text-slate-400">
+          Tu cuenta no tiene permisos de administración.
         </p>
         <Link
           href="/"
           className="mt-6 inline-flex items-center rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
         >
-          {t('admin_access_denied_link') || 'Volver al inicio'}
+          Volver al inicio
         </Link>
       </section>
     );
   }
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-6 py-10">
-      {children}
+    <div className="flex min-h-screen bg-slate-950 text-slate-100">
+      <AdminSidebar />
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <main className="flex-1 overflow-y-auto p-6 lg:p-8">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
