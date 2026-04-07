@@ -2,8 +2,8 @@ import './globals.css';
 import { headers } from 'next/headers';
 import Script from 'next/script';
 import { I18nProvider } from '@/i18n/I18nProvider';
-import { getServerUser } from '@/lib/supabase/server';
-import { isAdminUser } from '@/lib/auth/roles';
+import { createSupabaseServerClientReadOnly, getServerUser } from '@/lib/supabase/server';
+import { userCanAccessAdminPanel } from '@/lib/auth/adminAccess';
 import { ToastProvider } from '@/components/ui/toast';
 import type { Metadata, Viewport } from 'next';
 
@@ -31,7 +31,11 @@ export const viewport: Viewport = { themeColor: '#0EA5E9' };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
     const { user } = await getServerUser();
-    const serverIsAdmin = isAdminUser(user);
+    let serverIsAdmin = false;
+    if (user) {
+        const supabase = await createSupabaseServerClientReadOnly();
+        serverIsAdmin = await userCanAccessAdminPanel(supabase, user);
+    }
     
     // ✅ En Next 15, headers() es asíncrono
     const hdrs = await headers();

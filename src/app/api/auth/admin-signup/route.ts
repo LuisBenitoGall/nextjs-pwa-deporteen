@@ -1,19 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { getServerUser } from '@/lib/supabase/server';
-import { isAdminUser } from '@/lib/auth/roles';
+import { requireAdmin } from '@/lib/auth/adminGuard';
 
 export const runtime = 'nodejs';
 
-async function ensureAdmin() {
-  const { user } = await getServerUser();
-  if (!user || !isAdminUser(user)) return null;
-  return user;
-}
-
 export async function POST(req: NextRequest) {
-  if (!await ensureAdmin()) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  const guard = await requireAdmin();
+  if (!guard.ok) {
+    return guard.response;
   }
 
   if (!supabaseAdmin) {
@@ -53,8 +47,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
-  if (!await ensureAdmin()) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  const guard = await requireAdmin();
+  if (!guard.ok) {
+    return guard.response;
   }
 
   if (!supabaseAdmin) {

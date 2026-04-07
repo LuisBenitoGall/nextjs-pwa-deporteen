@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerUser } from '@/lib/supabase/server';
-import { isAdminUser } from '@/lib/auth/roles';
+import { requireAdmin } from '@/lib/auth/adminGuard';
 import { getStripe } from '@/lib/stripe/server';
 import type { Stripe } from '@/lib/stripe/server';
 
@@ -9,9 +8,9 @@ export const runtime = 'nodejs';
 const INTERVALS = new Set(['day', 'week', 'month', 'year']);
 
 export async function GET() {
-  const { user } = await getServerUser();
-  if (!user || !isAdminUser(user)) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  const guard = await requireAdmin();
+  if (!guard.ok) {
+    return guard.response;
   }
 
   const stripe = getStripe();
@@ -24,9 +23,9 @@ export async function GET() {
 }
 
 export async function PATCH(req: NextRequest) {
-  const { user } = await getServerUser();
-  if (!user || !isAdminUser(user)) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  const guard = await requireAdmin();
+  if (!guard.ok) {
+    return guard.response;
   }
 
   try {
@@ -69,9 +68,9 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { user } = await getServerUser();
-  if (!user || !isAdminUser(user)) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  const guard = await requireAdmin();
+  if (!guard.ok) {
+    return guard.response;
   }
 
   try {
