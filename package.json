@@ -36,6 +36,8 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "isomorphic-dompurify": "^2.36.0",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.7",
     "lucide-react": "^0.544.0",
     "next": "15.5.7",
     "nodemailer": "^7.0.13",
@@ -46,8 +48,10 @@
     "react-hook-form": "^7.72.1",
     "recharts": "^3.8.1",
     "stripe": "^18.5.0",
+    "tabulator-tables": "^6.4.0",
     "tailwind-merge": "^3.5.0",
     "tailwindcss-animate": "^1.0.7",
+    "xlsx": "^0.18.5",
     "zod": "^4.3.6"
   },
   "devDependencies": {
@@ -60,6 +64,7 @@
     "@types/nodemailer": "^7.0.11",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "@types/tabulator-tables": "^6.3.1",
     "dotenv": "^17.4.0",
     "eslint": "^9.39.4",
     "eslint-config-next": "15.5.7",

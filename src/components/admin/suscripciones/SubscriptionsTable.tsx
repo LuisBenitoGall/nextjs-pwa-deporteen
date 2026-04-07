@@ -1,12 +1,18 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/toast';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import type { ColumnDefinition } from 'tabulator-tables';
 import ConfirmDialog from '@/components/admin/ConfirmDialog';
 import EditSubscriptionDialog from './EditSubscriptionDialog';
+import AdminTabulatorTable from '@/components/admin/shared/AdminTabulatorTable';
+import {
+  makeEditBtn,
+  makeDeleteBtn,
+  makeActionsContainer,
+  dispatchAction,
+} from '@/components/admin/shared/tabulatorUtils';
 
 export interface AdminSubscription {
   id: string;
@@ -32,10 +38,19 @@ export interface StoragePlan {
   currency: string;
 }
 
-const STATUS_BADGE: Record<string, 'default' | 'warning' | 'destructive' | 'secondary'> = {
-  active: 'default',
-  expired: 'warning',
-  cancelled: 'destructive',
+const STATUS_CLASSES: Record<string, string> = {
+  active:
+    'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-emerald-600/20 text-emerald-400 border border-emerald-600/30',
+  expired:
+    'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-yellow-600/20 text-yellow-400 border border-yellow-600/30',
+  cancelled:
+    'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-red-600/20 text-red-400 border border-red-600/30',
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  active: 'Activo',
+  expired: 'Expirado',
+  cancelled: 'Cancelado',
 };
 
 export default function SubscriptionsTable({
@@ -47,24 +62,23 @@ export default function SubscriptionsTable({
 }) {
   const router = useRouter();
   const { showToast } = useToast();
-  const [query, setQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmSub, setConfirmSub] = useState<AdminSubscription | null>(null);
   const [editSub, setEditSub] = useState<AdminSubscription | null>(null);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return subscriptions.filter((s) => {
-      const matchStatus = statusFilter === 'all' || s.status === statusFilter;
-      const matchQuery =
-        !q ||
-        s.profile?.full_name?.toLowerCase().includes(q) ||
-        s.profile?.username?.toLowerCase().includes(q) ||
-        s.user_id.toLowerCase().includes(q);
-      return matchStatus && matchQuery;
-    });
-  }, [subscriptions, query, statusFilter]);
+  // Bridge: listen for Tabulator action events
+  useEffect(() => {
+    const el = wrapperRef.current;
+    if (!el) return;
+    const handler = (e: Event) => {
+      const { action, row } = (e as CustomEvent<{ action: string; row: AdminSubscription }>).detail;
+      if (action === 'edit') setEditSub(row);
+      if (action === 'delete') setConfirmSub(row);
+    };
+    el.addEventListener('tabulator-action', handler);
+    return () => el.removeEventListener('tabulator-action', handler);
+  }, []);
 
   async function handleDelete(id: string) {
     setDeletingId(id);
@@ -85,103 +99,131 @@ export default function SubscriptionsTable({
     }
   }
 
+  async function handleBulkDelete(rows: AdminSubscription[]) {
+    for (const row of rows) {
+      await fetch('/api/admin/suscripciones', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: row.id }),
+      });
+    }
+    showToast({ title: `${rows.length} suscripciones eliminadas`, variant: 'success' });
+    router.refresh();
+  }
+
+  const columns: ColumnDefinition[] = [
+    {
+      title: 'Usuario',
+      field: 'profile',
+      minWidth: 160,
+      headerFilter: 'input' as const,
+      headerFilterFunc: (filterVal: unknown, rowVal: unknown) => {
+        const p = rowVal as AdminSubscription['profile'];
+        const text = `${p?.full_name ?? ''} ${p?.username ?? ''}`.toLowerCase();
+        return text.includes((filterVal as string).toLowerCase());
+      },
+      sorter: (a: unknown, b: unknown) =>
+        ((a as AdminSubscription['profile'])?.full_name ?? '').localeCompare(
+          (b as AdminSubscription['profile'])?.full_name ?? ''
+        ),
+      formatter: (cell) => {
+        const p = cell.getValue() as AdminSubscription['profile'];
+        const div = document.createElement('div');
+        div.innerHTML =
+          `<div class="font-medium text-slate-100">${p?.full_name ?? '—'}</div>` +
+          `<div class="text-xs text-slate-400">@${p?.username ?? 'sin usuario'}</div>`;
+        return div;
+      },
+    },
+    {
+      title: 'Plan',
+      field: 'plan',
+      minWidth: 120,
+      sorter: (a: unknown, b: unknown) =>
+        ((a as AdminSubscription['plan'])?.name ?? '').localeCompare(
+          (b as AdminSubscription['plan'])?.name ?? ''
+        ),
+      formatter: (cell) => {
+        const p = cell.getValue() as AdminSubscription['plan'];
+        return p?.name ?? 'Sin plan';
+      },
+    },
+    {
+      title: 'Almacenamiento',
+      field: 'gb_amount',
+      minWidth: 110,
+      hozAlign: 'center',
+      formatter: (cell) => `${cell.getValue() as number} GB`,
+    },
+    {
+      title: 'Estado',
+      field: 'status',
+      minWidth: 110,
+      headerFilter: 'list' as const,
+      headerFilterParams: {
+        values: { '': 'Todos', active: 'Activo', expired: 'Expirado', cancelled: 'Cancelado' },
+        clearable: true,
+      },
+      formatter: (cell) => {
+        const status = cell.getValue() as string;
+        const span = document.createElement('span');
+        span.className = STATUS_CLASSES[status] ?? STATUS_CLASSES.cancelled;
+        span.textContent = STATUS_LABELS[status] ?? status;
+        return span;
+      },
+    },
+    {
+      title: 'Vence',
+      field: 'current_period_end',
+      minWidth: 100,
+      sorter: 'date',
+      sorterParams: { format: 'iso' },
+      formatter: (cell) => {
+        const span = document.createElement('span');
+        span.className = 'text-xs text-slate-400';
+        span.textContent = new Date(cell.getValue() as string).toLocaleDateString('es-ES');
+        return span;
+      },
+    },
+    {
+      title: 'Acciones',
+      field: '_actions',
+      headerSort: false,
+      minWidth: 150,
+      hozAlign: 'right',
+      formatter: (cell) => {
+        const s = cell.getData() as AdminSubscription;
+        const editBtn = makeEditBtn('Modificar');
+        const delBtn = makeDeleteBtn();
+        editBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          dispatchAction(cell.getElement(), 'edit', s);
+        });
+        delBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          dispatchAction(cell.getElement(), 'delete', s);
+        });
+        return makeActionsContainer(editBtn, delBtn);
+      },
+    },
+  ];
+
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar usuario…"
-          className="h-10 w-full max-w-xs rounded-md border border-slate-700 bg-slate-950/70 px-3 text-sm text-slate-100 placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-        />
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="h-10 rounded-md border border-slate-700 bg-slate-950/70 px-3 text-sm text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-        >
-          <option value="all">Todos los estados</option>
-          <option value="active">Activo</option>
-          <option value="expired">Expirado</option>
-          <option value="cancelled">Cancelado</option>
-        </select>
-      </div>
-
-      <div className="text-xs text-slate-400">
-        {filtered.length} de {subscriptions.length} suscripciones
-      </div>
-
-      <div className="overflow-x-auto rounded-xl border border-slate-700">
-        <table className="min-w-full divide-y divide-slate-800 text-sm">
-          <thead className="bg-slate-800/70 text-xs uppercase tracking-wide text-slate-400">
-            <tr>
-              <th className="px-4 py-3 text-left">Usuario</th>
-              <th className="px-4 py-3 text-left">Plan</th>
-              <th className="px-4 py-3 text-left">Almacenamiento</th>
-              <th className="px-4 py-3 text-left">Estado</th>
-              <th className="px-4 py-3 text-left">Vence</th>
-              <th className="px-4 py-3 text-left">Acciones</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-800">
-            {filtered.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
-                  No se encontraron suscripciones
-                </td>
-              </tr>
-            ) : (
-              filtered.map((s) => (
-                <tr key={s.id} className="hover:bg-slate-800/40 transition-colors">
-                  <td className="px-4 py-3">
-                    <div className="font-medium text-slate-100">
-                      {s.profile?.full_name || '—'}
-                    </div>
-                    <div className="text-xs text-slate-400">@{s.profile?.username || 'sin usuario'}</div>
-                  </td>
-                  <td className="px-4 py-3 text-slate-300">{s.plan?.name || 'Sin plan'}</td>
-                  <td className="px-4 py-3 text-slate-300">{s.gb_amount} GB</td>
-                  <td className="px-4 py-3">
-                    <Badge variant={STATUS_BADGE[s.status] ?? 'secondary'}>
-                      {s.status}
-                    </Badge>
-                  </td>
-                  <td className="px-4 py-3 text-slate-400 text-xs">
-                    {new Date(s.current_period_end).toLocaleDateString('es-ES')}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 border-slate-600 text-xs text-slate-300 hover:text-white"
-                        onClick={() => setEditSub(s)}
-                      >
-                        Modificar
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        className="h-7 text-xs"
-                        onClick={() => setConfirmSub(s)}
-                        disabled={deletingId !== null}
-                      >
-                        Eliminar
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+    <div ref={wrapperRef} className="space-y-4">
+      <AdminTabulatorTable<AdminSubscription>
+        data={subscriptions}
+        columns={columns}
+        exportFileName="suscripciones"
+        selectable
+        onBulkAction={handleBulkDelete}
+        bulkActionLabel="Eliminar seleccionadas"
+      />
 
       <ConfirmDialog
         open={!!confirmSub}
         onOpenChange={(open) => !open && setConfirmSub(null)}
         title="Eliminar suscripción"
-        description={`¿Eliminar permanentemente la suscripción de ${confirmSub?.profile?.full_name || confirmSub?.user_id}?`}
+        description={`¿Eliminar permanentemente la suscripción de ${confirmSub?.profile?.full_name ?? confirmSub?.user_id}?`}
         loading={deletingId !== null}
         onConfirm={() => confirmSub && handleDelete(confirmSub.id)}
       />

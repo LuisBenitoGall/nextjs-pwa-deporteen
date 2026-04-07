@@ -1,12 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -14,7 +13,16 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import type { ColumnDefinition } from 'tabulator-tables';
 import ConfirmDialog from '@/components/admin/ConfirmDialog';
+import AdminTabulatorTable from '@/components/admin/shared/AdminTabulatorTable';
+import {
+  makeEditBtn,
+  makeDeleteBtn,
+  makeToggleBtn,
+  makeActionsContainer,
+  dispatchAction,
+} from '@/components/admin/shared/tabulatorUtils';
 
 export interface StoragePlan {
   id: string;
@@ -129,7 +137,8 @@ function PlanDialog({
             />
           </div>
           <p className="text-xs text-slate-500">
-            Precio = {amountCents ? (Number(amountCents) / 100).toFixed(2) : '0.00'} {currency.toUpperCase()}
+            Precio = {amountCents ? (Number(amountCents) / 100).toFixed(2) : '0.00'}{' '}
+            {currency.toUpperCase()}
           </p>
         </div>
         <DialogFooter className="gap-2">
@@ -148,14 +157,28 @@ function PlanDialog({
 export default function StoragePlansTable({ plans }: { plans: StoragePlan[] }) {
   const router = useRouter();
   const { showToast } = useToast();
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const [editPlan, setEditPlan] = useState<StoragePlan | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [confirmPlan, setConfirmPlan] = useState<StoragePlan | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [togglingId, setTogglingId] = useState<string | null>(null);
+
+  // Bridge: listen for Tabulator action events
+  useEffect(() => {
+    const el = wrapperRef.current;
+    if (!el) return;
+    const handler = (e: Event) => {
+      const { action, row } = (e as CustomEvent<{ action: string; row: StoragePlan }>).detail;
+      if (action === 'edit') setEditPlan(row);
+      if (action === 'delete') setConfirmPlan(row);
+      if (action === 'toggle') handleToggleActive(row);
+    };
+    el.addEventListener('tabulator-action', handler);
+    return () => el.removeEventListener('tabulator-action', handler);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleToggleActive(plan: StoragePlan) {
-    setTogglingId(plan.id);
     try {
       const res = await fetch('/api/admin/configuracion/planes', {
         method: 'PATCH',
@@ -167,8 +190,6 @@ export default function StoragePlansTable({ plans }: { plans: StoragePlan[] }) {
       router.refresh();
     } catch {
       showToast({ title: 'Error', variant: 'destructive' });
-    } finally {
-      setTogglingId(null);
     }
   }
 
@@ -191,86 +212,105 @@ export default function StoragePlansTable({ plans }: { plans: StoragePlan[] }) {
     }
   }
 
-  return (
-    <div className="space-y-4">
-      <div className="flex justify-end">
-        <Button onClick={() => setShowCreate(true)}>+ Nuevo plan</Button>
-      </div>
+  const columns: ColumnDefinition[] = [
+    {
+      title: 'Nombre',
+      field: 'name',
+      minWidth: 140,
+      headerFilter: 'input' as const,
+      formatter: (cell) => {
+        const p = cell.getData() as StoragePlan;
+        const div = document.createElement('div');
+        div.innerHTML =
+          `<div class="font-medium text-slate-100">${p.name}</div>` +
+          (p.name_key ? `<div class="text-xs text-slate-500">${p.name_key}</div>` : '');
+        return div;
+      },
+    },
+    {
+      title: 'Almacenamiento',
+      field: 'gb_amount',
+      minWidth: 110,
+      hozAlign: 'center',
+      formatter: (cell) => `${cell.getValue() as number} GB`,
+    },
+    {
+      title: 'Precio',
+      field: 'amount_cents',
+      minWidth: 100,
+      hozAlign: 'right',
+      formatter: (cell) => {
+        const p = cell.getData() as StoragePlan;
+        return `${(p.amount_cents / 100).toFixed(2)} ${p.currency.toUpperCase()}`;
+      },
+    },
+    {
+      title: 'Stripe',
+      field: 'stripe_price_id',
+      minWidth: 120,
+      formatter: (cell) => {
+        const v = cell.getValue() as string | null;
+        const span = document.createElement('span');
+        span.className = 'text-xs text-slate-500 font-mono';
+        span.textContent = v ?? '—';
+        return span;
+      },
+    },
+    {
+      title: 'Estado',
+      field: 'active',
+      minWidth: 90,
+      hozAlign: 'center',
+      formatter: (cell) => {
+        const active = cell.getValue() as boolean;
+        const span = document.createElement('span');
+        span.className = active
+          ? 'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-emerald-600/20 text-emerald-400 border border-emerald-600/30'
+          : 'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-slate-700 text-slate-400';
+        span.textContent = active ? 'Activo' : 'Inactivo';
+        return span;
+      },
+    },
+    {
+      title: 'Acciones',
+      field: '_actions',
+      headerSort: false,
+      minWidth: 200,
+      hozAlign: 'right',
+      formatter: (cell) => {
+        const p = cell.getData() as StoragePlan;
+        const editBtn = makeEditBtn();
+        const toggleBtn = makeToggleBtn(p.active ? 'Desactivar' : 'Activar');
+        const delBtn = makeDeleteBtn();
+        editBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          dispatchAction(cell.getElement(), 'edit', p);
+        });
+        toggleBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          dispatchAction(cell.getElement(), 'toggle', p);
+        });
+        delBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          dispatchAction(cell.getElement(), 'delete', p);
+        });
+        return makeActionsContainer(editBtn, toggleBtn, delBtn);
+      },
+    },
+  ];
 
-      <div className="overflow-x-auto rounded-xl border border-slate-700">
-        <table className="min-w-full divide-y divide-slate-800 text-sm">
-          <thead className="bg-slate-800/70 text-xs uppercase tracking-wide text-slate-400">
-            <tr>
-              <th className="px-4 py-3 text-left">Nombre</th>
-              <th className="px-4 py-3 text-left">Almacenamiento</th>
-              <th className="px-4 py-3 text-left">Precio</th>
-              <th className="px-4 py-3 text-left">Stripe</th>
-              <th className="px-4 py-3 text-left">Estado</th>
-              <th className="px-4 py-3 text-left">Acciones</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-800">
-            {plans.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
-                  No hay planes configurados
-                </td>
-              </tr>
-            ) : (
-              plans.map((p) => (
-                <tr key={p.id} className="hover:bg-slate-800/40 transition-colors">
-                  <td className="px-4 py-3">
-                    <div className="font-medium text-slate-100">{p.name}</div>
-                    {p.name_key && <div className="text-xs text-slate-500">{p.name_key}</div>}
-                  </td>
-                  <td className="px-4 py-3 text-slate-300">{p.gb_amount} GB</td>
-                  <td className="px-4 py-3 text-slate-300">
-                    {(p.amount_cents / 100).toFixed(2)} {p.currency.toUpperCase()}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-slate-500 font-mono">
-                    {p.stripe_price_id || '—'}
-                  </td>
-                  <td className="px-4 py-3">
-                    <Badge variant={p.active ? 'default' : 'secondary'}>
-                      {p.active ? 'Activo' : 'Inactivo'}
-                    </Badge>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 border-slate-600 text-xs text-slate-300 hover:text-white"
-                        onClick={() => setEditPlan(p)}
-                      >
-                        Editar
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-7 text-xs text-slate-400 hover:text-slate-100"
-                        onClick={() => handleToggleActive(p)}
-                        disabled={togglingId !== null}
-                      >
-                        {p.active ? 'Desactivar' : 'Activar'}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        className="h-7 text-xs"
-                        onClick={() => setConfirmPlan(p)}
-                        disabled={deletingId !== null}
-                      >
-                        Eliminar
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+  return (
+    <div ref={wrapperRef} className="space-y-4">
+      <AdminTabulatorTable<StoragePlan>
+        data={plans}
+        columns={columns}
+        exportFileName="planes-almacenamiento"
+        toolbarRight={
+          <Button size="sm" onClick={() => setShowCreate(true)}>
+            + Nuevo plan
+          </Button>
+        }
+      />
 
       {(showCreate || editPlan) && (
         <PlanDialog

@@ -1,11 +1,18 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/toast';
-import { Button } from '@/components/ui/button';
+import type { ColumnDefinition } from 'tabulator-tables';
 import ConfirmDialog from '@/components/admin/ConfirmDialog';
 import EditPlayerDialog from './EditPlayerDialog';
+import AdminTabulatorTable from '@/components/admin/shared/AdminTabulatorTable';
+import {
+  makeEditBtn,
+  makeDeleteBtn,
+  makeActionsContainer,
+  dispatchAction,
+} from '@/components/admin/shared/tabulatorUtils';
 
 export interface AdminPlayer {
   id: string;
@@ -21,21 +28,23 @@ export interface AdminPlayer {
 export default function PlayersTable({ players }: { players: AdminPlayer[] }) {
   const router = useRouter();
   const { showToast } = useToast();
-  const [query, setQuery] = useState('');
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmPlayer, setConfirmPlayer] = useState<AdminPlayer | null>(null);
   const [editPlayer, setEditPlayer] = useState<AdminPlayer | null>(null);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return players;
-    return players.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.profile?.full_name?.toLowerCase().includes(q) ||
-        p.profile?.username?.toLowerCase().includes(q)
-    );
-  }, [players, query]);
+  // Bridge: listen for Tabulator action events
+  useEffect(() => {
+    const el = wrapperRef.current;
+    if (!el) return;
+    const handler = (e: Event) => {
+      const { action, row } = (e as CustomEvent<{ action: string; row: AdminPlayer }>).detail;
+      if (action === 'edit') setEditPlayer(row);
+      if (action === 'delete') setConfirmPlayer(row);
+    };
+    el.addEventListener('tabulator-action', handler);
+    return () => el.removeEventListener('tabulator-action', handler);
+  }, []);
 
   async function handleDelete(id: string) {
     setDeletingId(id);
@@ -56,84 +65,112 @@ export default function PlayersTable({ players }: { players: AdminPlayer[] }) {
     }
   }
 
+  async function handleBulkDelete(rows: AdminPlayer[]) {
+    for (const row of rows) {
+      await fetch('/api/admin/jugadores', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: row.id }),
+      });
+    }
+    showToast({ title: `${rows.length} jugadores eliminados`, variant: 'success' });
+    router.refresh();
+  }
+
+  const columns: ColumnDefinition[] = [
+    {
+      title: 'Nombre',
+      field: 'name',
+      minWidth: 160,
+      headerFilter: 'input' as const,
+      formatter: (cell) => {
+        const p = cell.getData() as AdminPlayer;
+        const div = document.createElement('div');
+        div.innerHTML =
+          `<div class="font-medium text-slate-100">${p.name}</div>` +
+          `<div class="text-xs text-slate-500 font-mono">${p.id.slice(0, 8)}…</div>`;
+        return div;
+      },
+    },
+    {
+      title: 'Usuario propietario',
+      field: 'profile',
+      minWidth: 160,
+      headerFilter: 'input' as const,
+      headerFilterFunc: (filterVal: unknown, rowVal: unknown) => {
+        const prof = rowVal as AdminPlayer['profile'];
+        const text = `${prof?.full_name ?? ''} ${prof?.username ?? ''}`.toLowerCase();
+        return text.includes((filterVal as string).toLowerCase());
+      },
+      sorter: (a: unknown, b: unknown) =>
+        ((a as AdminPlayer['profile'])?.full_name ?? '').localeCompare(
+          (b as AdminPlayer['profile'])?.full_name ?? ''
+        ),
+      formatter: (cell) => {
+        const p = cell.getValue() as AdminPlayer['profile'];
+        const div = document.createElement('div');
+        div.innerHTML =
+          `<span class="text-slate-300">${p?.full_name ?? '—'}</span>` +
+          (p?.username
+            ? ` <span class="text-xs text-slate-500">@${p.username}</span>`
+            : '');
+        return div;
+      },
+    },
+    {
+      title: 'Temporada',
+      field: 'season_id',
+      minWidth: 100,
+      headerFilter: 'input' as const,
+      formatter: (cell) => {
+        const span = document.createElement('span');
+        span.className = 'text-xs text-slate-400 font-mono';
+        span.textContent = ((cell.getValue() as string) ?? '').slice(0, 8) + '…';
+        return span;
+      },
+    },
+    {
+      title: 'Alta',
+      field: 'created_at',
+      minWidth: 100,
+      sorter: 'date',
+      sorterParams: { format: 'iso' },
+      formatter: (cell) =>
+        new Date(cell.getValue() as string).toLocaleDateString('es-ES'),
+    },
+    {
+      title: 'Acciones',
+      field: '_actions',
+      headerSort: false,
+      minWidth: 140,
+      hozAlign: 'right',
+      formatter: (cell) => {
+        const p = cell.getData() as AdminPlayer;
+        const editBtn = makeEditBtn();
+        const delBtn = makeDeleteBtn();
+        editBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          dispatchAction(cell.getElement(), 'edit', p);
+        });
+        delBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          dispatchAction(cell.getElement(), 'delete', p);
+        });
+        return makeActionsContainer(editBtn, delBtn);
+      },
+    },
+  ];
+
   return (
-    <div className="space-y-4">
-      <input
-        type="search"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="Buscar por nombre o usuario…"
-        className="h-10 w-full max-w-sm rounded-md border border-slate-700 bg-slate-950/70 px-3 text-sm text-slate-100 placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+    <div ref={wrapperRef} className="space-y-4">
+      <AdminTabulatorTable<AdminPlayer>
+        data={players}
+        columns={columns}
+        exportFileName="jugadores"
+        selectable
+        onBulkAction={handleBulkDelete}
+        bulkActionLabel="Eliminar seleccionados"
       />
-
-      <div className="text-xs text-slate-400">
-        {filtered.length} de {players.length} jugadores
-      </div>
-
-      <div className="overflow-x-auto rounded-xl border border-slate-700">
-        <table className="min-w-full divide-y divide-slate-800 text-sm">
-          <thead className="bg-slate-800/70 text-xs uppercase tracking-wide text-slate-400">
-            <tr>
-              <th className="px-4 py-3 text-left">Nombre</th>
-              <th className="px-4 py-3 text-left">Usuario propietario</th>
-              <th className="px-4 py-3 text-left">Temporada</th>
-              <th className="px-4 py-3 text-left">Alta</th>
-              <th className="px-4 py-3 text-left">Acciones</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-800">
-            {filtered.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
-                  No se encontraron jugadores
-                </td>
-              </tr>
-            ) : (
-              filtered.map((p) => (
-                <tr key={p.id} className="hover:bg-slate-800/40 transition-colors">
-                  <td className="px-4 py-3">
-                    <div className="font-medium text-slate-100">{p.name}</div>
-                    <div className="text-xs text-slate-500 font-mono">{p.id.slice(0, 8)}…</div>
-                  </td>
-                  <td className="px-4 py-3 text-slate-300">
-                    {p.profile?.full_name || '—'}
-                    {p.profile?.username && (
-                      <span className="ml-1 text-xs text-slate-500">@{p.profile.username}</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-slate-400 font-mono">
-                    {p.season_id.slice(0, 8)}…
-                  </td>
-                  <td className="px-4 py-3 text-xs text-slate-400">
-                    {new Date(p.created_at).toLocaleDateString('es-ES')}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 border-slate-600 text-xs text-slate-300 hover:text-white"
-                        onClick={() => setEditPlayer(p)}
-                      >
-                        Editar
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        className="h-7 text-xs"
-                        onClick={() => setConfirmPlayer(p)}
-                        disabled={deletingId !== null}
-                      >
-                        Eliminar
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
 
       <ConfirmDialog
         open={!!confirmPlayer}
