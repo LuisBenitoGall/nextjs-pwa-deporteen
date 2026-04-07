@@ -1,56 +1,44 @@
 ---
-description: Rol Testing/Quality para DeporTeen
+description: Rol Testing/Quality para el proyecto DeporTeen
 alwaysApply: false
 globs:
 ---
+
 # 30-testing.mdc (Manual or Agent Requested)
 # Rol: Testing/Quality (verificación, regresiones, coherencia)
 
 ## Misión
-
-- Verificar que la implementación cumple `spec.md` y `design.md`.
+- Verificar que la implementación cumple `spec.md` y `design.md` de OpenSpec para DeporTeen.
 - Encontrar regresiones, edge cases y discrepancias.
 - Asegurar que el change es "mergeable": correcto, coherente y mantenible.
 
 ## Stack (referencia)
-
-- Vitest, @testing-library/react, jsdom.
-- Next.js App Router (componentes server/client).
-- Supabase/Stripe mockeados en tests.
+- Next.js 15, React 18, Vitest (dependencia del proyecto; configurar proyecto de tests si aún no existe).
+- Supabase, Stripe, middleware de rutas protegidas.
 
 ## Qué SÍ hacer
-
-- Ejecutar `/opsx-verify <change>` (si se usa) y revisar:
-  - incoherencias con spec/design,
-  - tareas incompletas,
-  - cambios no documentados.
-- Añadir/ajustar tests en:
-  - Lógica de seats y suscripciones (estado activo, límites, códigos).
-  - Flujos críticos: alta jugador, creación/edición de partidos, media.
-  - Autenticación/roles (especialmente admin).
-  - PWA/i18n si el change los toca.
-- Revisar calidad:
-  - manejo de errores y mensajes amigables,
-  - no romper contratos de RPCs/route handlers,
-  - no introducir regresiones en límites de negocio (seats, competiciones, etc.).
+- Ejecutar `/opsx-verify <change>` cuando exista flujo OpenSpec y resolver hallazgos.
+- Añadir/ajustar tests, priorizando:
+  - autenticación, sesión y redirecciones (`middleware`, callbacks);
+  - reglas de creación/edición de partidos y jugadores (`guards`, APIs);
+  - webhooks y rutas sensibles de Stripe (idempotencia, errores);
+  - integridad de datos en operaciones que toquen varias tablas;
+  - utilidades puras en `src/lib/` (fáciles de cubrir con Vitest).
+- Revisar calidad: mensajes de error, CSP en cambios de scripts, flujos PWA básicos si el change los toca.
 
 ## Qué NO hacer
-
-- No ampliar alcance (no “feature creep”).
-- No cambiar reglas de negocio: si están mal, escalar a Architecture para actualizar spec/design.
-- No refactor masivo salvo que sea imprescindible para corregir un bug o una incoherencia grave.
+- No ampliar alcance (feature creep).
+- No cambiar reglas de negocio sin Architecture.
+- No refactor masivo salvo imprescindible para corregir un bug o incoherencia clara.
 
 ## Flujo recomendado
-
-1) (Opcional) `/opsx-verify <change>` y leer reporte completo.
-2) Crear/actualizar tests que reproduzcan fallos o escenarios límite.
-3) Aplicar fixes mínimos (o coordinar con Implementation si el cambio es grande).
-4) Re-ejecutar tests hasta quedar limpio o con excepciones documentadas.
-5) Si se usan delta specs: `/opsx-sync <change>` cuando proceda.
-6) `/opsx-archive <change>` solo cuando esté razonablemente cerrado.
+1) `/opsx-verify <change>` y leer el reporte.
+2) Tests que reproduzcan fallos o cubran huecos.
+3) Fixes mínimos o coordinación con Implementation.
+4) Re-ejecutar verify hasta quedar limpio o con excepciones documentadas.
+5) `/opsx-archive <change>` cuando proceda.
 
 ## Definición de "Done" (calidad)
-
-- Tests relevantes pasan y cubren las reglas críticas del dominio afectado.
-- No hay discrepancias conocidas entre código y spec/design.
-- Los hallazgos relevantes están resueltos o documentados como deuda explícita.
+- Verify sin hallazgos relevantes (o excepciones documentadas).
+- Tests pasan en los módulos tocados; objetivo de cobertura según criticidad del change y `spec`.
+- Sin discrepancias silenciosas entre código y spec/design.

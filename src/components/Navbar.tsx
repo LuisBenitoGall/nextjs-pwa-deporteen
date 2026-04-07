@@ -22,7 +22,7 @@ import {
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase/client';
 import { useLocale, useT } from '@/i18n/I18nProvider';
-import { isAdminUser } from '@/lib/auth/roles';
+import { isAdminByMetadata } from '@/lib/auth/roles.client';
 
 // Components
 import Select from '@/components/Select';
@@ -35,7 +35,7 @@ type UserLike = {
     user_metadata?: Record<string, any>;
 } | null;
 
-export default function Navbar({ serverUserId }: { serverUserId?: string | null }) {
+export default function Navbar({ serverUserId, serverIsAdmin = false }: { serverUserId?: string | null; serverIsAdmin?: boolean }) {
     const t = useT();
     const { locale, setLocale, locales } = useLocale();
     const BRAND = process.env.NEXT_PUBLIC_PROJECT || 'DeporTeen';
@@ -283,7 +283,7 @@ export default function Navbar({ serverUserId }: { serverUserId?: string | null 
         'usuario';
 
     const supabaseUser = (user ?? null) as unknown as User | null;
-    const isAdmin = isAdminUser(supabaseUser);
+    const isAdmin = supabaseUser ? isAdminByMetadata(supabaseUser) : serverIsAdmin;
 
     const navLinks = [
         { href: '/', label: t('inicio') || 'Inicio' },

@@ -79,8 +79,19 @@ export async function POST(req: Request) {
       if (plan?.days) {
         const now = new Date();
         const addedMs = plan.days * quantity * 24 * 60 * 60 * 1000;
-        const currentEnd = now;
-        const endsAt = new Date(currentEnd.getTime() + addedMs).toISOString();
+
+        // Extend from existing period end if it's in the future (stacking purchases),
+        // otherwise start from now (new or expired subscription).
+        const { data: existingSub } = await supabaseAdmin
+          .from('subscriptions')
+          .select('current_period_end')
+          .eq('user_id', userId)
+          .maybeSingle();
+        const existingEnd = existingSub?.current_period_end
+          ? new Date(existingSub.current_period_end)
+          : null;
+        const baseDate = existingEnd && existingEnd > now ? existingEnd : now;
+        const endsAt = new Date(baseDate.getTime() + addedMs).toISOString();
 
         // Upsert espejo en subscriptions con periodo simple (para acceso)
         const { error: subErr } = await supabaseAdmin.from('subscriptions').upsert({

@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase/client';
 import { getCurrentSeasonId } from '@/lib/seasons';
 import { LIMITS } from '@/config/constants';
 import { useT } from '@/i18n/I18nProvider';
+import { uploadAvatar } from '@/lib/uploadAvatar';
 
 import Input from '../../../components/Input';
 import Select from '../../../components/Select';
@@ -159,22 +160,8 @@ export default function NewPlayerForm({
         });
     };
 
-    async function saveAvatarLocally(file: File, playerId: string, seasonId: string) {
-        try {
-        // @ts-expect-error experimental API
-        if (window.showSaveFilePicker) {
-            // @ts-expect-error experimental API
-            const handle = await window.showSaveFilePicker({
-            suggestedName: `${playerId}-${seasonId}-${file.name}`,
-            types: [{ description: 'Imagen', accept: { [file.type || 'image/*']: ['.jpg', '.jpeg', '.png', '.webp'] } }],
-            });
-            const writable = await handle.createWritable();
-            await writable.write(await file.arrayBuffer());
-            await writable.close();
-            return `fsapi://${handle.name}`;
-        }
-        } catch { /* noop */ }
-        return `local://avatars/${playerId}/${seasonId}/${encodeURIComponent(file.name)}`;
+    async function saveAvatar(file: File, playerId: string, seasonId: string): Promise<string> {
+        return uploadAvatar(file, playerId, seasonId);
     }
 
     // Submit ---------------------------------------------------------------
@@ -246,7 +233,7 @@ export default function NewPlayerForm({
         const firstBlock = blocks[0];
         let avatarPath: string | null = null;
         if (firstBlock?.avatarFile) {
-            avatarPath = await saveAvatarLocally(firstBlock.avatarFile, playerId, seasonId);
+            avatarPath = await saveAvatar(firstBlock.avatarFile, playerId, seasonId);
         }
         {
             const { error: psErr } = await supabase

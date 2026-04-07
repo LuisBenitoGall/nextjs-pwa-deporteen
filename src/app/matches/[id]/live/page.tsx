@@ -104,6 +104,12 @@ export default function LiveMatchPage() {
         }
     }, [match]);
 
+    // Ref para que el debounce de inputs de marcador capture siempre los valores más recientes
+    const latestScoresRef = useRef({ my: myScore, rival: rivalScore });
+    useEffect(() => {
+        latestScoresRef.current = { my: myScore, rival: rivalScore };
+    }, [myScore, rivalScore]);
+
     // Debounce SOLO para notas/stats
     const savingRef = useRef<NodeJS.Timeout | null>(null);
     const scheduleSave = useCallback(() => {
@@ -319,6 +325,38 @@ export default function LiveMatchPage() {
         scheduleSave();
     }
 
+    function handleScoreInput(side: 'left' | 'right', raw: string) {
+        const n = Math.max(0, parseInt(raw, 10) || 0);
+
+        if (side === 'left') {
+            if (leftIsHome) { setMyScore(n);    latestScoresRef.current = { ...latestScoresRef.current, my: n }; }
+            else            { setRivalScore(n); latestScoresRef.current = { ...latestScoresRef.current, rival: n }; }
+        } else {
+            if (leftIsHome) { setRivalScore(n); latestScoresRef.current = { ...latestScoresRef.current, rival: n }; }
+            else            { setMyScore(n);    latestScoresRef.current = { ...latestScoresRef.current, my: n }; }
+        }
+
+        if (savingRef.current) clearTimeout(savingRef.current);
+        savingRef.current = setTimeout(async () => {
+            try {
+                const res = await fetch(`/api/matches/${matchId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        my_score:    latestScoresRef.current.my,
+                        rival_score: latestScoresRef.current.rival,
+                    }),
+                });
+                if (!res.ok) {
+                    const { error: errMsg } = await res.json().catch(() => ({ error: 'Error' }));
+                    setError(errMsg || 'No se pudo guardar');
+                }
+            } catch (e: any) {
+                setError(e?.message || 'No se pudo guardar');
+            }
+        }, 600);
+    }
+
     async function flushNow() {
         setIsSaving(true);
         try {
@@ -420,9 +458,16 @@ export default function LiveMatchPage() {
                                 <button type="button" aria-label="+1" className="rounded-md px-3 py-2 border" onClick={incLeft}>+</button>
                                 <button type="button" aria-label="-1" className="rounded-md px-3 py-2 border" onClick={decLeft}>-</button>
                             </div>
-                            <div className="grid place-content-center border rounded-md w-24 sm:w-28 md:w-32 lg:w-40 aspect-square text-5xl md:text-6xl font-bold select-none">
-                                {leftScore}
-                            </div>
+                            <input
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                value={leftScore}
+                                onChange={(e) => handleScoreInput('left', e.target.value)}
+                                className="border rounded-md w-24 sm:w-28 md:w-32 lg:w-40 aspect-square text-5xl md:text-6xl font-bold text-center bg-white"
+
+                                aria-label={leftLabel}
+                            />
                         </div>
                     </div>
 
@@ -432,9 +477,16 @@ export default function LiveMatchPage() {
                             <span className="bg-green-700 text-white rounded-md px-3 py-1">{rightLabel}</span>
                         </div>
                         <div className="flex items-center justify-center gap-4">
-                            <div className="grid place-content-center border rounded-md w-24 sm:w-28 md:w-32 lg:w-40 aspect-square text-5xl md:text-6xl font-bold select-none">
-                            {rightScore}
-                            </div>
+                            <input
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                value={rightScore}
+                                onChange={(e) => handleScoreInput('right', e.target.value)}
+                                className="border rounded-md w-24 sm:w-28 md:w-32 lg:w-40 aspect-square text-5xl md:text-6xl font-bold text-center bg-white"
+
+                                aria-label={rightLabel}
+                            />
                             <div className="flex flex-col gap-2">
                                 <button type="button" aria-label="+1" className="rounded-md px-3 py-2 border" onClick={incRight}>+</button>
                                 <button type="button" aria-label="-1" className="rounded-md px-3 py-2 border" onClick={decRight}>-</button>

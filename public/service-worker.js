@@ -2,7 +2,7 @@
 // public/service-worker.js
 
 const CACHE_PREFIX  = 'pwa-esports';
-const CACHE_VERSION = 'v2';                // << súbelo para forzar actualización
+const CACHE_VERSION = 'v4';                // << súbelo para forzar actualización
 const CACHE_NAME    = `${CACHE_PREFIX}-${CACHE_VERSION}`;
 const BLOCK_SITE    = false;
 
@@ -50,6 +50,10 @@ self.addEventListener('fetch', (event) => {
   // 2) Solo cachea GET. Todo lo demás, que pase directo.
   if (req.method !== 'GET') return;
 
+  // 2b) Nunca interceptar bundles de Next/Webpack. Cache-first aquí mezcla chunks de
+  //     distintos deploys y provoca en runtime: "Cannot read properties of undefined (reading 'call')".
+  if (url.pathname.startsWith('/_next/')) return;
+
   // 3) Estrategias:
   //    - Navegación (document): network-first para no servir app vieja
   //    - Assets estáticos: cache-first
@@ -60,7 +64,6 @@ self.addEventListener('fetch', (event) => {
   }
 
   const isStaticAsset =
-    url.pathname.startsWith('/_next/') ||
     url.pathname.startsWith('/icons/') ||
     url.pathname.endsWith('.css') ||
     url.pathname.endsWith('.js') ||
@@ -90,9 +93,13 @@ async function cacheFirst(request) {
 
 async function networkFirst(request) {
   const cache = await caches.open(CACHE_NAME);
+  // No guardar HTML: un documento en caché + chunks nuevos en red reproduce el fallo
+  // "Cannot read properties of undefined (reading 'call')" en el runtime de Webpack.
+  const isDocument =
+    request.mode === 'navigate' || request.destination === 'document';
   try {
     const resp = await fetch(request);
-    if (resp && resp.status === 200 && resp.type !== 'opaque') {
+    if (resp && resp.status === 200 && resp.type !== 'opaque' && !isDocument) {
       cache.put(request, resp.clone());
     }
     return resp;

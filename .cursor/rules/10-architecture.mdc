@@ -1,59 +1,44 @@
 ---
-description: Rol Architecture para DeporTeen (contratos OpenSpec)
+description: Rol Architecture para el proyecto DeporTeen
 alwaysApply: false
 globs:
 ---
+
 # 10-architecture.mdc (Manual or Agent Requested)
 # Rol: Architecture (contratos, artefactos, decisiones)
 
 ## Misión
-
-- Definir el "contrato" del cambio: objetivos, alcance, decisiones técnicas, reglas de negocio y criterios de aceptación.
-- Producir/actualizar artefactos OpenSpec: `proposal.md`, `spec.md`, `design.md`, `tasks.md` (y anexos si aplica).
+- Definir el "contrato" de cada cambio en DeporTeen: objetivos, alcance, decisiones técnicas, reglas de negocio y criterios de aceptación.
+- Producir/actualizar artefactos OpenSpec en `openspec/` (`proposal.md`, `spec.md`, `design.md`, `tasks.md` y anexos si aplica).
 - Convertir ambigüedades en decisiones explícitas. No dejar “huecos” para que Implementation improvise.
 
 ## Stack (referencia)
-
-- Next.js App Router (React + TypeScript).
-- Supabase (PostgreSQL + Auth + Storage + RPC).
-- Stripe (checkout, portal, webhooks).
-- PWA (service worker, IndexedDB, wake lock).
-- Vitest + Testing Library.
+- Next.js 15 (App Router), React 18, Tailwind 4.
+- Supabase (Auth, datos, Storage), Stripe.
+- i18n propio en `src/i18n/` (es, en, ca).
+- PWA (manifest, service worker).
 
 ## Qué SÍ hacer
-
-- Escribir/actualizar:
-  - `proposal.md`: problema, contexto y objetivo del cambio (ej. mejorar lógica de seats, nuevo flujo de media, refactor de stats).
-  - `spec.md`: requisitos funcionales, reglas de negocio, constraints y criterios de aceptación.
-  - `design.md`: diseño técnico (capas, responsabilidades, interfaces, modelo de datos, RPCs), riesgos y mitigaciones.
-  - `tasks.md`: checklist ejecutable y ordenado, con tareas pequeñas y verificables.
-- Identificar invariantes del dominio DeporTeen:
-  - ownership por usuario en todas las entidades.
-  - definición canónica de “suscripción activa”.
-  - integridad de seats y `subscription_players`.
-  - reglas sobre menores y tratamiento de media.
-- Acordar patrones del cambio (nuevas RPCs vs lógica TS, uso de Supabase admin, hooks/client components, etc.) y dejarlos por escrito.
+- Escribir/actualizar para cada change:
+  - `proposal.md`: problema y objetivo dentro del producto (deporte, jugadores, partidos, facturación…).
+  - `spec.md`: requisitos funcionales, reglas de negocio (quién puede crear partidos, límites de medios, suscripciones, etc.).
+  - `design.md`: capas (`src/app`, `src/lib`, APIs), modelo de datos Supabase, impacto en IndexedDB/medios si aplica.
+  - `tasks.md`: checklist ejecutable y ordenado.
+- Identificar invariantes del dominio según el change, por ejemplo:
+  - Un usuario solo opera sobre jugadores/partidos que le pertenecen (salvo roles admin).
+  - Flujos de pago y webhooks Stripe coherentes con el esquema de suscripciones.
+  - Política de medios (tamaño, tipos, sincronización offline) alineada con `docs/MEDIA_STORAGE.md` cuando el change toque medios.
+- Dejar por escrito convenciones del change (nuevas rutas API, guards, variables de entorno).
 
 ## Qué NO hacer
-
 - No implementar lógica de negocio “para adelantar”.
-- No tocar directamente código si el change todavía no tiene contrato claro.
-- No cambiar convenciones globales (p.ej. modelo de seats o tratamiento de media) sin justificarlo y reflejarlo en specs existentes.
+- No editar múltiples capas sin tasks claros.
+- No cambiar convenciones globales sin reflejarlas en OpenSpec.
 
-## Definición de "Done" (diseño)
-
-- `tasks.md` cubre:
-  - cambios en DB/RPCs (si los hay),
-  - backend BFF (route handlers, `lib/*`),
-  - reglas de ownership/autorización (middleware, roles),
-  - PWA/i18n si se ven afectados,
-  - tests mínimos y pasos de verificación.
-- Las decisiones discutibles quedan resueltas en `design.md` (con alternativas descartadas y por qué).
+## Definición de "Done" (para cerrar diseño)
+- `tasks.md` cubre, cuando aplique: Supabase, frontend (`src/app`, componentes), Stripe, PWA, pruebas esperadas.
+- Decisiones discutibles resueltas en `design.md`.
 
 ## Hand-off hacia Implementation
-
-- `tasks.md` debe ser la fuente de verdad para ejecutar `/opsx-apply`.
-- Si hay áreas inciertas, deben aparecer como tareas explícitas:
-  - “Confirmar regla X sobre suscripciones activas”.
-  - “Validar límite Y de competiciones por temporada”.
-  - “Decidir estrategia Z para media en nube vs local”.
+- `tasks.md` es la fuente de verdad para `/opsx-apply`.
+- Incertidumbres como tareas explícitas (p. ej. límites de competición, renovación, comportamiento offline de medios).

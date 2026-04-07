@@ -63,7 +63,10 @@ export async function middleware(req: NextRequest) {
     `base-uri 'self'`,
     `form-action 'self'`,
     `script-src ${scriptSrc}`,
-    `style-src 'self' 'unsafe-inline' https:`,
+    // 'unsafe-inline' is required for inline style="" attributes used by
+    // Radix UI, animation utilities and custom components (13 occurrences).
+    // Nonces cannot protect HTML style attributes — only <style> elements.
+    `style-src 'self' 'unsafe-inline'`,
     `img-src 'self' data: blob: https:`,
     `media-src 'self' blob: data: https:`,
     `font-src 'self' https: data:`,
@@ -86,13 +89,9 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
+  // Apply to all routes except Next.js internals and static assets.
+  // This ensures CSP and security headers are set on every page response.
   matcher: [
-    '/dashboard/:path*',
-    '/players/:path*',
-    '/account/:path*',
-    '/subscription/:path*',
-    '/billing/:path*',
-    '/login',
-    '/registro',
+    '/((?!_next/static|_next/image|favicon\\.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?)$).*)',
   ],
 };

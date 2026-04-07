@@ -21,14 +21,27 @@ import type { CouponRow } from './CouponsTable';
 interface EditCouponDialogProps {
   coupon: CouponRow;
   onSuccess?: () => void;
+  /** When provided, the dialog is controlled externally (no trigger button rendered) */
+  open?: boolean;
+  onOpenChange?: (v: boolean) => void;
 }
 
-export default function EditCouponDialog({ coupon, onSuccess }: EditCouponDialogProps) {
+export default function EditCouponDialog({
+  coupon,
+  onSuccess,
+  open: controlledOpen,
+  onOpenChange: onControlledOpenChange,
+}: EditCouponDialogProps) {
   const t = useT();
   const router = useRouter();
   const { showToast } = useToast();
 
-  const [open, setOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = isControlled
+    ? (v: boolean) => onControlledOpenChange?.(v)
+    : setInternalOpen;
   const [name, setName] = useState(coupon.name ?? '');
   const [redeemBy, setRedeemBy] = useState<string | null>(coupon.redeemByRaw);
   const [maxRedemptions, setMaxRedemptions] = useState<string>(
@@ -92,11 +105,13 @@ export default function EditCouponDialog({ coupon, onSuccess }: EditCouponDialog
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          {t('stripe_coupons_edit_open') || 'Editar'}
-        </Button>
-      </DialogTrigger>
+      {!isControlled && (
+        <DialogTrigger asChild>
+          <Button variant="outline" size="sm">
+            {t('stripe_coupons_edit_open') || 'Editar'}
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="bg-slate-900 text-slate-100">
         <DialogHeader>
           <DialogTitle>{t('stripe_coupons_edit_title') || 'Editar cupón'}</DialogTitle>

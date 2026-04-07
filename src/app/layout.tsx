@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import Script from 'next/script';
 import { I18nProvider } from '@/i18n/I18nProvider';
 import { getServerUser } from '@/lib/supabase/server';
+import { isAdminUser } from '@/lib/auth/roles';
 import { ToastProvider } from '@/components/ui/toast';
 import type { Metadata, Viewport } from 'next';
 
@@ -30,6 +31,7 @@ export const viewport: Viewport = { themeColor: '#0EA5E9' };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
     const { user } = await getServerUser();
+    const serverIsAdmin = isAdminUser(user);
     
     // ✅ En Next 15, headers() es asíncrono
     const hdrs = await headers();
@@ -41,7 +43,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <I18nProvider>
                     <ToastProvider>
                         <ServiceWorkerRegistrar />
-                        <Navbar serverUserId={user?.id ?? null} />
+                        <Navbar serverUserId={user?.id ?? null} serverIsAdmin={serverIsAdmin} />
 
                         <InstallBanner />
 

@@ -1,155 +1,77 @@
 ---
-description: Contexto global de DeporTeen (Next.js + Supabase + Stripe + PWA)
+description: Contexto global del proyecto DeporTeen (PWA deporte / estadísticas)
 alwaysApply: true
 globs:
   - "src/**"
-  - "database/**"
-  - "public/**"
-  - "scripts/**"
   - "openspec/**"
+  - "public/**"
+  - ".cursor/**"
+  - "docs/**"
+  - "supabase/**"
 ---
 
 # 00-project.mdc (Always)
-# DeporTeen - Reglas globales del repositorio
+# DeporTeen — Reglas globales del repositorio
 
 ## Propósito del sistema
-
-- Aplicación PWA para que adultos (madres/padres/tutores) gestionen la trayectoria deportiva de menores:
-  - Alta y gestión de jugadores (hijos/as).
-  - Registro de temporadas, competiciones y partidos.
-  - Registro de estadísticas por deporte.
-  - Gestión de fotos/vídeos asociados a los partidos.
-- Controlar el número de jugadores a través de un modelo de suscripciones (seats) ligado a Stripe y/o códigos de acceso.
-- Prioridades: seguridad (menores, privacidad), coherencia de dominio (seats, suscripciones, ownership), experiencia móvil, mantenibilidad.
+- **DeporTeen** es una **PWA** para **resultados y estadísticas deportivas** (jugadores, clubes/equipos, competiciones, partidos), pensada para familias y clubs.
+- Prioridades: experiencia móvil usable, integridad de datos, pagos/suscripciones claros, PWA instalable.
+- Evitar “magia” difícil de depurar y soluciones que no estén respaldadas por OpenSpec cuando el cambio sea contractual.
 
 ## Stack y compatibilidad (obligatoria)
-
-- Frontend/Backend:
-  - **Next.js App Router** (React + TypeScript).
-  - **Node**: usar la versión definida en el proyecto (package.json / configuración del entorno). No introducir tooling que obligue a otra versión incompatible.
-- Backend de datos:
-  - **Supabase** (PostgreSQL + Auth + Storage + RPCs).
-- Pagos:
-  - **Stripe** para suscripciones, pagos únicos y portal de cliente.
-- Testing:
-  - **Vitest** + **@testing-library/react** + **jsdom**.
+- **Runtime**: **Node 24** (CLI y toolchain), salvo que el equipo documente otra versión en `package.json` > `engines`.
+- **Frontend**: **Next.js (App Router)** en `src/app/`, **React 18**.
+- **Estilos**: **Tailwind CSS** (v4 en el proyecto) y componentes en `src/components/`.
+- **Estado**: **React** (server/client components, hooks). **No** hay Zustand en dependencias actuales; no introducirlo sin decisión en OpenSpec y `package.json`.
+- **Backend gestionado**: **Supabase** (Auth, Postgres, Storage, RPC donde existan).
+- **Pagos**: **Stripe** (checkout, webhooks, portal; panel admin en rutas `/admin/stripe/*`).
+- **i18n**: implementación **propia** en `src/i18n/` (locales **es**, **en**, **ca** en mensajes JSON). No es i18next.
+- **PWA**: `manifest` (p. ej. `src/app/manifest.ts`), Service Worker vía componente cliente, banners de instalación.
+- No introducir tooling o dependencias que rompan el build o sin actualizar el contrato en OpenSpec cuando aplique.
 
 ## Convenciones de repositorio
-
-- Estructura por dominio lógico:
-  - `src/app/dashboard`, `src/app/players`, `src/app/matches`, `src/app/subscription`, `src/app/billing`, `src/app/admin`, `src/app/legal`, etc.
-  - Lógica de dominio en `src/lib/*` (seats, subscriptions, seasons, sports, media, rpc-helpers, etc.).
-  - Infraestructura / configuración en `src/i18n`, `src/config`, `src/middleware.ts`, `public/service-worker.js`, `database/**`.
-- Nombres:
-  - Tablas SQL: snake_case plural.
-  - Columnas FK: `<entidad>_id`.
-  - Funciones/servicios TS: nombres claros de dominio (`getSeatStatus`, `fetchUserSubscriptions`, `uploadMatchMedia`).
-- Evitar “helpers” globales genéricos; preferir módulos de dominio bien acotados (`lib/subscriptions`, `lib/seats`, `lib/sports`, etc.).
+- **Estructura por dominios** (orientativa): autenticación y cuenta, jugadores y temporadas, partidos y medios, competiciones, suscripciones/facturación, administración Stripe.
+- **Alias**: `@/` → `src/` (`tsconfig.json`).
+- **Nombres**:
+  - Hooks: `use*` en `src/hooks/`.
+  - Clientes / helpers: `src/lib/` (p. ej. `supabase`, `stripe`, guards).
+  - Componentes UI reutilizables: `src/components/` y `src/components/ui/`.
+- Mantener responsabilidades claras; evitar utilidades globales opacas salvo que estén justificadas.
 
 ## Regla de oro: no inventar requisitos
+- Si una decisión de negocio no está especificada en OpenSpec (`openspec/specs`, cambios activos en `openspec/changes` o documentación explícita del change): **no inventar**.
+- Si hay ambigüedad: proponer opciones (A/B) en artefactos OpenSpec o devolver a Architecture.
 
-- Si una decisión de negocio no está especificada en OpenSpec (proposal/spec/design/tasks): NO inventar.
-- Si hay ambigüedad:
-  - Proponer opciones (A/B) en el artefacto OpenSpec correspondiente.
-  - Implementar estrictamente el camino elegido por los artefactos, sin rediseñar el producto.
+## Dominio operativo (según código y datos actuales)
+- **Usuarios**: autenticación Supabase; perfiles y datos de jugador asociados al usuario.
+- **Licencias / suscripciones**: integración Stripe (planes, renovaciones, recibos); comprobar roles y env vars para admin.
+- **Partidos y medios**: fotos/vídeos con almacenamiento híbrido (IndexedDB + Supabase); ver `docs/MEDIA_STORAGE.md`.
+- **Acceso a rutas protegidas**: definido en `src/middleware.ts` (dashboard, jugadores, cuenta, suscripción, facturación).
 
-## Dominio: supuestos operativos (para modelado y validación)
+## Autorización y acceso
+- Endpoints y acciones que modifiquen datos de usuario, pagos o recursos deben validar **sesión** y **pertenencia** (p. ej. `user_id` / `player_id`) según el spec del change.
+- Panel de administración Stripe restringido a cuentas administrador (configuración por email/rol en código).
 
-- Un **usuario** adulto tiene una o más suscripciones (`subscriptions`) y un conjunto de jugadores (`players`) limitado por sus seats (`seats_remaining`).
-- Un **jugador**:
-  - Pertenece siempre a un usuario (adulto).
-  - Está vinculado a una o varias temporadas y competiciones.
-  - Sus datos (incluyendo media) están siempre bajo responsabilidad del adulto propietario.
-- Una **suscripción**:
-  - Pertenece a un único usuario (`user_id`).
-  - Define número de seats y vigencia (`current_period_end`, `status`).
-  - Puede venir de Stripe o de códigos de acceso (`access_codes`).
-- Un **seat**:
-  - Equivale a la capacidad de tener un jugador activo (o más, según reglas de negocio futuras, siempre explícitas en spec).
-  - Se reparte a través de `subscription_players` con historial (`linked_at` / `unlinked_at`).
-- Media (fotos/vídeos):
-  - Por defecto se almacena localmente en el dispositivo (IndexedDB).
-  - Subida a nube (Supabase Storage) sólo si la configuración y las páginas legales lo reflejan.
-
-## Autenticación, autorización y ownership
-
-- Autenticación:
-  - Basada en Supabase Auth (sesiones gestionadas en `middleware.ts` y `lib/supabase`).
-- Ownership:
-  - Cualquier lectura/escritura de datos de dominio debe:
-    - Filtrar por `user_id` del usuario autenticado.
-    - Asumir que RLS está activado y reforzarla con filtros explícitos en el código.
-- Roles:
-  - Usuarios admin determinados por reglas en `lib/auth/roles.ts` (email/metadata).
-  - Acceso a rutas `/admin/**` sólo para usuarios admin.
-
-## Backend: patrones y límites
-
-- Lógica de dominio:
-  - Encapsulada en `src/lib/*`:
-    - Suscripciones/seats, sports, seasons, media, RPC helpers, Stripe, etc.
-  - Las páginas/route handlers deben orquestar, no contener reglas complejas.
-- Supabase:
-  - Evitar duplicar lógica de negocio compleja en múltiples sitios; preferir RPCs bien diseñados para invariantes delicados (p.ej. `create_player_link_subscription`, `seats_remaining`).
-  - Cuidado con funciones PL/pgSQL: evitar ambigüedades de tipos y nombres de columnas.
-- Stripe:
-  - Webhooks idempotentes, con trazabilidad clara hacia cambios en `subscriptions` y `payments`.
-
-## UI / PWA
-
-- UI:
-  - Componentes reutilizables en `src/components` y `src/components/ui`.
-  - Mantener consistencia visual y de interacción (formularios, banners, modales).
-- PWA:
-  - Service Worker controla app shell y assets estáticos; NO intercepta ni cachea tráfico de Supabase por defecto.
-  - Hooks como `useA2HS` y `useWakeLock` deben usarse conforme a las specs de PWA.
-- Estado:
-  - Preferir state local/React; evitar introducir librerías de estado global sin necesidad clara.
-
-## Base de datos, integridad y performance
-
-- Integridad:
-  - Respetar constraints existentes (UNIQUE, CHECK en `subscriptions.status`, FK, etc.).
-  - Usar transacciones en operaciones multi-tabla críticas (suscripciones, vínculo jugador–suscripción, borrado cascada de competiciones/partidos).
-- Performance:
-  - Consultas filtradas por `user_id` y criterios de dominio (temporada actual, deporte, etc.).
-  - Evitar N+1 en listas grandes de jugadores/partidos cuando se obtienen estadísticas asociadas.
+## Persistencia y datos
+- **Global (Supabase)**: tablas y RPC descritas o inferidas en `src/lib/database.types.ts` y migraciones; mantener tipos alineados con la base real.
+- **Cliente (offline / medios)**: IndexedDB y estrategias en `src/lib/indexeddb.ts`, `mediaLocal.ts`, `mediaSync.ts` — ver documentación de medios.
 
 ## Errores, logging y seguridad
-
-- Errores:
-  - Mensajes claros para el usuario final, especialmente en:
-    - Crear jugador.
-    - Procesar pagos/códigos.
-    - Operaciones en vivo de partido.
-- Logging:
-  - Loguear eventos relevantes del dominio en server (webhooks Stripe, fallos de RPCs críticas).
-- Seguridad:
-  - No exponer detalles internos de SQL/Stripe en mensajes de error al usuario.
-  - Validar/sanitizar IDs y pertenencia a usuario en cada endpoint.
+- Mensajes al usuario claros; detalles técnicos solo en logs.
+- No confiar en input del cliente; validar en route handlers y server actions.
+- No loguear secretos, tokens ni datos de pago.
 
 ## Testing y calidad mínima
-
-- Cambios que toquen lógica de negocio:
-  - Añadir/ajustar tests (unitarios o de integración ligera con mocks de Supabase/Stripe).
-- Mínimo antes de dar por “done”:
-  - Tests relevantes pasan (`pnpm test:run` o equivalente).
-  - No hay errores obvios de typecheck/lint (si existen en el proyecto).
-  - No se rompe compatibilidad con el stack actual (Node/Next/Supabase/Stripe).
+- Cambios que toquen **auth**, **pagos**, **reglas de negocio de partidos/jugadores** o **medios** deberían ir acompañados de pruebas cuando el entorno lo permita.
+- Herramienta prevista: **Vitest** (dependencia presente). Añadir `vitest.config` / scripts si el equipo los estandariza.
+- Antes de dar por hecho: `pnpm build`, `pnpm lint`, `pnpm types` sin errores graves; flujos PWA básicos afectados siguen funcionando.
 
 ## Cómo deben trabajar los agentes
-
-- Architecture:
-  - Define contratos y artefactos OpenSpec (proposal/spec/design/tasks) y criterios Done.
-  - No implementa lógica compleja.
-- Implementation:
-  - Implementa estrictamente tasks/spec/design.
-  - Si detecta ambigüedad, la documenta y la devuelve a Architecture.
-- Testing:
-  - Verifica edge cases, añade tests y valida coherencia con spec.
+- **Architecture**: contratos OpenSpec y criterios de aceptación.
+- **Implementation**: implementación según tasks/spec/design.
+- **Testing**: verificación y cobertura donde corresponda.
+- **Install & Settings**: entorno, tooling y documentación de mapa del repo (ver `40-install-settings.mdc`).
 
 ## Comunicación en commits/PRs (si aplica)
-
 - Commits descriptivos por unidad de trabajo.
-- Evitar commits “wip” grandes sin explicación.
-- En PR: describir impacto en dominio (jugadores/suscripciones/partidos/media), migraciones si hay y riesgos.
+- En PR: impacto en dominio (jugadores, partidos, pagos, medios), migraciones y riesgos.

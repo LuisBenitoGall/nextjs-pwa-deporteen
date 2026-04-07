@@ -24,11 +24,11 @@ let scriptLoaded = false;
 let gapiLoaded = false;
 let gisLoaded = false;
 
-export function useGooglePicker({ 
-  apiKey, 
-  clientId, 
-  scope = ['https://www.googleapis.com/auth/drive.readonly'],
-  onFilePicked 
+export function useGooglePicker({
+  apiKey,
+  clientId,
+  scope = ['https://www.googleapis.com/auth/drive.file'],
+  onFilePicked
 }: UseGooglePickerOptions) {
   const [isPickerReady, setIsPickerReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -113,6 +113,8 @@ export function useGooglePicker({
       scope: scope.join(' '),
       callback: (tokenResponse: google.accounts.oauth2.TokenResponse) => {
         if (tokenResponse && tokenResponse.access_token) {
+          // Persist token so useStorageProvider can detect Drive availability
+          try { sessionStorage.setItem('google_access_token', tokenResponse.access_token); } catch {}
           createPicker(tokenResponse.access_token);
         }
       },
@@ -137,6 +139,45 @@ export async function fetchGoogleDriveFile(file: PickerFile): Promise<Blob> {
   }
 
   return response.blob();
+}
+
+/**
+ * Requests a Google OAuth token with drive.file scope and saves it to sessionStorage.
+ * Does NOT open the picker — use this to "connect" Drive from account settings.
+ */
+export function connectGoogleDrive(clientId: string, onSuccess?: () => void): void {
+    if (typeof window === 'undefined') return;
+
+    const doConnect = () => {
+        const tokenClient = window.google.accounts.oauth2.initTokenClient({
+            client_id: clientId,
+            scope: 'https://www.googleapis.com/auth/drive.file',
+            callback: (tokenResponse: google.accounts.oauth2.TokenResponse) => {
+                if (tokenResponse?.access_token) {
+                    try { sessionStorage.setItem('google_access_token', tokenResponse.access_token); } catch {}
+                    onSuccess?.();
+                }
+            },
+        });
+        tokenClient.requestAccessToken();
+    };
+
+    if (window.google?.accounts?.oauth2) {
+        doConnect();
+        return;
+    }
+    // Load GIS if not yet loaded
+    const existing = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
+    if (!existing) {
+        const s = document.createElement('script');
+        s.src = 'https://accounts.google.com/gsi/client';
+        s.async = true;
+        s.defer = true;
+        s.onload = doConnect;
+        document.body.appendChild(s);
+    } else {
+        existing.addEventListener('load', doConnect);
+    }
 }
 
 // Extend the global window object for Google's libraries

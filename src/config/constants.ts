@@ -44,6 +44,7 @@ export const LIMITS = {
     COMPETITION_NUM_MAX_BY_SEASON: 5,
     CLUB_NAME_MAX: 80,
     TEAM_NAME_MAX: 60,
+    CHECKOUT_MAX_UNITS: 100,
 } as const;
 
 export const LEGAL_CONSTANTS = {

@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient, getServerUser } from '@/lib/supabase/server';
 
 // PATCH para actualizar campos del match (marcador, notas, stats...)
 export async function PATCH(req: Request, context: { params: Promise<{ id: string }> }) {
   try {
+    const { user } = await getServerUser();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const { id: matchId } = await context.params;
     if (!matchId) {
       return NextResponse.json({ error: 'matchId requerido' }, { status: 400 });
@@ -63,6 +66,9 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
 // DELETE para eliminar un partido por id
 export async function DELETE(_req: Request, context: { params: Promise<{ id: string }> }) {
   try {
+    const { user } = await getServerUser();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const { id: matchId } = await context.params;
     if (!matchId) {
       return NextResponse.json({ error: 'matchId requerido' }, { status: 400 });

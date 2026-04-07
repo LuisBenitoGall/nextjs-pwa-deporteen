@@ -1,361 +1,213 @@
-'use client';
-
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useParams } from 'next/navigation';
+// src/app/players/[id]/media/page.tsx
 import Image from 'next/image';
-import { supabaseBrowser } from '@/lib/supabase/client';
-import { idbGet, idbPut, idbDelete } from '@/lib/mediaLocal';
-import { useT } from '@/i18n/I18nProvider';
-
+import Link from 'next/link';
+import { redirect, notFound } from 'next/navigation';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { tServer } from '@/i18n/server';
 import TitleH1 from '@/components/TitleH1';
-import Submit from '@/components/Submit';
+import ConfirmDeleteButton from '@/components/ConfirmDeleteButton';
+import AvatarUploadForm from './AvatarUploadForm';
 
-type SeasonItem = {
-  playerSeasonId: string;
-  seasonId: string;
-  label: string;          // "2025/2026"
-  isCurrent: boolean;
-  avatar: string | null;  // key local en IndexedDB
-};
+type PageParams = { id: string };
 
-const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
-const MAX_BYTES = 5 * 1024 * 1024; // 5MB
-
-function buildAvatarKey(userId: string, playerId: string, seasonId: string) {
-  // Misma idea que device_uri: string estable, y reemplazar = sobrescribir blob con misma key
-  return `avatar:${userId}:${playerId}:${seasonId}`;
+function canUseNextImage(u: string | null | undefined) {
+    return !!u && (/^https?:\/\//i.test(u) || u.startsWith('/'));
 }
 
-export default function PlayerMediaPage() {
-  const t = useT();
-  const { id: playerId } = useParams() as { id: string };
-  const supabase = useMemo(() => supabaseBrowser(), []);
+export default async function PlayerMediaPage({
+    params,
+}: {
+    params: Promise<PageParams>;
+}) {
+    const { id } = await params;
+    const supabase = await createSupabaseServerClient();
 
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) redirect('/login');
 
-  const [seasons, setSeasons] = useState<SeasonItem[]>([]);
-  const [currentSeasonId, setCurrentSeasonId] = useState<string | null>(null);
+    const { data: me } = await supabase
+        .from('users')
+        .select('locale')
+        .eq('id', user.id)
+        .maybeSingle();
+    const { t } = await tServer(me?.locale || undefined);
 
-  const [urls, setUrls] = useState<Record<string, string>>({}); // seasonId -> blob url
-  const blobUrlsRef = useRef<string[]>([]);
+    const { data: player, error: pErr } = await supabase
+        .from('players')
+        .select('id, full_name, user_id')
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-  const currentSeason =
-    seasons.find(s => s.seasonId === currentSeasonId) ??
-    seasons.find(s => s.isCurrent) ??
-    null;
-
-  const otherSeasons = seasons.filter(s => s.seasonId !== (currentSeason?.seasonId ?? ''));
-
-  const revokeAllBlobs = () => {
-    for (const u of blobUrlsRef.current) {
-      if (u?.startsWith('blob:')) URL.revokeObjectURL(u);
-    }
-    blobUrlsRef.current = [];
-  };
-
-  async function load() {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const res = await fetch(`/api/players/${playerId}/media`, { method: 'GET' });
-      const json = await res.json();
-
-      if (!res.ok) {
-        setError(json?.error ?? 'No se pudo cargar la media del jugador.');
-        setLoading(false);
-        return;
-      }
-
-      const list: SeasonItem[] = json.seasons ?? [];
-      setSeasons(list);
-      setCurrentSeasonId(json.currentSeasonId ?? null);
-
-      // Resolver URLs locales (solo idb)
-      const out: Record<string, string> = {};
-      const created: string[] = [];
-
-      for (const s of list) {
-        if (!s.avatar) continue;
-        try {
-          const blob = await idbGet(s.avatar);
-          if (blob) {
-            const u = URL.createObjectURL(blob);
-            created.push(u);
-            out[s.seasonId] = u;
-          }
-        } catch {
-          // silencio administrativo
-        }
-      }
-
-      // revoca anteriores y guarda nuevos
-      revokeAllBlobs();
-      blobUrlsRef.current = created;
-      setUrls(out);
-    } catch (e: any) {
-      setError(e?.message ?? 'Error inesperado.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    void load();
-    return () => {
-      revokeAllBlobs();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playerId]);
-
-  useEffect(() => {
-    const onFocus = () => setSeasons(s => [...s]); // fuerza re-render (por si cambió algo y caducó blob url)
-    window.addEventListener('focus', onFocus);
-    return () => window.removeEventListener('focus', onFocus);
-  }, []);
-
-  const validateFile = (file: File): string | null => {
-    if (!ALLOWED_MIME.has(file.type)) return 'Formato no permitido. Usa jpg/jpeg, png, webp o gif.';
-    if (file.size > MAX_BYTES) return 'La imagen supera el tamaño máximo (5 MB).';
-    return null;
-  };
-
-  async function onPickFile(file: File) {
-    setError(null);
-    if (!currentSeason) {
-      setError('No hay temporada actual definida para este jugador.');
-      return;
-    }
-
-    const v = validateFile(file);
-    if (v) {
-      setError(v);
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setError(t('sesion_iniciar_aviso') || 'Sesión requerida');
-        return;
-      }
-
-      const key = buildAvatarKey(user.id, playerId, currentSeason.seasonId);
-
-      // 1) Guardar blob en IDB
-      await idbPut(key, file);
-
-      // 2) Guardar puntero en player_seasons.avatar
-      const res = await fetch(`/api/players/${playerId}/media/avatar`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          seasonId: currentSeason.seasonId,
-          avatar: key,
-          mime: file.type,
-          bytes: file.size,
-        }),
-      });
-
-      const json = await res.json();
-      if (!res.ok) {
-        // rollback: borra blob si el server no aceptó
-        await idbDelete(key);
-        setError(json?.error ?? 'No se pudo guardar el avatar.');
-        return;
-      }
-
-      await load();
-    } catch (e: any) {
-      setError(e?.message ?? 'Error guardando el avatar.');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function onDeleteCurrent() {
-    setError(null);
-    if (!currentSeason) return;
-    if (!currentSeason.avatar) return;
-
-    setSaving(true);
-    try {
-      const res = await fetch(
-        `/api/players/${playerId}/media/avatar?seasonId=${encodeURIComponent(currentSeason.seasonId)}`,
-        { method: 'DELETE' }
-      );
-
-      const json = await res.json();
-      if (!res.ok) {
-        setError(json?.error ?? 'No se pudo eliminar el avatar.');
-        return;
-      }
-
-      // borrar blob local
-      await idbDelete(currentSeason.avatar);
-
-      await load();
-    } catch (e: any) {
-      setError(e?.message ?? 'Error eliminando el avatar.');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  if (loading) return <div className="p-6">{t('cargando') || 'Cargando…'}</div>;
-  if (!playerId) return <div className="p-6">{t('no_encontrado') || 'No encontrado'}</div>;
-
-  const currentUrl = currentSeason ? urls[currentSeason.seasonId] : null;
-
-  return (
-    <div className="max-w-xl mx-auto">
-      <TitleH1>{t('jugador_media') || 'Jugador · Media'}</TitleH1>
-
-      <div className="p-4 space-y-6">
-        {/* Temporada actual */}
-        <div className="space-y-2">
-          <div className="text-sm text-gray-600">
-            Temporada actual:{' '}
-            <span className="font-semibold">{currentSeason?.label ?? '-'}</span>
-          </div>
-
-          <div className="rounded-xl border bg-white p-4 space-y-4">
-            {!currentSeason ? (
-              <div className="text-sm text-red-700">
-                No se encontró temporada actual para este jugador.
-              </div>
-            ) : currentUrl ? (
-              <>
-                <div className="relative w-full aspect-square rounded-xl border overflow-hidden bg-gray-50">
-                  <Image
-                    src={currentUrl}
-                    alt="Avatar temporada actual"
-                    fill
-                    unoptimized
-                    sizes="100vw"
-                    className="object-cover"
-                  />
+    if (pErr) {
+        return (
+            <div className="max-w-xl mx-auto">
+                <TitleH1>{t('avatares')}</TitleH1>
+                <div className="mt-4 rounded-xl border p-4 bg-red-50 text-red-800">
+                    {t('player_error_cargar')}
                 </div>
-
-                <div className="flex gap-2">
-                  <label className="flex-1">
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp,image/gif"
-                      className="hidden"
-                      disabled={saving}
-                      onChange={(e) => {
-                        const f = e.currentTarget.files?.[0];
-                        if (f) void onPickFile(f);
-                        e.currentTarget.value = '';
-                      }}
-                    />
-                    <div
-                      className={`h-[40.5px] rounded-lg bg-gray-600 text-white flex items-center justify-center hover:bg-gray-700 ${
-                        saving ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
-                      }`}
-                    >
-                      {saving ? (t('guardando') || 'Guardando…') : 'Sustituir imagen'}
-                    </div>
-                  </label>
-
-                  <button
-                    type="button"
-                    onClick={() => void onDeleteCurrent()}
-                    className="w-28 h-[40.5px] rounded-lg border border-gray-300 hover:bg-gray-50"
-                    disabled={saving}
-                  >
-                    Eliminar
-                  </button>
+                <div className="mt-4">
+                    <Link href="/dashboard" className="text-green-700 underline">{t('volver_panel')}</Link>
                 </div>
-
-                <p className="text-xs text-gray-500">
-                  Formatos: jpg/jpeg/png/webp/gif. Máximo 5 MB.
-                </p>
-              </>
-            ) : (
-              <>
-                <div className="text-sm text-gray-700">
-                  No hay imagen para la temporada actual.
-                </div>
-
-                <label className="block">
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp,image/gif"
-                    className="hidden"
-                    disabled={saving}
-                    onChange={(e) => {
-                      const f = e.currentTarget.files?.[0];
-                      if (f) void onPickFile(f);
-                      e.currentTarget.value = '';
-                    }}
-                  />
-                  <Submit
-                    onClick={() => {}}
-                    text={saving ? (t('guardando') || 'Guardando…') : 'Subir imagen'}
-                    loadingText={t('guardando') || 'Guardando…'}
-                    loading={saving}
-                  />
-                </label>
-
-                <p className="text-xs text-gray-500">
-                  Formatos: jpg/jpeg/png/webp/gif. Máximo 5 MB.
-                </p>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Temporadas anteriores */}
-        <div className="space-y-3">
-          <div className="text-sm text-gray-700 font-semibold">
-            Avatares de temporadas anteriores
-          </div>
-
-          {otherSeasons.length === 0 ? (
-            <div className="text-sm text-gray-500">No hay temporadas anteriores.</div>
-          ) : (
-            <div className="grid grid-cols-3 gap-3">
-              {otherSeasons.map((s) => {
-                const u = urls[s.seasonId];
-                return (
-                  <div key={s.seasonId} className="space-y-1">
-                    <div className="relative aspect-square rounded-lg border bg-white overflow-hidden">
-                      {u ? (
-                        <Image
-                          src={u}
-                          alt={`Avatar ${s.label}`}
-                          fill
-                          unoptimized
-                          sizes="33vw"
-                          className="object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">
-                          Sin imagen
-                        </div>
-                      )}
-                    </div>
-                    <div className="text-[11px] text-gray-600 text-center">{s.label}</div>
-                  </div>
-                );
-              })}
             </div>
-          )}
+        );
+    }
+    if (!player) notFound();
 
-          <p className="text-xs text-gray-500">
-            Las imágenes de temporadas anteriores son solo de consulta.
-          </p>
+    // Temporada vigente
+    const now = new Date();
+    const y = now.getFullYear();
+    const aug1 = new Date(y, 7, 1);
+    const startYear = now >= aug1 ? y : y - 1;
+    const endYear = startYear + 1;
+
+    const { data: currentSeason } = await supabase
+        .from('seasons')
+        .select('id, year_start, year_end')
+        .eq('year_start', startYear)
+        .eq('year_end', endYear)
+        .maybeSingle();
+
+    const currentSeasonId = currentSeason?.id ?? null;
+
+    // Todas las player_seasons del jugador con join a seasons, desc
+    const { data: allPlayerSeasons } = await supabase
+        .from('player_seasons')
+        .select('season_id, avatar, s:seasons(year_start, year_end)')
+        .eq('player_id', player.id)
+        .order('created_at', { ascending: false });
+
+    const rows = allPlayerSeasons ?? [];
+
+    const currentRow = rows.find(r => r.season_id === currentSeasonId) ?? null;
+    const pastRows = rows.filter(r => r.season_id !== currentSeasonId);
+
+    // Server action: eliminar avatar (poner a null)
+    async function clearAvatarAction(bound: { playerId: string; seasonId: string }) {
+        'use server';
+        const { playerId, seasonId } = bound;
+
+        const supabase = await createSupabaseServerClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) redirect('/login');
+
+        // Verificar pertenencia
+        const { data: owns } = await supabase
+            .from('players')
+            .select('id')
+            .eq('id', playerId)
+            .eq('user_id', user.id)
+            .maybeSingle();
+        if (!owns) return;
+
+        const { getSupabaseAdmin } = await import('@/lib/supabase/admin');
+        const admin = getSupabaseAdmin();
+
+        await admin
+            .from('player_seasons')
+            .update({ avatar: null })
+            .eq('player_id', playerId)
+            .eq('season_id', seasonId);
+
+        redirect(`/players/${playerId}/media`);
+    }
+
+    const seasonLabel = (row: any) =>
+        row?.s ? `${row.s.year_start}-${row.s.year_end}` : String(row?.season_id ?? '—');
+
+    return (
+        <div className="max-w-xl mx-auto">
+            <TitleH1>{t('avatares')} · <i>{player.full_name}</i></TitleH1>
+
+            {/* Botón volver */}
+            <div className="mb-6">
+                <Link
+                    href={`/players/${player.id}`}
+                    className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-3 py-2 text-sm text-white font-semibold hover:bg-green-700"
+                >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M15 18L9 12L15 6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    {t('avatar_volver_deportista')}
+                </Link>
+            </div>
+
+            {/* Temporada actual */}
+            <section className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm">
+                <h2 className="text-base font-semibold text-gray-800 mb-1">
+                    {t('temporada_actual')}
+                    {currentSeason && (
+                        <span className="ml-2 text-gray-500 font-normal">
+                            {currentSeason.year_start}-{currentSeason.year_end}
+                        </span>
+                    )}
+                </h2>
+                <p className="text-xs text-gray-500 mb-4">{t('avatar_temporada')}</p>
+
+                {currentSeasonId ? (
+                    <AvatarUploadForm
+                        playerId={player.id}
+                        seasonId={currentSeasonId}
+                        currentAvatarPath={currentRow?.avatar ?? null}
+                    />
+                ) : (
+                    <p className="text-sm text-gray-500">{t('temporada_no_definida')}</p>
+                )}
+            </section>
+
+            {/* Temporadas anteriores */}
+            {pastRows.length > 0 && (
+                <section className="mt-8 rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm">
+                    <h2 className="text-base font-semibold text-gray-800 mb-4">{t('temporadas')}</h2>
+
+                    <ul className="divide-y divide-gray-100">
+                        {pastRows.map((row: any) => (
+                            <li key={row.season_id} className="flex items-center gap-4 py-3">
+                                {/* Avatar */}
+                                <div className="h-12 w-12 overflow-hidden rounded-full bg-gray-100 flex-shrink-0">
+                                    {canUseNextImage(row.avatar) ? (
+                                        <Image
+                                            src={row.avatar}
+                                            alt={t('avatar')}
+                                            width={48}
+                                            height={48}
+                                            unoptimized
+                                            className="h-full w-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="grid h-full w-full place-content-center text-xl text-gray-400">
+                                            🏃
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Etiqueta temporada */}
+                                <span className="flex-1 text-sm font-medium text-gray-700">
+                                    {seasonLabel(row)}
+                                </span>
+
+                                {/* Eliminar (solo si hay avatar) */}
+                                {row.avatar ? (
+                                    <ConfirmDeleteButton
+                                        onConfirm={clearAvatarAction.bind(null, {
+                                            playerId: player.id,
+                                            seasonId: row.season_id,
+                                        })}
+                                        ariaLabel={t('eliminar')}
+                                        confirmTitle={t('avatar_eliminar_confirmar')}
+                                        confirmMessage={t('avatar_eliminar_confirmar_texto')}
+                                        confirmCta={t('borrado_confirmar')}
+                                        cancelCta={t('cancelar')}
+                                        className="inline-flex items-center rounded-xl bg-red-100 border border-red-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-red-50"
+                                    />
+                                ) : (
+                                    <span className="text-xs text-gray-400">{t('avatar_sin')}</span>
+                                )}
+                            </li>
+                        ))}
+                    </ul>
+                </section>
+            )}
         </div>
-
-        {error && (
-          <div className="rounded border p-3 bg-red-50 text-red-700">{error}</div>
-        )}
-      </div>
-    </div>
-  );
+    );
 }
