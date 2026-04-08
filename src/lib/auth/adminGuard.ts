@@ -1,12 +1,12 @@
 import 'server-only';
 import { NextResponse } from 'next/server';
 import { getServerUser } from '@/lib/supabase/server';
-import { isAdminUser } from './roles';
+import { createSupabaseServerClientReadOnly } from '@/lib/supabase/server';
+import { userCanAccessAdminPanel } from './adminAccess';
 
 /**
- * Verifica que el usuario autenticado sea admin.
- * Si no, devuelve una NextResponse con 401/403.
- * Si sí, devuelve { user }.
+ * Verifica que el usuario autenticado pueda acceder al panel /admin (Superadmin en BD o ADMIN_EMAILS).
+ * Si no, devuelve 401/403. No confía en metadatos JWT.
  */
 export async function requireAdmin(): Promise<
   | { ok: true; user: NonNullable<Awaited<ReturnType<typeof getServerUser>>['user']> }
@@ -19,7 +19,9 @@ export async function requireAdmin(): Promise<
       response: NextResponse.json({ error: 'No autenticado' }, { status: 401 }),
     };
   }
-  if (!isAdminUser(user)) {
+  const supabase = await createSupabaseServerClientReadOnly();
+  const allowed = await userCanAccessAdminPanel(supabase, user);
+  if (!allowed) {
     return {
       ok: false,
       response: NextResponse.json({ error: 'Acceso denegado' }, { status: 403 }),

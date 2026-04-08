@@ -15,6 +15,7 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
+    "forceConsistentCasingInFileNames": true,
     "plugins": [
       {
         "name": "next"
@@ -27,6 +28,7 @@
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "next.config.js"],
   "exclude": [
     "node_modules",
-    "supabase/functions/**" // Excluir Edge Functions (Deno) del chequeo local
+    "supabase/functions/**", // Excluir Edge Functions (Deno) del chequeo local
+    "scripts/**" // Excluir scripts de utilidad del typecheck de Next build
   ]
 }

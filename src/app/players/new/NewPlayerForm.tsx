@@ -202,7 +202,7 @@ export default function NewPlayerForm({
 
         // 0) Barrera seats solo si NO hay código
         if (!pendingCode && seatsRemaining !== null && seatsRemaining <= 0) {
-            throw new Error('No te quedan plazas disponibles para crear deportistas.');
+            throw new Error(t('limite_deportistas_alcanzado') ?? 'Has alcanzado el límite de deportistas permitidos. Amplía tu suscripción para agregar más.');
         }
 
         // 1) Garantiza perfil
@@ -317,10 +317,27 @@ export default function NewPlayerForm({
             <div ref={topRef} />
             <TitleH1>{t('deportista_nuevo')}</TitleH1>
 
-            <div className="mt-2 mb-4 rounded border p-3 bg-blue-50 text-blue-900 text-sm">
-                {t('player_nuevo_texto1')}: <b>{remaining}</b>.
-                {pendingCode && <span className="ml-2">· {t('codigo_detectado') ?? 'Código aplicado'}</span>}
-            </div>
+            {seatsRemaining !== null && seatsRemaining <= 0 && !pendingCode ? (
+                <div className="mt-2 mb-4 rounded border p-3 bg-yellow-50 text-yellow-900 text-sm">
+                    <p className="font-medium mb-2">
+                        {t('limite_deportistas_alcanzado') ?? 'Has alcanzado el límite de deportistas permitidos'}
+                    </p>
+                    <p className="text-xs mb-2">
+                        {t('limite_deportistas_info') ?? 'Tu suscripción actual permite crear hasta el máximo de deportistas configurado. Para agregar más, puedes ampliar tu suscripción.'}
+                    </p>
+                    <a
+                        href="/subscription"
+                        className="inline-block mt-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition"
+                    >
+                        {t('ampliar_suscripcion') ?? 'Ampliar suscripción'}
+                    </a>
+                </div>
+            ) : (
+                <div className="mt-2 mb-4 rounded border p-3 bg-blue-50 text-blue-900 text-sm">
+                    {t('player_nuevo_texto1')}: <b>{remaining}</b>.
+                    {pendingCode && <span className="ml-2">· {t('codigo_detectado') ?? 'Código aplicado'}</span>}
+                </div>
+            )}
 
             {info && <div role="status" className="rounded border p-3 bg-green-50 text-green-700 mb-4">{info}</div>}
             {err && <div role="alert" className="rounded border p-3 bg-red-50 text-red-700 mb-4">{err}</div>}

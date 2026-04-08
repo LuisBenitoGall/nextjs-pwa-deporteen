@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { userCanAccessAdminPanel } from '@/lib/auth/adminAccess';
 
 export async function middleware(req: NextRequest) {
   const nonce = crypto.randomUUID();
@@ -26,9 +27,31 @@ export async function middleware(req: NextRequest) {
       },
     }
   );
+  const p = req.nextUrl.pathname;
+
+  // --- /admin: sesión válida + rol Superadmin (o ADMIN_EMAILS) ---
+  if (p.startsWith('/admin')) {
+    const {
+      data: { user },
+      error: userErr,
+    } = await supabase.auth.getUser();
+    if (userErr || !user) {
+      const url = req.nextUrl.clone();
+      url.pathname = '/login';
+      url.searchParams.set('next', p);
+      return NextResponse.redirect(url);
+    }
+    const allowed = await userCanAccessAdminPanel(supabase, user);
+    if (!allowed) {
+      const url = req.nextUrl.clone();
+      url.pathname = '/';
+      url.searchParams.set('error', 'forbidden');
+      return NextResponse.redirect(url);
+    }
+  }
+
   const { data: { session } } = await supabase.auth.getSession();
 
-  const p = req.nextUrl.pathname;
   const isProtected =
     p.startsWith('/dashboard') ||
     p.startsWith('/players')   ||

@@ -1,8 +1,8 @@
 import { ReactNode } from 'react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { getServerUser } from '@/lib/supabase/server';
-import { isAdminUser } from '@/lib/auth/roles';
+import { createSupabaseServerClientReadOnly, getServerUser } from '@/lib/supabase/server';
+import { userCanAccessAdminPanel } from '@/lib/auth/adminAccess';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 
 export const metadata = {
@@ -15,7 +15,9 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     redirect('/login?next=/admin');
   }
 
-  if (!isAdminUser(user)) {
+  const supabase = await createSupabaseServerClientReadOnly();
+  const allowed = await userCanAccessAdminPanel(supabase, user);
+  if (!allowed) {
     return (
       <section className="mx-auto flex min-h-[50vh] max-w-3xl flex-col items-center justify-center px-6 text-center">
         <h1 className="text-2xl font-semibold text-red-500">Acceso restringido</h1>

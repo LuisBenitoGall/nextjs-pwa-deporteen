@@ -3,9 +3,18 @@ import Stripe from 'stripe';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2025-08-27.basil' });
-
 export async function POST(req: NextRequest) {
+  const stripeSecret = process.env.STRIPE_SECRET_KEY;
+  if (!stripeSecret) {
+    return NextResponse.json({ ok: false, error: 'Missing STRIPE_SECRET_KEY' }, { status: 500 });
+  }
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !serviceRoleKey) {
+    return NextResponse.json({ ok: false, error: 'Supabase admin env vars are missing' }, { status: 500 });
+  }
+
+  const stripe = new Stripe(stripeSecret, { apiVersion: '2025-08-27.basil' });
   const { session_id } = await req.json();
   if (!session_id) return NextResponse.json({ ok: false, error: 'Missing session_id' }, { status: 400 });
 
@@ -30,10 +39,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Missing metadata' }, { status: 400 });
   }
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const supabase = createClient(supabaseUrl, serviceRoleKey);
 
   // Leemos el plan (días y divisa)
   const { data: plan, error: planErr } = await supabase

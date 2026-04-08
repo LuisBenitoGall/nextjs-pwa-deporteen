@@ -5,6 +5,7 @@ import { redirect, notFound } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { tServer } from '@/i18n/server';
 import { LIMITS } from '@/config/constants';
+import { isSubscriptionActive } from '@/lib/subscriptions/shared';
 
 //Components
 import ConfirmDeleteButton from '@/components/ConfirmDeleteButton';
@@ -219,13 +220,8 @@ export default async function PlayerDetailPage({
     .eq('user_id', user.id)
     .order('current_period_end', { ascending: false });
 
-    let isActiveSubscription = false;
-    if (subs?.length) {
-        const latest = subs[0];
-        const end = latest.current_period_end ? new Date(latest.current_period_end) : null;
-        const statusOk = latest.status === true || String(latest.status || '').toLowerCase() === 'active';
-        isActiveSubscription = Boolean(end && end.getTime() > Date.now() && statusOk);
-    }
+    const latestSub = subs?.[0];
+    const isActiveSubscription = isSubscriptionActive(latestSub);
 
     return (
         <div>

@@ -44,7 +44,12 @@
 	- NEXT_PUBLIC_CLOUD_MEDIA=0   Con valor 1 permite subir los archivos a Cloud
 
 
+## DEVELOPMENT:
+	- url: https://nextjs-pwa-deporteen-five.vercel.app/
 
+
+## COMANDOS:
+	- pnpm i18n:sync   Sirve para la sincronización de los archivos de traducciones.
 
 
 

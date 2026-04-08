@@ -1,5 +1,5 @@
 // src/i18n/config.ts
-export const SUPPORTED_LOCALES = ['es', 'en', 'ca'] as const;
+export const SUPPORTED_LOCALES = ['es', 'en', 'ca', 'it'] as const;
 export type Locale = typeof SUPPORTED_LOCALES[number];
 export const DEFAULT_LOCALE: Locale = 'es';
 
@@ -12,6 +12,7 @@ export const LOCALE_LABELS: Record<Locale, string> = {
     es: 'Castellano',
     en: 'English',
     ca: 'Català',
+    it: 'Italiano',
     //eu: 'Euskara',
     //gl: 'Galego',
 };

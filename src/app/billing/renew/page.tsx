@@ -14,6 +14,7 @@ import {
     isLifetime,
     type PlanChoice,
     } from '@/lib/subscription-plans';
+import { isSubscriptionActive } from '@/lib/subscriptions/shared';
 
 export const runtime = 'nodejs';
 
@@ -46,12 +47,12 @@ export default async function RenewPage() {
 
     const renewableSeats = (subsRaw || []).reduce((acc, s) => {
         const end = s.current_period_end ? new Date(s.current_period_end) : null;
-        const statusBool = s?.status === true || String(s?.status || '').toLowerCase() === 'active';
+        const isActive = isSubscriptionActive(s);
 
         // Renovable si:
-        // - No está "activa" (status no activo)  O
+        // - No está "activa" (criterio canónico)  O
         // - Su fin es <= horizonte (ya vencida o a punto de vencer)
-        const isRenewable = !statusBool || (end ? end <= horizon : false);
+        const isRenewable = !isActive || (end ? end <= horizon : false);
 
         if (isRenewable) {
         const seats = Number(s.seats ?? 1);

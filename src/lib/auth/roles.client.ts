@@ -1,6 +1,5 @@
-// Client-safe admin check: only inspects user metadata/permissions.
-// Never reads env vars — no emails exposed in the client bundle.
-// For the email-based check use isAdminUser() from roles.ts (server-only).
+// Client-side helpers for legacy metadata (no env). El acceso real al panel /admin
+// se decide en servidor: userCanAccessAdminPanel (adminAccess.ts) + middleware.
 import type { User } from '@supabase/supabase-js';
 
 type UserLike = Pick<User, 'user_metadata' | 'app_metadata'> | null | undefined;

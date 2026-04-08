@@ -1,0 +1,9 @@
+# Changes Directory
+
+Este directorio contiene propuestas de cambios y mejoras futuras para el proyecto.
+
+Cada cambio debe tener su propio subdirectorio con:
+- `proposal.md`: Descripción y justificación del cambio
+- `tasks.md`: Lista de tareas para implementación
+- `design.md`: Decisiones técnicas (opcional)
+- `specs/`: Cambios en especificaciones (opcional)

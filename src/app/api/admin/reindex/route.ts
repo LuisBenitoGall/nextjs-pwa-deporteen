@@ -1,16 +1,16 @@
 // app/api/admin/reindex/route.ts
 export const runtime = 'nodejs';
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase/admin';
-import { getServerUser } from '@/lib/supabase/server';
-import { isAdminUser } from '@/lib/auth/roles';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { requireAdmin } from '@/lib/auth/adminGuard';
 
 export async function POST() {
-  const { user } = await getServerUser();
-  if (!user || !isAdminUser(user)) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  const guard = await requireAdmin();
+  if (!guard.ok) {
+    return guard.response;
   }
 
+  const supabaseAdmin = getSupabaseAdmin();
   // Operaciones que requieren service role (sin RLS)
   const { error } = await supabaseAdmin
     .from('players')

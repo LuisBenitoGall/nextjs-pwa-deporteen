@@ -30,5 +30,4 @@ export function getSupabaseAdmin(): SupabaseClient {
   return globalThis.__supabase_admin__!;
 }
 
-export const supabaseAdmin = getSupabaseAdmin();
 export type { SupabaseClient };

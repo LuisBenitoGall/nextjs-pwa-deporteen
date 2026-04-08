@@ -19,11 +19,8 @@ import {
     UserCircle2,
     UserCog,
 } from 'lucide-react';
-import type { User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase/client';
 import { useLocale, useT } from '@/i18n/I18nProvider';
-import { isAdminByMetadata } from '@/lib/auth/roles.client';
-
 // Components
 import Select from '@/components/Select';
 import LogoScatter from '@/components/LogoScatter';
@@ -282,8 +279,8 @@ export default function Navbar({ serverUserId, serverIsAdmin = false }: { server
         t('usuario') ||
         'usuario';
 
-    const supabaseUser = (user ?? null) as unknown as User | null;
-    const isAdmin = supabaseUser ? isAdminByMetadata(supabaseUser) : serverIsAdmin;
+    // Admin: solo lo que resolvió el servidor (BD role Superadmin o ADMIN_EMAILS). No metadatos JWT en cliente.
+    const isAdmin = serverIsAdmin;
 
     const navLinks = [
         { href: '/', label: t('inicio') || 'Inicio' },

@@ -1,10 +1,11 @@
 import Stripe from 'stripe';
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase/admin';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
+  const supabaseAdmin = getSupabaseAdmin();
   const sig = req.headers.get('stripe-signature');
   if (!sig) return new NextResponse('Missing Stripe signature', { status: 400 });
   const buf = Buffer.from(await req.arrayBuffer());
