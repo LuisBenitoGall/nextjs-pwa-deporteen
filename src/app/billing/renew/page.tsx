@@ -14,7 +14,7 @@ import {
     isLifetime,
     type PlanChoice,
     } from '@/lib/subscription-plans';
-import { isSubscriptionActive } from '@/lib/subscriptions';
+import { isSubscriptionActive } from '@/lib/subscriptions/shared';
 
 export const runtime = 'nodejs';
 

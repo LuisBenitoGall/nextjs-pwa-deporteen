@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { tServer } from '@/i18n/server';
 import { getSeatStatus } from '@/lib/seats';
-import { isSubscriptionActive } from '@/lib/subscriptions';
+import { isSubscriptionActive } from '@/lib/subscriptions/shared';
 import Stripe from 'stripe';
 import { resolveStripeCustomerId } from '@/lib/stripe-customer';
 import { fetchUserPayments } from '@/lib/stripe-payments';

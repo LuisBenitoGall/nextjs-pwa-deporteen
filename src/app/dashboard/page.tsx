@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { tServer } from '@/i18n/server';
 import { getSeatStatus } from '@/lib/seats';
-import { isSubscriptionActive } from '@/lib/subscriptions';
+import { isSubscriptionActive } from '@/lib/subscriptions/shared';
 
 //Components
 import TitleH1 from '../../components/TitleH1';

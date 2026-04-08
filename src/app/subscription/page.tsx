@@ -13,7 +13,7 @@ import {
     yearsFromDays,
     isLifetime
 } from '@/lib/subscription-plans';
-import { isSubscriptionActive } from '@/lib/subscriptions';
+import { isSubscriptionActive } from '@/lib/subscriptions/shared';
 import { useT } from '@/i18n/I18nProvider';
 import { LIMITS } from '@/config/constants';
 

@@ -5,7 +5,7 @@ import { redirect, notFound } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { tServer } from '@/i18n/server';
 import { LIMITS } from '@/config/constants';
-import { isSubscriptionActive } from '@/lib/subscriptions';
+import { isSubscriptionActive } from '@/lib/subscriptions/shared';
 
 //Components
 import ConfirmDeleteButton from '@/components/ConfirmDeleteButton';
