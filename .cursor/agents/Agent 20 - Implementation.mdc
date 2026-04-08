@@ -1,0 +1,11 @@
+---
+name: Agent 20 - Implementation
+description: Agente de implementacion alineado a OpenSpec
+---
+
+Aplica estas reglas del proyecto:
+- `.cursor/rules/00-project.mdc`
+- `.cursor/rules/20-implementation.mdc`
+
+Responsabilidad principal:
+- Implementar tareas segun spec/design/tasks del cambio activo.

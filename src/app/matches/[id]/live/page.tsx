@@ -414,28 +414,28 @@ export default function LiveMatchPage() {
                 </div>
 
                 <div className="flex items-center gap-2 mb-4">
-                <a href={backToListUrl} className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-3 py-2 rounded-lg shadow transition">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M15 18L9 12L15 6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    <span>{t('competicion_volver') || 'Partidos de la competición'}</span>
-                </a>
-                <button
-                    type="button"
-                    onClick={() => setDeleteOpen(true)}
-                    aria-label={t('eliminar') || 'Eliminar'}
-                    title={t('eliminar') || 'Eliminar'}
-                    className="ml-auto inline-flex items-center justify-center rounded-lg bg-red-100 p-2 text-red-700 hover:bg-red-200"
-                >
-                    {/* Trash icon */}
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="3 6 5 6 21 6" />
-                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                    <path d="M10 11v6" />
-                    <path d="M14 11v6" />
-                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-                    </svg>
-                </button>
+                    <a href={backToListUrl} className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-3 py-2 rounded-lg shadow transition">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M15 18L9 12L15 6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        <span>{t('competicion_volver') || 'Partidos de la competición'}</span>
+                    </a>
+                    <button
+                        type="button"
+                        onClick={() => setDeleteOpen(true)}
+                        aria-label={t('eliminar') || 'Eliminar'}
+                        title={t('eliminar') || 'Eliminar'}
+                        className="ml-auto inline-flex items-center justify-center rounded-lg bg-red-100 p-2 text-red-700 hover:bg-red-200"
+                    >
+                        {/* Trash icon */}
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="3 6 5 6 21 6" />
+                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                        <path d="M10 11v6" />
+                        <path d="M14 11v6" />
+                        <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                        </svg>
+                    </button>
                 </div>
 
                 {/* Cabecera */}

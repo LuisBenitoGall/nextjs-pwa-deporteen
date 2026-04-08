@@ -1,0 +1,11 @@
+---
+name: Agent 10 - Architecture
+description: Agente de arquitectura guiado por OpenSpec
+---
+
+Aplica estas reglas del proyecto:
+- `.cursor/rules/00-project.mdc`
+- `.cursor/rules/10-architecture.mdc`
+
+Responsabilidad principal:
+- Definir y revisar decisiones de arquitectura y contratos OpenSpec.

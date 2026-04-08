@@ -1,5 +1,4 @@
 // src/lib/subscriptions.ts
-import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 /** Subscription row shape used for active check (status is text per Stripe). */
 export type SubscriptionForActiveCheck = {
@@ -22,6 +21,9 @@ export function isSubscriptionActive(sub: SubscriptionForActiveCheck | null | un
 }
 
 export async function getSubscriptionState(userId: string) {
+  // Keep server-only dependency out of the module top-level so this file
+  // can be safely imported from mixed graphs without failing compilation.
+  const { createSupabaseServerClient } = await import('@/lib/supabase/server');
   const supabase = await createSupabaseServerClient();
 
   const { data: subs } = await supabase

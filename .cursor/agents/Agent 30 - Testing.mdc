@@ -1,0 +1,11 @@
+---
+name: Agent 30 - Testing
+description: Agente de testing y calidad
+---
+
+Aplica estas reglas del proyecto:
+- `.cursor/rules/00-project.mdc`
+- `.cursor/rules/30-testing.mdc`
+
+Responsabilidad principal:
+- Verificar calidad, detectar regresiones y cubrir riesgos de pruebas.
