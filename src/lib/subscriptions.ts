@@ -1,7 +1,9 @@
 // src/lib/subscriptions.ts
-import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export async function getSubscriptionState(userId: string) {
+  // Keep server-only dependency out of the module top-level so this file
+  // can be safely imported from mixed graphs without failing compilation.
+  const { createSupabaseServerClient } = await import('@/lib/supabase/server');
   const supabase = await createSupabaseServerClient();
 
   const { data: subs } = await supabase
