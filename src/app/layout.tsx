@@ -30,7 +30,14 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { themeColor: '#0EA5E9' };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-    const { user } = await getServerUser();
+    let user: Awaited<ReturnType<typeof getServerUser>>['user'] = null;
+    try {
+        const userResult = await getServerUser();
+        user = userResult.user;
+    } catch {
+        // During build-time routes like /_not-found may be evaluated without runtime env.
+        user = null;
+    }
     let serverIsAdmin = false;
     if (user) {
         const supabase = await createSupabaseServerClientReadOnly();
