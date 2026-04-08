@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth/adminGuard';
 import { getStripe } from '@/lib/stripe/server';
 import type { Stripe } from '@/lib/stripe/server';
-import { supabaseAdmin } from '@/lib/supabase/admin';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 export const runtime = 'nodejs';
 
@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    const supabaseAdmin = getSupabaseAdmin();
     const body = await req.json();
     const name: string | undefined = body?.name;
     const description: string | undefined = body?.description;

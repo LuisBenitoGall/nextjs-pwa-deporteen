@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase/admin';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import { requireAdmin } from '@/lib/auth/adminGuard';
 
 export const runtime = 'nodejs';
@@ -10,11 +10,8 @@ export async function POST(req: NextRequest) {
     return guard.response;
   }
 
-  if (!supabaseAdmin) {
-    return NextResponse.json({ message: 'Servicio de administración no configurado (falta SUPABASE_SERVICE_ROLE_KEY)' }, { status: 500 });
-  }
-
   try {
+    const supabaseAdmin = getSupabaseAdmin();
     const body = await req.json();
     const email = (body.email || '').trim().toLowerCase();
     const password = body.password || '';
@@ -52,10 +49,8 @@ export async function GET() {
     return guard.response;
   }
 
-  if (!supabaseAdmin) {
-    return NextResponse.json({ message: 'Servicio de administración no configurado' }, { status: 500 });
-  }
   try {
+    const supabaseAdmin = getSupabaseAdmin();
     const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1 });
     if (error) {
       return NextResponse.json({ code: (error as any)?.code || error.name, message: error.message }, { status: 400 });

@@ -4,7 +4,7 @@
 // En componentes cliente importa SIEMPRE desde './client' directamente.
 
 export { createSupabaseServerClient } from './server';
-export { getSupabaseAdmin, supabaseAdmin } from './admin';
+export { getSupabaseAdmin } from './admin';
 
 // Tipos útiles (opcionales; no arrastran cliente)
 export type { SupabaseClient } from '@supabase/supabase-js';

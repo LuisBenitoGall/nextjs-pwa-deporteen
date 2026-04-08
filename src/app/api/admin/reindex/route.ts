@@ -1,7 +1,7 @@
 // app/api/admin/reindex/route.ts
 export const runtime = 'nodejs';
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase/admin';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import { requireAdmin } from '@/lib/auth/adminGuard';
 
 export async function POST() {
@@ -10,6 +10,7 @@ export async function POST() {
     return guard.response;
   }
 
+  const supabaseAdmin = getSupabaseAdmin();
   // Operaciones que requieren service role (sin RLS)
   const { error } = await supabaseAdmin
     .from('players')
