@@ -4,17 +4,11 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import {
-    CreditCard,
     Home,
     Mail,
     LayoutDashboard,
     LogOut,
-    PackageSearch,
-    Receipt,
     ShieldCheck,
-    ShoppingCart,
-    Tag,
-    Ticket,
     type LucideIcon,
     UserCircle2,
     UserCog,
@@ -40,7 +34,6 @@ export default function Navbar({ serverUserId, serverIsAdmin = false }: { server
     const [user, setUser] = useState<UserLike>(serverUserId ? ({ id: serverUserId } as any) : null);
     const [langOpen, setLangOpen] = useState(false);
     const [userOpen, setUserOpen] = useState(false);
-    const [adminOpen, setAdminOpen] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
     // Marca que ya verificamos el estado de auth en el cliente
@@ -48,7 +41,6 @@ export default function Navbar({ serverUserId, serverIsAdmin = false }: { server
 
     const langRef = useRef<HTMLDivElement>(null);
     const userRef = useRef<HTMLDivElement>(null);
-    const adminRef = useRef<HTMLDivElement>(null);
     const loggingOutRef = useRef(false);
     const router = useRouter();
     const pathname = usePathname();
@@ -66,6 +58,7 @@ export default function Navbar({ serverUserId, serverIsAdmin = false }: { server
         setLangOpen(false);
         setUserOpen(false);
     }, [pathname, isProtectedPath]);
+
 
     // Detecta sesión y suscribe a cambios
     useEffect(() => {
@@ -245,7 +238,6 @@ export default function Navbar({ serverUserId, serverIsAdmin = false }: { server
           const target = e.target as Node;
           if (langRef.current && !langRef.current.contains(target)) setLangOpen(false);
           if (userRef.current && !userRef.current.contains(target)) setUserOpen(false);
-          if (adminRef.current && !adminRef.current.contains(target)) setAdminOpen(false);
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -286,18 +278,6 @@ export default function Navbar({ serverUserId, serverIsAdmin = false }: { server
         { href: '/', label: t('inicio') || 'Inicio' },
         { href: '/contacto', label: t('contacto') || 'Contacto' },
     ];
-
-    const adminMenuItems: { href: string; label: string; Icon: LucideIcon }[] = isAdmin
-        ? [
-            { href: '/admin/stripe', label: t('stripe_admin_dashboard') || 'Panel general', Icon: ShieldCheck },
-            { href: '/admin/stripe/products', label: t('stripe_admin_products') || 'Productos', Icon: PackageSearch },
-            { href: '/admin/stripe/prices', label: t('stripe_admin_prices') || 'Planes y precios', Icon: Tag },
-            { href: '/admin/stripe/payment-links', label: t('stripe_admin_payments') || 'Pagos únicos', Icon: ShoppingCart },
-            { href: '/admin/stripe/subscriptions', label: t('stripe_admin_subscriptions') || 'Suscripciones', Icon: CreditCard },
-            { href: '/admin/stripe/coupons', label: t('stripe_admin_coupons') || 'Cupones', Icon: Ticket },
-            { href: '/admin/stripe/invoices', label: t('stripe_admin_invoices') || 'Facturas', Icon: Receipt },
-        ]
-        : [];
 
     const userMenuItems: { href: string; label: string; Icon: LucideIcon }[] = [
         { href: '/dashboard', label: t('mi_panel') || 'Mi Panel', Icon: LayoutDashboard },
@@ -408,41 +388,14 @@ export default function Navbar({ serverUserId, serverIsAdmin = false }: { server
         <div className="h-8 w-36 rounded-md bg-slate-700/60 animate-pulse" aria-hidden="true" />
     );
 
-    const AdminMenuDesktop = isAdmin && (
-        <div className="relative" ref={adminRef}>
-             <button
-              onClick={() => setAdminOpen(o => !o)}
-              className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-slate-500 transition-colors hover:text-gray-600 hover:bg-emerald-500/10"
-              aria-haspopup="menu"
-              aria-expanded={adminOpen}
-             >
-                {t('stripe_admin_menu') || 'Administración Stripe'}
-                <svg width="14" height="14" viewBox="0 0 20 20" aria-hidden="true">
-                <path d="M5 7l5 6 5-6H5z" fill="currentColor" />
-                </svg>
-            </button>
-
-            {adminOpen && (
-                <div className="absolute right-0 z-50 mt-2 w-56 rounded-md border border-slate-700 bg-slate-800/95 text-slate-100 shadow-lg shadow-emerald-500/10">
-                    <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                        {t('stripe_admin_manage') || 'Gestionar Stripe'}
-                    </div>
-                    <div className="space-y-1 px-2 pb-2">
-                        {adminMenuItems.map(item => (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            onClick={() => setAdminOpen(false)}
-                            className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-emerald-500/15"
-                        >
-                            <item.Icon className="h-4 w-4" aria-hidden="true" />
-                            {item.label}
-                        </Link>
-                        ))}
-                    </div>
-                </div>
-            )}
-        </div>
+    const AdminLinkDesktop = isAdmin && (
+        <Link
+            href="/admin"
+            className={desktopLinkClasses(pathnameClean.startsWith('/admin'))}
+        >
+            <ShieldCheck className="inline-block h-4 w-4 mr-1 align-text-bottom" aria-hidden="true" />
+            {t('admin_panel') || 'Admin'}
+        </Link>
     );
 
     // Mostrar CTAs: en rutas protegidas no mostramos CTAs aunque aún no se haya resuelto user
@@ -477,7 +430,7 @@ export default function Navbar({ serverUserId, serverIsAdmin = false }: { server
                         </Link>
                     ))}
 
-                    {AdminMenuDesktop}
+                    {AdminLinkDesktop}
 
                     {LangSelectorDesktop}
 
@@ -586,23 +539,14 @@ export default function Navbar({ serverUserId, serverIsAdmin = false }: { server
 
                                 {isAdmin && (
                                     <li className="pt-2 mt-2 border-t border-slate-700">
-                                        <span className="block px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                                            {t('stripe_admin_manage') || 'Administración Stripe'}
-                                        </span>
-                                        <ul className="space-y-1">
-                                            {adminMenuItems.map(item => (
-                                                <li key={item.href}>
-                                                    <Link
-                                                        href={item.href}
-                                                        onClick={() => setMobileOpen(false)}
-                                                        className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-slate-500 transition-colors hover:bg-emerald-500/10 dark:text-zinc-200 dark:hover:bg-emerald-900/30"
-                                                    >
-                                                        <item.Icon className="h-4 w-4" aria-hidden="true" />
-                                                        {item.label}
-                                                    </Link>
-                                                </li>
-                                            ))}
-                                        </ul>
+                                        <Link
+                                            href="/admin"
+                                            onClick={() => setMobileOpen(false)}
+                                            className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-slate-500 transition-colors hover:bg-emerald-500/10 dark:text-zinc-200 dark:hover:bg-emerald-900/30"
+                                        >
+                                            <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+                                            {t('admin_panel') || 'Admin'}
+                                        </Link>
                                     </li>
                                 )}
 

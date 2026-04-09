@@ -29,7 +29,7 @@ export const ROUTES = {
     LOGOUT: '/logout',
     DASHBOARD: '/dashboard',
     ACCOUNT: '/account',
-    CONTACT: '/contact',
+    CONTACT: '/contacto',
 } as const;
 
 export const CONTACT = {
