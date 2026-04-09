@@ -3,7 +3,16 @@
     "allow": [
       "Bash(pnpm build:*)",
       "Bash(pnpm add:*)",
-      "Bash(pnpm types:*)"
+      "Bash(pnpm types:*)",
+      "Bash(mkdir -p \"C:/www/nextjs-pwa-deporteen/src/app/\\(public\\)\")",
+      "Bash(mv \"C:/www/nextjs-pwa-deporteen/src/app/page.tsx\" \"C:/www/nextjs-pwa-deporteen/src/app/\\(public\\)/\")",
+      "Bash(mv \"C:/www/nextjs-pwa-deporteen/src/app/account\" \"C:/www/nextjs-pwa-deporteen/src/app/\\(public\\)/\")",
+      "Bash(mv \"C:/www/nextjs-pwa-deporteen/src/app/contacto\" \"C:/www/nextjs-pwa-deporteen/src/app/\\(public\\)/\")",
+      "Bash(mv \"C:/www/nextjs-pwa-deporteen/src/app/dashboard\" \"C:/www/nextjs-pwa-deporteen/src/app/\\(public\\)/\")",
+      "Bash(grep -v \"admin\\\\|api\\\\|\\(public\\)\\\\|app$\")",
+      "Bash(cp:*)",
+      "Bash(python3:*)",
+      "Bash(node:*)"
     ]
   }
 }
