@@ -1,0 +1,150 @@
+{
+  "legal_notice": [
+    {
+      "title": "1. Identificació del titular",
+      "html": "<p>Aquest lloc i l’aplicació <b>{{product.app_name}}</b> ({{product.domain}}) són titularitat de <b>{{company.name}}</b>, amb NIF {{company.nif}}, domicili a {{company.address}}, {{company.country}}. Correu de contacte: <a href=\"mailto:{{company.email}}\">{{company.email}}</a>.</p><p>Inscripció registral: {{company.reg_merc}}</p>"
+    },
+    {
+      "title": "2. Objecte i acceptació",
+      "html": "<p>Aquest Avís Legal regula l’accés i l’ús de {{product.app_name}}. L’accés implica l’acceptació d’aquestes condicions i, si escau, dels <a href=\"/legal/terminos\" target=\"_blank\" rel=\"noopener\">Termes d’Ús</a>.</p>"
+    },
+    {
+      "title": "3. Usuaris i menors",
+      "html": "<p>La plataforma va dirigida a persones adultes. <b>Els menors de 16 anys no poden crear compte</b>. Els adults poden registrar informació esportiva de tercers, inclosos menors, d’acord amb la <a href=\"/legal/contenidos\" target=\"_blank\" rel=\"noopener\">Política de Continguts i Drets d’Imatge</a>.</p>"
+    },
+    {
+      "title": "4. Propietat intel·lectual",
+      "html": "<p>El programari, el disseny i la interfície de {{product.app_name}} pertanyen a {{company.name}} o als seus llicenciants. L’ús no implica cessió de cap dret de propietat intel·lectual.</p>"
+    },
+    {
+      "title": "5. Responsabilitat",
+      "html": "<p>{{company.name}} no es fa responsable de les dades, imatges o vídeos que l’usuari emmagatzemi al dispositiu, ni dels danys derivats d’un ús indegut de l’aplicació.</p>"
+    },
+    {
+      "title": "6. Enllaços i serveis de tercers",
+      "html": "<p>L’app integra serveis de tercers (p. ex., <b>Supabase</b> a {{providers.supabase_region}} per a la base de dades, <b>Stripe</b> a {{providers.stripe_region}} per a pagaments, <b>{{providers.hosting}}</b> per a allotjament i <b>{{providers.analytics}}</b> per a analítica). Vegeu la <a href=\"/legal/privacidad\">Política de Privadesa</a>.</p>"
+    },
+    {
+      "title": "7. Llei aplicable i jurisdicció",
+      "html": "<p>S’aplicarà la legislació de {{legal.jurisdiction}} i, llevat norma imperativa, els jutjats del domicili de l’usuari consumidor.</p>"
+    }
+  ],
+  "privacy": [
+    {
+      "title": "1. Responsable del tractament",
+      "html": "<p>Responsable: <b>{{company.name}}</b> ({{company.email}}). No s’ha designat Delegat de Protecció de Dades de moment.</p>"
+    },
+    {
+      "title": "2. Dades tractades",
+      "html": "<ul><li><b>Compte</b>: nom, cognoms, email i telèfon (opcional).</li><li><b>Ús del servei</b>: estadístiques esportives creades per l’usuari sobre tercers.</li><li><b>Mitjans</b>: imatges i vídeos <b>emmagatzemats localment al dispositiu</b>, no al núvol.</li><li><b>Pagaments</b>: identificació de transacció gestionada per Stripe.</li><li><b>Analítica</b>: mesures amb {{providers.analytics}}.</li></ul>"
+    },
+    {
+      "title": "3. Finalitats i bases jurídiques",
+      "html": "<ul><li><b>Prestació del servei i subscripció</b> (execució de contracte).</li><li><b>Analítica d’ús</b> (consentiment; vegeu <a href=\"/legal/cookies\">Política de Galetes</a>).</li><li><b>Notificacions de renovació</b> (consentiment).</li><li><b>Seguretat i prevenció del frau</b> (interès legítim).</li></ul>"
+    },
+    {
+      "title": "4. Origen i veracitat",
+      "html": "<p>Les dades provenen de l’usuari. Si registres informació sobre tercers, garanteixes comptar amb legitimació suficient (p. ex. consentiment dels titulars d’imatge en cas de menors).</p>"
+    },
+    {
+      "title": "5. Conservació",
+      "html": "<ul><li>Compte i registres: mentre existeixi el compte. Dades de facturació: <b>6 anys</b>.</li><li>Registres de seguretat: <b>12 mesos</b> llevat incidències.</li><li>Analítica i consentiments: fins a la revocació.</li></ul>"
+    },
+    {
+      "title": "6. Destinataris i encarregats",
+      "html": "<ul><li><b>Supabase</b> (UE/Irlanda) com a proveïdor de base de dades.</li><li><b>Stripe</b> per a pagaments.</li><li><b>{{providers.hosting}}</b> per a allotjament.</li><li><b>{{providers.analytics}}</b> (configurat segons consentiment).</li></ul><p>No es fan transferències internacionals fora de l’EEE excepte les inherents a aquests proveïdors i emparades pels seus mecanismes de compliment.</p>"
+    },
+    {
+      "title": "7. Drets",
+      "html": "<p>Pots exercir accés, rectificació, supressió, oposició, limitació i portabilitat escrivint a <a href=\"mailto:{{legal.data_subject_email}}\">{{legal.data_subject_email}}</a>. Termini de resposta: 1 mes.</p>"
+    },
+    {
+      "title": "8. Mesures de seguretat",
+      "html": "<p>Xifrat en trànsit (TLS) i en repòs als serveis de base de dades, control d’accés, còpies de seguretat al proveïdor i bones pràctiques de minimització. Els mitjans (fotos/vídeos) es guarden a l’<b>emmagatzematge local del dispositiu</b> que controla l’usuari.</p>"
+    },
+    {
+      "title": "9. Menors",
+      "html": "<p>Els menors de 16 anys no poden crear compte. Els adults que registrin dades o imatges de menors declaren tenir legitimació suficient i respectar la <a href=\"/legal/contenidos\">Política de Continguts i Drets d’Imatge</a>.</p>"
+    }
+  ],
+  "cookies": [
+    {
+      "title": "1. Què són les galetes?",
+      "html": "<p>Utilitzem galetes i tecnologies similars perquè el web funcioni i, si ho acceptes, per mesurar l’ús amb {{providers.analytics}}.</p>"
+    },
+    {
+      "title": "2. Configuració",
+      "html": "<p>Pots personalitzar les preferències al bàner de <i>Preferències de galetes</i>. Les categories són:</p><ul><li><b>Necessàries</b>: imprescindibles per al funcionament (inici de sessió, seguretat).</li><li><b>Analítica</b>: mesura d’ús amb {{providers.analytics}} (requereix consentiment llevat mode exent AEPD).</li><li><b>Funcionals</b>: millores no essencials.</li><li><b>Màrqueting</b>: no utilitzem actualment.</li></ul>"
+    },
+    {
+      "title": "3. Galetes que utilitzem",
+      "html": "<p><b>Necessàries</b></p><ul><li>Sessió Supabase: {{cookies.session}}.</li><li>Stripe (checkout): {{cookies.stripe}}.</li></ul><p><b>Analítica</b></p><ul><li>Google Analytics 4: {{cookies.ga4}}.</li></ul><p>A més, podem fer servir emmagatzematge local (IndexedDB/localStorage) per a contingut i preferències.</p>"
+    },
+    {
+      "title": "4. Com canviar o retirar el consentiment",
+      "html": "<p>Pots tornar a obrir el panell de preferències des de l’enllaç «Galetes» del peu de pàgina, o esborrar galetes des de la configuració del navegador.</p>"
+    }
+  ],
+  "terms": [
+    {
+      "title": "1. Objecte",
+      "html": "<p>Aquests Termes regulen l’ús de {{product.app_name}}.</p>"
+    },
+    {
+      "title": "2. Compte i accés",
+      "html": "<p>El compte és personal i per a majors de 16. Un adult pot registrar esportistes tercers.</p>"
+    },
+    {
+      "title": "3. Plans i pagaments",
+      "html": "<p>Els pagaments es processen amb Stripe. La factura l’emet Stripe.</p>"
+    },
+    {
+      "title": "4. Desistiment i reemborsaments",
+      "html": "<p>Disposes de <b>14 dies</b> des de la compra per sol·licitar reemborsament si no has consumit prestacions que ho impedeixin legalment.</p>"
+    },
+    {
+      "title": "5. Continguts de l’usuari",
+      "html": "<p>Et responsabilitzes de les dades i imatges que emmagatzemis. Has de complir la legislació vigent i la nostra <a href=\"/legal/contenidos\">Política de Continguts</a>.</p>"
+    },
+    {
+      "title": "6. Limitació de responsabilitat",
+      "html": "<p>El servei es presta «tal qual» dins d’una diligència raonable.</p>"
+    }
+  ],
+  "subscription": [
+    {
+      "title": "1. Procés de compra",
+      "html": "<p>La subscripció es gestiona mitjançant Stripe. Un cop confirmat el pagament s’activa l’accés.</p>"
+    },
+    {
+      "title": "2. Renovacions i avisos",
+      "html": "<p>Podem enviar-te avisos de renovació si ho consents.</p>"
+    },
+    {
+      "title": "3. Facturació",
+      "html": "<p>La factura és la generada per Stripe i estarà disponible al teu rebut de pagament.</p>"
+    },
+    {
+      "title": "4. Desistiment",
+      "html": "<p>14 dies de desistiment conforme a la normativa de consum, amb les excepcions legals aplicables.</p>"
+    }
+  ],
+  "content_policy": [
+    {
+      "title": "1. Àmbit",
+      "html": "<p>Regula l’ús d’imatges i vídeos i el registre de dades de tercers, inclosos menors.</p>"
+    },
+    {
+      "title": "2. Drets d’imatge",
+      "html": "<p>Si emmagatzemes imatges o vídeos de tercers, has de comptar amb el seu consentiment. En cas de menors, el consentiment l’ha d’atorgar el representant legal.</p>"
+    },
+    {
+      "title": "3. Prohibicions",
+      "html": "<p>Queda prohibit pujar o conservar continguts il·lícits, difamatoris o que vulnerin drets de tercers.</p>"
+    },
+    {
+      "title": "4. Retirada de continguts",
+      "html": "<p>Podrem exigir-te la retirada de continguts que vulnerin aquesta política o la llei. Pots contactar a <a href=\"mailto:{{legal.data_subject_email}}\">{{legal.data_subject_email}}</a>.</p>"
+    }
+  ]
+}
