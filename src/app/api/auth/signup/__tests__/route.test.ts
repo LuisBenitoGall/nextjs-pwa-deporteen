@@ -28,6 +28,8 @@ describe('POST /api/auth/signup', () => {
   beforeEach(async () => {
     vi.resetModules()
     mockSignUp.mockClear()
+    delete process.env.NEXT_PUBLIC_SUPABASE_URL
+    delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     ;({ POST } = await import('../route'))
   })
 

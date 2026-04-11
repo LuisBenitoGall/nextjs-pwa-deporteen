@@ -172,6 +172,23 @@ Las tablas principales ya están definidas en otras specs. El panel admin princi
 - **Stripe Dashboard**: Enlaces a dashboard para detalles
 - **Supabase**: Sincronización con BD local
 
+## Tablas de datos (Tabulator)
+
+Las vistas del panel de administración que presenten datos mediante **Tabulator** MUST cumplir la especificación **admin-tabulator-ui** en `openspec/specs/admin-tabulator-ui/spec.md`, incluyendo coherencia cromática con el shell admin, legibilidad, cabecera/filtros/cuerpo/pie uniformes y ámbito centralizado de estilos.
+
+### Requirement: Tablas de datos Tabulator en el panel admin
+
+#### Scenario: Listado con Tabulator en ruta admin
+
+- **WHEN** un usuario administrador accede a cualquier ruta bajo `/admin/**` donde se muestre una tabla construida con Tabulator
+- **THEN** la presentación de esa tabla MUST satisfacer todos los requisitos normativos de la spec **admin-tabulator-ui** aplicable a este proyecto
+- **AND** MUST NOT quedar excluidas partes de la tabla (cabecera, filtros, columnas sueltas o pie) del conjunto de reglas de coherencia visual
+
+#### Scenario: Consistencia con RF de acceso existentes
+
+- **WHEN** el acceso al panel está permitido según el control de acceso del panel admin (p. ej. verificación de rol admin)
+- **THEN** las tablas Tabulator visibles en ese contexto MUST seguir cumpliendo **admin-tabulator-ui** además de los requisitos funcionales ya definidos en esta spec principal (Stripe, listados, etc.)
+
 ## Estados y Flujos
 
 ### Flujo de Creación de Producto

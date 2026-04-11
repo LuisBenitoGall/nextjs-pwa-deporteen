@@ -21,8 +21,8 @@ describe('isSupportedLocale', () => {
 })
 
 describe('SUPPORTED_LOCALES', () => {
-  it('contains exactly es, en, ca', () => {
-    expect(SUPPORTED_LOCALES).toEqual(['es', 'en', 'ca'])
+  it('contains exactly es, en, ca, it', () => {
+    expect(SUPPORTED_LOCALES).toEqual(['es', 'en', 'ca', 'it'])
   })
 })
 

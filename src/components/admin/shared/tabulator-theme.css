@@ -1,8 +1,14 @@
-/* Base Tabulator structure + dark slate theme override */
+/* Base Tabulator structure + dark slate theme override (scoped to .admin-tabulator-root) */
 @import 'tabulator-tables/dist/css/tabulator.min.css';
 
+/* Root scope: full width inside flex layouts, isolate theme from global CSS */
+.admin-tabulator-root {
+  width: 100%;
+  min-width: 0;
+}
+
 /* ── Container ──────────────────────────────────────────────── */
-.tabulator {
+.admin-tabulator-root .tabulator {
   background: rgba(2, 6, 23, 0.4); /* slate-950/40 */
   border: 1px solid #1e293b; /* slate-800 */
   border-radius: 0.5rem;
@@ -13,22 +19,28 @@
 }
 
 /* ── Header ─────────────────────────────────────────────────── */
-.tabulator-header {
-  background: rgba(15, 23, 42, 0.8); /* slate-900/80 */
+.admin-tabulator-root .tabulator-header {
+  background: rgba(15, 23, 42, 0.95) !important; /* slate-900 — beat min.css */
   border-bottom: 1px solid #1e293b; /* slate-800 */
   color: #94a3b8; /* slate-400 */
 }
 
-.tabulator-col {
+.admin-tabulator-root .tabulator-headers,
+.admin-tabulator-root .tabulator-header-contents {
+  background: rgba(15, 23, 42, 0.95) !important;
+  color: inherit;
+}
+
+.admin-tabulator-root .tabulator-col {
   background: transparent !important;
   border-right: 1px solid #1e293b !important;
 }
 
-.tabulator-col:last-child {
+.admin-tabulator-root .tabulator-col:last-child {
   border-right: none !important;
 }
 
-.tabulator-col-title {
+.admin-tabulator-root .tabulator-col-title {
   font-size: 0.7rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -36,29 +48,29 @@
   color: #64748b; /* slate-500 */
 }
 
-.tabulator-col.tabulator-sortable:hover {
+.admin-tabulator-root .tabulator-col.tabulator-sortable:hover {
   background: rgba(30, 41, 59, 0.6) !important;
   cursor: pointer;
 }
 
 /* Sort arrows */
-.tabulator-col .tabulator-col-sorter .tabulator-arrow {
+.admin-tabulator-root .tabulator-col .tabulator-col-sorter .tabulator-arrow {
   border-bottom-color: #334155; /* slate-700 */
   border-top-color: #334155;
 }
-.tabulator-col[aria-sort="asc"] .tabulator-col-sorter .tabulator-arrow,
-.tabulator-col[aria-sort="desc"] .tabulator-col-sorter .tabulator-arrow {
+.admin-tabulator-root .tabulator-col[aria-sort='asc'] .tabulator-col-sorter .tabulator-arrow,
+.admin-tabulator-root .tabulator-col[aria-sort='desc'] .tabulator-col-sorter .tabulator-arrow {
   border-bottom-color: #10b981; /* emerald-500 */
   border-top-color: #10b981;
 }
 
 /* ── Header filters ─────────────────────────────────────────── */
-.tabulator-header-filter {
+.admin-tabulator-root .tabulator-header-filter {
   padding: 4px 6px;
 }
 
-.tabulator-header-filter input,
-.tabulator-header-filter select {
+.admin-tabulator-root .tabulator-header-filter input,
+.admin-tabulator-root .tabulator-header-filter select {
   background: rgba(2, 6, 23, 0.7); /* slate-950/70 */
   border: 1px solid #1e293b; /* slate-800 */
   border-radius: 0.375rem;
@@ -70,72 +82,84 @@
   transition: border-color 0.15s;
 }
 
-.tabulator-header-filter input:focus,
-.tabulator-header-filter select:focus {
+.admin-tabulator-root .tabulator-header-filter input:focus,
+.admin-tabulator-root .tabulator-header-filter select:focus {
   border-color: #10b981; /* emerald-500 */
   box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
 }
 
-.tabulator-header-filter input::placeholder {
+.admin-tabulator-root .tabulator-header-filter input::placeholder {
   color: #334155; /* slate-700 */
 }
 
-/* ── Rows ────────────────────────────────────────────────────── */
-.tabulator-tableHolder {
-  background: transparent;
+/* ── Inner table / holders (min.css often sets white on thead or cells) ── */
+.admin-tabulator-root .tabulator-tableHolder {
+  background: rgba(2, 6, 23, 0.25) !important;
 }
 
-.tabulator-table {
-  background: transparent;
+.admin-tabulator-root .tabulator-table {
+  background: transparent !important;
   width: 100%;
 }
 
-.tabulator-row {
+.admin-tabulator-root .tabulator-table thead,
+.admin-tabulator-root .tabulator-table thead .tabulator-row,
+.admin-tabulator-root .tabulator-table tbody {
+  background: transparent !important;
+}
+
+.admin-tabulator-root .tabulator-table thead .tabulator-col {
+  background: rgba(15, 23, 42, 0.85) !important;
+}
+
+/* ── Rows ────────────────────────────────────────────────────── */
+.admin-tabulator-root .tabulator-row {
   background: transparent !important;
   border-bottom: 1px solid #0f172a; /* slate-900 */
   color: #cbd5e1; /* slate-300 */
   transition: background-color 0.1s;
 }
 
-.tabulator-row:last-child {
+.admin-tabulator-root .tabulator-row:last-child {
   border-bottom: none;
 }
 
-.tabulator-row-odd {
+.admin-tabulator-root .tabulator-row-odd {
   background: transparent !important;
 }
 
-.tabulator-row-even {
+.admin-tabulator-root .tabulator-row-even {
   background: rgba(15, 23, 42, 0.4) !important; /* slate-900/40 */
 }
 
-.tabulator-row:hover,
-.tabulator-row.tabulator-row-odd:hover,
-.tabulator-row.tabulator-row-even:hover {
+.admin-tabulator-root .tabulator-row:hover,
+.admin-tabulator-root .tabulator-row.tabulator-row-odd:hover,
+.admin-tabulator-root .tabulator-row.tabulator-row-even:hover {
   background: rgba(30, 41, 59, 0.6) !important; /* slate-800/60 */
 }
 
-.tabulator-row.tabulator-selected,
-.tabulator-row.tabulator-selected:hover {
+.admin-tabulator-root .tabulator-row.tabulator-selected,
+.admin-tabulator-root .tabulator-row.tabulator-selected:hover {
   background: rgba(16, 185, 129, 0.08) !important;
   border-color: rgba(16, 185, 129, 0.2);
 }
 
 /* ── Cells ───────────────────────────────────────────────────── */
-.tabulator-cell {
+.admin-tabulator-root .tabulator-cell {
   border-right: 1px solid #0f172a !important; /* slate-900 */
   padding: 0.6rem 0.875rem;
   color: #cbd5e1; /* slate-300 */
+  background: transparent !important;
 }
 
-.tabulator-cell:last-child {
+.admin-tabulator-root .tabulator-cell:last-child {
   border-right: none !important;
 }
 
 /* ── Cell editors ────────────────────────────────────────────── */
-.tabulator-cell.tabulator-editing input,
-.tabulator-cell.tabulator-editing select,
-.tabulator-cell.tabulator-editing textarea {
+.admin-tabulator-root .tabulator-cell.tabulator-editing input,
+.admin-tabulator-root .tabulator-cell.tabulator-editing select,
+.admin-tabulator-root .tabulator-cell.tabulator-editing textarea {
   background: rgba(2, 6, 23, 0.8);
   border: 1px solid #10b981;
   border-radius: 0.25rem;
@@ -145,13 +169,13 @@
 }
 
 /* ── Selection checkbox ─────────────────────────────────────── */
-.tabulator-cell.tabulator-row-handle {
+.admin-tabulator-root .tabulator-cell.tabulator-row-handle {
   width: 40px;
   text-align: center;
 }
 
-.tabulator-cell input[type="checkbox"],
-.tabulator-col input[type="checkbox"] {
+.admin-tabulator-root .tabulator-cell input[type='checkbox'],
+.admin-tabulator-root .tabulator-col input[type='checkbox'] {
   accent-color: #10b981; /* emerald-500 */
   width: 15px;
   height: 15px;
@@ -159,11 +183,11 @@
 }
 
 /* ── Empty placeholder ───────────────────────────────────────── */
-.tabulator-placeholder {
-  background: transparent;
+.admin-tabulator-root .tabulator-placeholder {
+  background: transparent !important;
 }
 
-.tabulator-placeholder span {
+.admin-tabulator-root .tabulator-placeholder span {
   color: #334155; /* slate-700 */
   font-size: 0.875rem;
   padding: 2.5rem 0;
@@ -172,11 +196,11 @@
 }
 
 /* ── Loading indicator ───────────────────────────────────────── */
-.tabulator-loader {
-  background: rgba(2, 6, 23, 0.75);
+.admin-tabulator-root .tabulator-loader {
+  background: rgba(2, 6, 23, 0.75) !important;
 }
 
-.tabulator-loader-msg {
+.admin-tabulator-root .tabulator-loader-msg {
   color: #94a3b8;
   background: rgba(15, 23, 42, 0.95);
   border: 1px solid #1e293b;
@@ -186,25 +210,26 @@
 }
 
 /* ── Footer / Pagination ─────────────────────────────────────── */
-.tabulator-footer {
-  background: rgba(2, 6, 23, 0.6); /* slate-950/60 */
+.admin-tabulator-root .tabulator-footer {
+  background: rgba(2, 6, 23, 0.85) !important; /* slate-950 — avoid pale band vs body */
   border-top: 1px solid #1e293b; /* slate-800 */
   padding: 0.5rem 0.75rem;
 }
 
-.tabulator-footer .tabulator-footer-contents {
+.admin-tabulator-root .tabulator-footer .tabulator-footer-contents {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
+  background: transparent !important;
 }
 
-.tabulator-paginator {
+.admin-tabulator-root .tabulator-paginator {
   color: #64748b; /* slate-500 */
   font-size: 0.75rem;
 }
 
-.tabulator-page-size {
+.admin-tabulator-root .tabulator-page-size {
   background: rgba(2, 6, 23, 0.6);
   border: 1px solid #1e293b;
   border-radius: 0.375rem;
@@ -215,11 +240,11 @@
   margin: 0 0.25rem;
 }
 
-.tabulator-page-size:focus {
+.admin-tabulator-root .tabulator-page-size:focus {
   border-color: #10b981;
 }
 
-.tabulator-page {
+.admin-tabulator-root .tabulator-page {
   background: transparent;
   border: 1px solid #1e293b;
   border-radius: 0.375rem;
@@ -231,57 +256,57 @@
   margin: 0 1px;
 }
 
-.tabulator-page:hover:not(:disabled) {
+.admin-tabulator-root .tabulator-page:hover:not(:disabled) {
   background: rgba(30, 41, 59, 0.7);
   color: #e2e8f0;
   border-color: #334155;
 }
 
-.tabulator-page.active {
+.admin-tabulator-root .tabulator-page.active {
   background: #059669; /* emerald-600 */
   border-color: #059669;
   color: #fff;
   font-weight: 600;
 }
 
-.tabulator-page:disabled {
+.admin-tabulator-root .tabulator-page:disabled {
   opacity: 0.25;
   cursor: not-allowed;
 }
 
 /* Row counter text */
-.tabulator-counter {
+.admin-tabulator-root .tabulator-counter {
   color: #475569; /* slate-600 */
   font-size: 0.75rem;
 }
 
 /* ── Column resize handle ────────────────────────────────────── */
-.tabulator-col-resize-handle {
+.admin-tabulator-root .tabulator-col-resize-handle {
   background: transparent;
 }
 
-.tabulator-col-resize-handle:hover {
+.admin-tabulator-root .tabulator-col-resize-handle:hover {
   background: #10b981;
 }
 
 /* ── Scrollbar ───────────────────────────────────────────────── */
-.tabulator .tabulator-tableHolder::-webkit-scrollbar {
+.admin-tabulator-root .tabulator .tabulator-tableHolder::-webkit-scrollbar {
   height: 5px;
   width: 5px;
 }
-.tabulator .tabulator-tableHolder::-webkit-scrollbar-track {
+.admin-tabulator-root .tabulator .tabulator-tableHolder::-webkit-scrollbar-track {
   background: rgba(2, 6, 23, 0.5);
 }
-.tabulator .tabulator-tableHolder::-webkit-scrollbar-thumb {
+.admin-tabulator-root .tabulator .tabulator-tableHolder::-webkit-scrollbar-thumb {
   background: #1e293b;
   border-radius: 3px;
 }
-.tabulator .tabulator-tableHolder::-webkit-scrollbar-thumb:hover {
+.admin-tabulator-root .tabulator .tabulator-tableHolder::-webkit-scrollbar-thumb:hover {
   background: #334155;
 }
 
 /* ── Group headers ───────────────────────────────────────────── */
-.tabulator-row.tabulator-group {
+.admin-tabulator-root .tabulator-row.tabulator-group {
   background: rgba(15, 23, 42, 0.9) !important;
   color: #64748b;
   border-bottom: 1px solid #1e293b;
@@ -291,6 +316,6 @@
   letter-spacing: 0.06em;
 }
 
-.tabulator-row.tabulator-group span {
+.admin-tabulator-root .tabulator-row.tabulator-group span {
   color: #475569;
 }
