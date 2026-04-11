@@ -43,6 +43,10 @@
 ## VARIABLES DE ENTORNO:
 	- NEXT_PUBLIC_CLOUD_MEDIA=0   Con valor 1 permite subir los archivos a Cloud
 
+## IDIOMAS:
+	- Actualizar: trabajar sobre es.json y ejecutar comando pnpm i18n:sync
+	- Actualizar textos legales en  scripts/data/legal-full-en.json y legal-full-ca.json
+
 
 ## DEVELOPMENT:
 	- url: https://nextjs-pwa-deporteen-five.vercel.app/

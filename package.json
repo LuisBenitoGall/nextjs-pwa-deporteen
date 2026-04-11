@@ -15,7 +15,8 @@
     "types": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "i18n:sync": "node scripts/sync-i18n-from-es.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1024.0",
