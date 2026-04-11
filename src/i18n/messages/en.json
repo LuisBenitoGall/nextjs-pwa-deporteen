@@ -1,6 +1,7 @@
 {
-  "a_favor": "For",
-  "acceso_para_siempre": "Lifetime access",
+  "a_favor": "In favor",
+  "acceso_para_siempre": "Access for life",
+  "acceso_vida": "Access for life",
   "acciones": "Actions",
   "acepta_comunicaciones": "I wish to receive commercial communications and news from SportTracker.",
   "acepta_rgpd_1": "I have read and accept the",
@@ -10,22 +11,13 @@
   "actualizando": "Updating...",
   "actualizar": "Update",
   "analitica": "Analytics",
-  "anotaciones_balance": "Scoring balance",
+  "anotaciones_balance": "Annotations balance",
   "any": "Year",
   "apellidos": "Last name",
   "asistencias": "Assists",
   "asunto": "Subject",
-  "avatar": "Avatar",
-  "avatar_actualizado_ok": "Avatar updated successfully.",
-  "avatar_actualizar": "Update avatar",
-  "avatar_eliminar_confirmar": "Confirm avatar deletion",
-  "avatar_formato_invalido": "The file must be an image (JPG, PNG, WebP…).",
-  "avatar_max_size": "Max. 100 KB · automatically compressed if larger",
-  "avatar_eliminar_confirmar_texto": "Confirm you want to delete the avatar for this season. This action is irreversible.",
-  "avatar_sin": "No avatar",
+  "avatar": "[PENDIENTE] Avatar",
   "avatar_temporada": "You can include a new avatar each season",
-  "avatar_volver_deportista": "Back to player",
-  "avatares": "Avatars",
   "aviso_legal": "Legal notice",
   "baloncesto": "Basketball",
   "balonmano": "Handball",
@@ -38,7 +30,7 @@
   "categoria": "Category",
   "categoria_selec": "Select a category",
   "claim": "Your sports history, season by season",
-  "club": "Club",
+  "club": "[PENDIENTE] Club",
   "club_nombre": "Club name",
   "club_selec": "Select a club",
   "codigo": "Code",
@@ -47,13 +39,13 @@
   "codigo_usar": "Use code",
   "comentarios": "Comments",
   "competicion": "Competition",
-  "competicion_eliminar_confirmar": "Confirm competition deletion",
-  "competicion_eliminar_confirmar_texto": "Confirm you want to delete this competition. All data will be lost. This action is irreversible.",
+  "competicion_eliminar_confirmar": "Confirm elimination from competition",
+  "competicion_eliminar_confirmar_texto": "Confirm that you want to delete this competition. All data will be lost. This action is irreversible.",
   "competicion_nombre": "Competition name",
   "competicion_nombre_info": "For example: pre-season, tournaments, league, playoffs...",
   "competicion_nueva": "New competition",
   "competicion_selec": "Select a competition",
-  "competicion_volver": "Back to competition",
+  "competicion_volver": "Return to competition",
   "competiciones": "Competitions",
   "comprobando_sesion": "Checking session…",
   "condicion": "Condition",
@@ -61,12 +53,12 @@
   "configurar": "Configure",
   "confirmar": "Confirm",
   "consulta_texto": "Tell us briefly about your query…",
-  "contacta": "Contact",
-  "contacta_nuevo_deporte": "contact us if you would like another sport added.",
+  "contacta": "CALL",
+  "contacta_nuevo_deporte": "Contact us if you would like to include any other sports.",
   "contacto": "Contact",
   "contacto_acepta_condiciones": "I accept the use of my data to manage this contact request.",
   "contacto_h1": "Contact Us",
-  "contacto_text1": "how can we help you?",
+  "contacto_text1": "How can we help you?",
   "contacto_text2": "Fill out the form and we will reply shortly.",
   "contacto_text3": "Thank you! We have received your message and will reply as soon as possible.",
   "continuar": "Continue",
@@ -75,11 +67,11 @@
   "contrasena_actualizar": "Update password",
   "contrasena_nueva": "New password",
   "contrasena_repetir": "Repeat password",
-  "cookies_aceptacion_texto": "We use cookies for essential purposes, analytics, features and marketing. You can reject all except necessary ones, or configure them.",
-  "cookies_analitica_texto": "Usage measurement. Requires consent unless exempt AEPD mode.",
+  "cookies_aceptacion_texto": "We use cookies for essential purposes, analytics, functionality and marketing. You can reject all of them except the necessary ones, or configure them.",
+  "cookies_analitica_texto": "Usage measurement. Requires consent except in the AEPD exempt mode.",
   "cookies_funcionales_texto": "Non-essential service improvements.",
-  "cookies_marketing_texto": "Advertising and profiling.",
-  "cookies_necesarias_texto": "Required for basic operation. Always active.",
+  "cookies_marketing_texto": "Advertising and profiles.",
+  "cookies_necesarias_texto": "For basic operation. Always active.",
   "cookies_preferencias": "Cookie preferences",
   "cuenta_cancelar": "Cancel account",
   "cuenta_cancelar_texto": "Are you sure you want to cancel your account? This action cannot be undone.",
@@ -118,7 +110,7 @@
   "deportista_agregar": "Add athlete",
   "deportista_crear_error": "Could not create athlete.",
   "deportista_nombre": "Athlete's name",
-  "deportista_no_encontrado": "Athlete not found",
+  "deportista_no_encontrado": "Sportsman not found",
   "deportista_no_encontrado_mensaje": "There is no information in the system about this athlete.",
   "deportista_nuevo": "New athlete",
   "deportista_pendiente": "pending athlete",
@@ -134,9 +126,9 @@
   "editar": "Edit",
   "eliminar": "Delete",
   "eliminando": "Deleting...",
-  "email": "Email",
+  "email": "[PENDIENTE] Email",
   "empatados": "Tied",
-  "en_contra": "Against",
+  "en_contra": "against",
   "entrando": "Logging in...",
   "enviando": "Sending...",
   "enviar": "Send",
@@ -152,10 +144,7 @@
   "estadisticas": "Statistics",
   "estadisticas_individuales": "Individual statistics",
   "estado": "Status",
-  "competicion_requerida": "Competition is required.",
   "fecha": "Date",
-  "fecha_requerida": "Date is required.",
-  "hora_opcional": "Time (optional — defaults to midnight if not set)",
   "fecha_alta": "Registration date",
   "fin": "End",
   "formulario_completa": "or fill out the form",
@@ -164,15 +153,15 @@
   "futbol": "Football (Soccer)",
   "futbol_sala": "Futsal",
   "galeria": "Gallery",
-  "galeria_aviso": "Remember that images and videos are stored on the device you used to capture or link them. In the gallery you will only see media stored on the device you are using.",
-  "galeria_vacia": "There are no images or videos for this match.",
+  "galeria_aviso": "Remember that images and videos are stored on the device from which you captured or linked. When accessing the gallery you will only see the images and videos that are stored on the device from which you access.",
+  "galeria_vacia": "There are no images or videos of this match.",
   "ganados": "Won",
   "goles": "Goals",
   "guardando": "Saving...",
   "guardando_archivo": "Saving file...",
-  "guardando_dispositivo": "Saving on device...",
-  "guardando_foto": "Saving photo...",
-  "guardando_video": "Saving video...",
+  "guardando_dispositivo": "Saving to device...",
+  "guardando_foto": "Looking at photos...",
+  "guardando_video": "Watching videos...",
   "guardar": "Save",
   "hecho": "Done ✔",
   "historial": "History",
@@ -181,19 +170,19 @@
   "hockey_patines": "Roller Hockey",
   "hola": "Hello",
   "home_deportes_texto": "Record the sports history of these sports",
-  "home_feature1_title": "Athlete management",
-  "home_feature1_text": "Register and track the sports history of your favourite players.",
-  "home_feature2_title": "Multiple sports",
-  "home_feature2_text": "Basketball, football, futsal, handball, volleyball, rugby, water polo, roller hockey and field hockey",
+  "home_feature1_title": "Athlete Management",
+  "home_feature1_text": "Record and track the sports history of your favorite players.",
+  "home_feature2_title": "Multiple Sports",
+  "home_feature2_text": "Basketball, soccer, indoor soccer, handball, volleyball, rugby, water polo, roller hockey and field hockey",
   "home_feature3_title": "Detailed statistics",
-  "home_feature3_text": "Analyse performance each match and season. Full history of wins, losses, points scored, goals,...",
-  "home_feature4_title": "Photos and videos",
-  "home_feature4_text": "Capture and store the best moments of every match to remember them forever.",
+  "home_feature3_text": "Analyze the performance of each game and season. You will have the history of their victories, losses, points scored, goals scored,...",
+  "home_feature4_title": "Photos and Videos",
+  "home_feature4_text": "Capture and store the best moments of each match to always remember them.",
   "home_feature5_title": "Works offline",
-  "home_feature5_text": "Record data even without internet and sync automatically when you are back online.",
+  "home_feature5_text": "Record data even without an internet connection and automatically sync it when you regain connection.",
   "home_feature6_title": "Mobile PWA",
-  "home_feature6_text": "You do not need to download an app from any store. Use it from your browser.",
-  "home_main_text1": "Looking for an app to save match stats for you or your kids? With Deporteen you can keep goals, points, assists, minutes played,... match by match, and add photos and videos. A memory for life.",
+  "home_feature6_text": "You do not need to download any App from any official store. You use it from your browser.",
+  "home_main_text1": "Were you looking for an App to save the statistics of your matches or your children's matches? With Deporteen you can now save forever the goals, points, assists, minutes played,... match by match and add photos and videos to them. A memory for life.",
   "hora": "Time",
   "idioma": "Language",
   "idioma_selec": "Select a language",
@@ -206,20 +195,20 @@
   "juego_local": "Home game",
   "juego_visitante": "Away game",
   "jugador": "Player",
-  "jugador_eliminar_confirmar": "Confirm player deletion",
-  "jugador_eliminar_confirmar_texto": "Confirm you want to delete this player. All data for this player will be removed. This action is irreversible.",
+  "jugador_eliminar_confirmar": "Confirm player removal",
+  "jugador_eliminar_confirmar_texto": "Confirm that you want to remove this player. All data relating to this player will be deleted. This action is irreversible.",
   "jugador_nombre_editar": "Edit player name",
   "jugadores": "Players",
-  "legal_": "Legal",
+  "legal_": "[PENDIENTE] Legal",
   "local": "Home",
   "login": "Login",
-  "logout": "Logout",
+  "logout": "[PENDIENTE] Logout",
   "lugar": "Location",
-  "mantener_pantalla": "Keep screen on",
+  "mantener_pantalla": "Keep screen active",
   "marcador": "Scoreboard",
-  "marketing": "Marketing",
+  "marketing": "[PENDIENTE] Marketing",
   "media_eliminar_confirmar": "Confirm file deletion",
-  "media_eliminar_confirmar_texto": "Confirm you want to delete this file",
+  "media_eliminar_confirmar_texto": "Confirm that you want to delete this file",
   "mensaje": "Message",
   "mensaje_no_enviado": "Could not send message.",
   "menu": "Menu",
@@ -229,9 +218,9 @@
   "mi_panel_volver": "Back to my panel",
   "minutos": "Minutes",
   "minutos_jugados": "Minutes played",
-  "multimedia": "Multimedia",
+  "multimedia": "[PENDIENTE] Multimedia",
   "necesarias": "Necessary",
-  "no_cierres_app": "Do not close the app or lock the screen.",
+  "no_cierres_app": "Don't close the app or lock the screen.",
   "no_definida": "Undefined",
   "nombre": "Name",
   "nombre_apellidos": "Full name",
@@ -241,24 +230,24 @@
   "observaciones": "Observations",
   "olvide_contrasena": "Forgot your password?",
   "opcional": "optional",
-  "pago_cancelado": "Payment was cancelled.",
-  "pago_completado": "Payment completed successfully and your subscription has been activated.",
+  "pago_cancelado": "Payment has been cancelled.",
+  "pago_completado": "The payment has been completed successfully and your subscription has been activated.",
   "participacion": "Participation",
   "participacion_add": "Add another participation",
   "partido": "Match",
   "partido_editar": "Edit match",
   "partido_ver": "View match",
-  "partido_volver": "Back to match",
+  "partido_volver": "Return to the game",
   "partido_nuevo": "New match",
   "partidos": "Matches",
-  "partidos_balance": "Match record",
+  "partidos_balance": "Swing parties",
   "partidos_competicion": "Competition matches",
   "partidos_ver": "View matches",
-  "password": "Password",
+  "password": "[PENDIENTE] Password",
   "password_confirm": "Confirm password",
   "password_olvidada": "Forgot your password?",
   "password_recuperar": "Recover password",
-  "pc_promedio": "Avg. points against",
+  "pc_promedio": "Average points against",
   "pc_total": "Points against",
   "pendientes_alta": "to register",
   "perdidos": "Lost",
@@ -267,12 +256,16 @@
   "perfil_editar": "Edit profile",
   "perfil_guardado_confirma_email": "Profile saved. Confirm your email.",
   "perfil_ver": "View profile",
-  "pf_promedio": "Avg. points for",
-  "pf_total": "Points for",
-  "plan_anual": "Annual plan",
-  "plan_siempre": "Lifetime plan",
-  "plan_trianual": "3-year plan",
+  "pf_promedio": "Average points in favor",
+  "pf_total": "Points in favor",
+  "plan_anual": "Annual Plan",
+  "plan_siempre": "Forever Plan",
+  "plan_trianual": "3 Year Plan",
   "player_nuevo_texto1": "Enter the athletes' data. Pending",
+  "limite_deportistas_alcanzado": "You have reached the limit of allowed athletes",
+  "limite_deportistas_info": "Your current subscription allows you to create up to the maximum configured athletes. To add more, you can expand your subscription.",
+  "limite_deportistas_alcanzado_dashboard": "You have reached the limit of athletes in your subscription. Expand your subscription to add more",
+  "ampliar_suscripcion": "Expand subscription",
   "player_nuevo_texto2": "Next, indicate all the participations the athlete has in one or more sports and categories.",
   "plazas_disponibles": "Available slots",
   "plazas_disponibles_sin": "No available slots left",
@@ -281,43 +274,42 @@
   "procesando": "Processing...",
   "procesando_metadatos": "Processing metadata...",
   "puntos": "Points",
-  "rechazar_todo": "Reject all",
+  "rechazar_todo": "Reject everything",
   "recibo_ver": "View receipt",
   "recibos_ver_question": "Do you need all your receipts?",
   "recibos": "Receipts",
-  "recuerda_guardar_cambios": "Remember to save your changes.",
-  "recuperacion_enviada": "We have sent a password recovery email. If it is not in your inbox, check spam.",
-  "recuperar_contrasena": "Reset password",
-  "registrando_galeria": "Adding to gallery",
+  "recuerda_guardar_cambios": "Remember to save the changes.",
+  "recuperacion_enviada": "We have sent you an email to recover your password. If it doesn't appear in your inbox, check your spam folder.",
+  "recuperar_contrasena": "Recover password",
+  "registrando_galeria": "Registering in the gallery",
   "registrate": "Register",
   "registrate_google": "Register with Google",
   "registro_h1": "Create your account",
-  "renovacion_proxima_texto": "Your subscription will renew soon; you can renew from here.",
-  "renovacion_proxima_titulo": "Upcoming subscription renewal",
+  "renovacion_proxima_texto": "Your subscription expires in the near future, you can access it here to renew.",
+  "renovacion_proxima_titulo": "Next renewal of your subscription",
   "renovar": "Renew",
   "renovar_ahora": "Renew now",
   "resultado": "Result",
-  "rival": "Rival",
-  "rugby": "Rugby",
+  "rival": "[PENDIENTE] Rival",
+  "rugby": "[PENDIENTE] Rugby",
   "sesion_iniciar_aviso": "You must log in to subscribe.",
-  "sin_asientos_disponibles": "No seats available.",
-  "sin_competiciones_actuales": "There is no competition registered at the moment.",
+  "sin_competiciones_actuales": "There are currently no competitions registered.",
   "sin_deportistas": "No athletes registered.",
   "sin_estadisticas_detectadas": "No statistics detected.",
-  "sin_partidos": "No matches recorded",
-  "sin_preview": "File not found. It may be saved on another of your devices.",
+  "sin_partidos": "There are no registered matches",
+  "sin_preview": "The file was not found. It is possibly saved on another of your devices.",
   "soy_local": "I am home",
   "soy_visitante": "I am away",
   "suscribete": "Subscribe",
   "stripe_pago_seguro": "Secure payment with Stripe",
-  "stripe_portal_facturacion": "Portal de facturación",
+  "stripe_portal_facturacion": "Billing Portal",
   "stripe_admin": "Administration",
-  "stripe_admin_menu": "Stripe administration",
+  "stripe_admin_menu": "Stripe Administration",
   "stripe_admin_manage": "Manage Stripe",
-  "stripe_admin_dashboard": "Overview",
+  "stripe_admin_dashboard": "[PENDIENTE] Panel general",
   "stripe_admin_products": "Products",
   "stripe_products_description": "Manage your Stripe catalog from a single place.",
-  "stripe_open_in_dashboard": "Stripe Dashboard",
+  "stripe_open_in_dashboard": "[PENDIENTE] Stripe Dashboard",
   "stripe_add_product_button": "Add product",
   "stripe_create_product": "Create product",
   "stripe_product_modal_title": "New product",
@@ -331,7 +323,7 @@
   "stripe_product_currency_label": "Currency",
   "stripe_product_create_price_toggle": "Create default price",
   "stripe_product_create_price_help": "When enabled, a default price will be generated automatically in Stripe.",
-  "stripe_product_price_placeholder": "19.99",
+  "stripe_product_price_placeholder": "[PENDIENTE] 19.99",
   "stripe_product_price_hint": "Enter the amount in the selected currency; we will convert it to the correct unit amount.",
   "stripe_product_currency_hint": "Default currency: EUR.",
   "stripe_modal_close": "Close",
@@ -430,7 +422,7 @@
   "stripe_subscriptions_results_prefix": "Showing",
   "stripe_subscriptions_results_suffix": "records",
   "stripe_subscriptions_column_id": "Subscription",
-  "stripe_subscriptions_column_plan": "Plan",
+  "stripe_subscriptions_column_plan": "[PENDIENTE] Plan",
   "stripe_subscriptions_column_amount": "Amount",
   "stripe_subscriptions_column_interval": "Interval",
   "stripe_subscriptions_column_status": "Status",
@@ -511,7 +503,7 @@
   "stripe_invoices_status_uncollectible": "Uncollectible",
   "stripe_invoices_status_void": "Void",
   "stripe_invoices_status_past_due": "Past due",
-  "titulo": "DeporTeen",
+  "titulo": "[PENDIENTE] DeporTeen",
   "stripe_coupons_create_id": "ID (optional)",
   "stripe_coupons_create_name": "Name",
   "stripe_coupons_create_amount_off": "Amount off",
@@ -550,120 +542,120 @@
   "suscribirme": "Subscribe me",
   "suscripcion": "Subscription",
   "suscripcion_ampliar": "Extend subscription",
-  "suscripcion_inactiva_titulo": "You do not have an active subscription at the moment.",
-  "suscripcion_inactiva_texto": "You must renew your subscription to add new matches, and extend it to add new athletes.",
-  "suscripcion_planes_texto": "All subscription plans include: <br> · Unlimited access to all recorded history. <br> · Export history to .xls. <br> · Images and videos are stored on your own device. <br> · 14-day period to request a refund.",
+  "suscripcion_inactiva_titulo": "You do not have any active subscriptions at this time.",
+  "suscripcion_inactiva_texto": "You must renew your subscription to be able to add new matches, and expand it to include new athletes.",
+  "suscripcion_planes_texto": "All subscription plans include the following features: · Unlimited access to all recorded history. <br> · Export history to .xls. <br> · Images and videos are saved on the device itself. <br> · 14-day period to request a refund.",
   "suscripcion_renovar": "Renew subscription",
-  "suscripcion_renovar_texto": "Choose one of our plans to renew your subscription.",
+  "suscripcion_renovar_texto": "Select one of our plans to renew your subscription.",
   "suscripcion_stripe": "Subscribe with Stripe",
   "suscripcion_texto1": "Register an athlete if you have a valid free access code. If you want to register more than one athlete, you must indicate it in the form.",
   "suscripcion_texto2": "You can register <b>1</b> athlete with an <b>access code</b>. If you need to add more athletes, you must complete the payment via Stripe. You can always create one now with a code and add more later via Stripe.",
   "suscripciones": "Subscriptions",
   "suscripciones_gestionar": "Manage subscriptions",
-  "suscripciones_no_registradas": "You have no subscriptions at the moment.",
-  "telf": "Phone",
+  "suscripciones_no_registradas": "You do not have any subscription at this time.",
+  "telf": "Telephone",
   "temporada": "Season",
   "temporada_actual": "Current season",
   "temporada_selec": "Select a season",
   "temporadas": "Seasons",
   "terminos_condiciones": "Terms and conditions",
-  "total": "Total",
-  "valor": "Value",
+  "total": "[PENDIENTE] Total",
+  "valor": "[PENDIENTE] Valor",
   "video": "Video",
   "visitante": "Away",
   "voleibol": "Volleyball",
   "volver_atras": "Go back",
-  "waterpolo": "Waterpolo",
+  "waterpolo": "[PENDIENTE] Waterpolo",
   "legal": {
     "legal_notice": {
       "sections": [
         {
-          "title": "1. Owner identification",
-          "html": "<p>This website and the <b>{{product.app_name}}</b> app ({{product.domain}}) are owned by <b>{{company.name}}</b>, tax ID {{company.nif}}, registered at {{company.address}}, {{company.country}}. Contact email: <a href=\"mailto:{{company.email}}\">{{company.email}}</a>.</p><p>Commercial register: {{company.reg_merc}}</p>"
+          "title": "1. Owner details",
+          "html": "<p>The website and the <b>{{product.app_name}}</b> app ({{product.domain}}) are owned by <b>{{company.name}}</b>, VAT {{company.nif}}, {{company.address}}, {{company.country}}. Contact: <a href=\"mailto:{{company.email}}\">{{company.email}}</a>.</p><p>Trade registry: {{company.reg_merc}}</p>"
         },
         {
           "title": "2. Purpose and acceptance",
-          "html": "<p>This Legal Notice governs access to and use of {{product.app_name}}. Access implies acceptance of these terms and, where applicable, the <a href=\"/legal/terminos\" target=\"_blank\" rel=\"noopener\">Terms of Use</a>.</p>"
+          "html": "<p>Accessing {{product.app_name}} implies acceptance of this Legal Notice and, where applicable, the <a href=\"/legal/terminos\" target=\"_blank\" rel=\"noopener\">Terms of Use</a>.</p>"
         },
         {
           "title": "3. Users and minors",
-          "html": "<p>The platform is intended for adults. <b>Children under 16 may not create an account</b>. Adults may record sports information about third parties, including minors, in accordance with the <a href=\"/legal/contenidos\" target=\"_blank\" rel=\"noopener\">Content & Image Policy</a>.</p>"
+          "html": "<p>The service is for adults. <b>Children under 16 cannot create an account</b>. Adults may record sports data of third parties pursuant to the <a href=\"/legal/contenidos\">Content & Image Policy</a>.</p>"
         },
         {
-          "title": "4. Intellectual property",
-          "html": "<p>The software, design and interface of {{product.app_name}} belong to {{company.name}} or its licensors. Use does not grant any intellectual property rights.</p>"
+          "title": "4. IP rights",
+          "html": "<p>Software and design belong to {{company.name}} or its licensors.</p>"
         },
         {
           "title": "5. Liability",
-          "html": "<p>{{company.name}} is not liable for data, images or videos the user stores on the device, nor for damage arising from misuse of the application.</p>"
+          "html": "<p>{{company.name}} is not liable for user-stored data, images or videos on the device, nor for misuse of the app.</p>"
         },
         {
-          "title": "6. Third-party links and services",
-          "html": "<p>The app integrates third-party services (e.g. <b>Supabase</b> in {{providers.supabase_region}} for the database, <b>Stripe</b> in {{providers.stripe_region}} for payments, <b>{{providers.hosting}}</b> for hosting and <b>{{providers.analytics}}</b> for analytics). See the <a href=\"/legal/privacidad\">Privacy Policy</a>.</p>"
+          "title": "6. Third-party services",
+          "html": "<p>We integrate <b>Supabase</b> (EU/Ireland), <b>Stripe</b> (payments), <b>{{providers.hosting}}</b> (hosting) and <b>{{providers.analytics}}</b> (analytics). See the <a href=\"/legal/privacidad\">Privacy Policy</a>.</p>"
         },
         {
-          "title": "7. Applicable law and jurisdiction",
-          "html": "<p>The law of {{legal.jurisdiction}} applies and, unless mandatory rules provide otherwise, the courts of the consumer user’s domicile.</p>"
+          "title": "7. Governing law",
+          "html": "<p>Spanish law applies. Consumer jurisdiction rules prevail.</p>"
         }
       ]
     },
     "privacy": {
       "sections": [
         {
-          "title": "1. Data controller",
-          "html": "<p>Controller: <b>{{company.name}}</b> ({{company.email}}). A Data Protection Officer has not been appointed for the time being.</p>"
+          "title": "1. Controller",
+          "html": "<p>Controller: <b>{{company.name}}</b> ({{company.email}}). No DPO appointed for now.</p>"
         },
         {
           "title": "2. Data we process",
-          "html": "<ul><li><b>Account</b>: name, surname, email and phone (optional).</li><li><b>Service use</b>: sports statistics created by the user about third parties.</li><li><b>Media</b>: images and videos <b>stored locally on the device</b>, not in the cloud.</li><li><b>Payments</b>: transaction identification managed by Stripe.</li><li><b>Analytics</b>: measurements with {{providers.analytics}}.</li></ul>"
+          "html": "<ul><li><b>Account</b>: name, surname, email, optional phone.</li><li><b>Service use</b>: sports stats created by the user about third parties.</li><li><b>Media</b>: images/videos stored <b>locally</b>, not in cloud.</li><li><b>Payments</b>: handled by Stripe.</li><li><b>Analytics</b>: {{providers.analytics}}.</li></ul>"
         },
         {
-          "title": "3. Purposes and legal bases",
-          "html": "<ul><li><b>Service and subscription</b> (performance of contract).</li><li><b>Usage analytics</b> (consent; see <a href=\"/legal/cookies\">Cookie Policy</a>).</li><li><b>Renewal notifications</b> (consent).</li><li><b>Security and fraud prevention</b> (legitimate interest).</li></ul>"
+          "title": "3. Purposes & legal bases",
+          "html": "<ul><li><b>Service & subscription</b> (contract).</li><li><b>Analytics</b> (consent).</li><li><b>Renewal notifications</b> (consent).</li><li><b>Security/fraud</b> (legitimate interest).</li></ul>"
         },
         {
-          "title": "4. Origin and accuracy",
-          "html": "<p>Data comes from the user. If you record information about third parties, you warrant sufficient legitimacy (e.g. consent of image rights holders for minors).</p>"
+          "title": "4. Retention",
+          "html": "<ul><li>Account and records while account exists. Billing data: <b>6 years</b>.</li><li>Security logs: <b>12 months</b>.</li></ul>"
         },
         {
-          "title": "5. Retention",
-          "html": "<ul><li>Account and records: while the account exists. Billing data: <b>6 years</b>.</li><li>Security logs: <b>12 months</b> unless incidents require longer.</li><li>Analytics and consents: until withdrawn.</li></ul>"
+          "title": "5. Recipients",
+          "html": "<ul><li>Supabase (EU/Ireland)</li><li>Stripe</li><li>{{providers.hosting}}</li><li>{{providers.analytics}}</li></ul>"
         },
         {
-          "title": "6. Recipients and processors",
-          "html": "<ul><li><b>Supabase</b> (EU/Ireland) as database provider.</li><li><b>Stripe</b> for payments.</li><li><b>{{providers.hosting}}</b> for hosting.</li><li><b>{{providers.analytics}}</b> (configured according to consent).</li></ul><p>No international transfers outside the EEA beyond those inherent to these providers and covered by their compliance mechanisms.</p>"
+          "title": "6. Rights",
+          "html": "<p>Contact <a href=\"mailto:{{legal.data_subject_email}}\">{{legal.data_subject_email}}</a> to exercise GDPR rights. Response within one month.</p>"
         },
         {
-          "title": "7. Rights",
-          "html": "<p>You may exercise access, rectification, erasure, objection, restriction and portability by writing to <a href=\"mailto:{{legal.data_subject_email}}\">{{legal.data_subject_email}}</a>. Response time: 1 month.</p>"
+          "title": "7. Minors",
+          "html": "<p>Under-16s cannot create an account. Adults must ensure consent to process minors' images/data.</p>"
         },
         {
           "title": "8. Security measures",
-          "html": "<p>Encryption in transit (TLS) and at rest in database services, access controls, provider backups and data minimisation. Media (photos/videos) are stored in <b>local device storage</b> controlled by the user.</p>"
+          "html": "<p>Encryption in transit (TLS) and at rest in database services, access control, backup copies at the provider and good minimization practices. Media (photos/videos) are saved to the <b>local storage of the device</b> controlled by the user.</p>"
         },
         {
           "title": "9. Minors",
-          "html": "<p>Children under 16 cannot create an account. Adults who register data or images of minors declare sufficient legitimacy and must comply with the <a href=\"/legal/contenidos\">Content & Image Policy</a>.</p>"
+          "html": "<p>Those under 16 cannot create an account. Adults who register data or images of minors declare that they have sufficient legitimacy and respect the <a href=\"/legal/contents\">Content and Image Rights Policy</a>.</p>"
         }
       ]
     },
     "cookies": {
       "sections": [
         {
-          "title": "1. What are cookies?",
-          "html": "<p>We use cookies and similar technologies so the site works and, if you accept, to measure usage with {{providers.analytics}}.</p>"
+          "title": "1. What cookies we use",
+          "html": "<p>Only necessary cookies and, if consented, analytics ({{providers.analytics}}).</p>"
         },
         {
-          "title": "2. Settings",
-          "html": "<p>You can customise preferences in the <i>Cookie preferences</i> banner. Categories used:</p><ul><li><b>Necessary</b>: essential for operation (login, security).</li><li><b>Analytics</b>: usage measurement with {{providers.analytics}} (requires consent unless AEPD exempt mode).</li><li><b>Functional</b>: non-essential improvements.</li><li><b>Marketing</b>: not used currently.</li></ul>"
+          "title": "2. Categories",
+          "html": "<ul><li><b>Necessary</b>: login, security.</li><li><b>Analytics</b>: usage measurement (consent-based).</li><li><b>Functional</b>: non-essential improvements.</li><li><b>Marketing</b>: currently unused.</li></ul>"
         },
         {
-          "title": "3. Cookies we use",
-          "html": "<p><b>Necessary</b></p><ul><li>Supabase session: {{cookies.session}}.</li><li>Stripe (checkout): {{cookies.stripe}}.</li></ul><p><b>Analytics</b></p><ul><li>Google Analytics 4: {{cookies.ga4}}.</li></ul><p>We may also use local storage (IndexedDB/localStorage) for content and preferences.</p>"
+          "title": "3. List",
+          "html": "<p><b>Necessary</b></p><ul><li>Supabase session: {{cookies.session}}</li><li>Stripe: {{cookies.stripe}}</li></ul><p><b>Analytics</b></p><ul><li>GA4: {{cookies.ga4}}</li></ul>"
         },
         {
-          "title": "4. How to change or withdraw consent",
-          "html": "<p>You can reopen the preferences panel from the “Cookies” link in the footer, or clear cookies in your browser settings.</p>"
+          "title": "4. Manage consent",
+          "html": "<p>Use the cookie banner or your browser settings to withdraw consent.</p>"
         }
       ]
     },
@@ -671,39 +663,39 @@
       "sections": [
         {
           "title": "1. Purpose",
-          "html": "<p>These Terms govern use of {{product.app_name}}.</p>"
+          "html": "<p>Terms for using {{product.app_name}}.</p>"
         },
         {
           "title": "2. Account and access",
-          "html": "<p>The account is personal and for users over 16. An adult may register third-party athletes.</p>"
+          "html": "<p>The account is personal and for people over 16. An adult can register third-party athletes.</p>"
         },
         {
           "title": "3. Plans and payments",
-          "html": "<p>Payments are processed with Stripe. Invoices are issued by Stripe.</p>"
+          "html": "<p>Payments are processed with Stripe. The invoice is issued by Stripe.</p>"
         },
         {
           "title": "4. Withdrawal and refunds",
-          "html": "<p>You have <b>14 days</b> from purchase to request a refund if you have not consumed services that legally prevent it.</p>"
+          "html": "<p>You have <b>14 days</b> from the purchase to request a refund if you have not consumed benefits that legally prevent it.</p>"
         },
         {
           "title": "5. User content",
-          "html": "<p>You are responsible for data and images you store. You must comply with applicable law and our <a href=\"/legal/contenidos\">Content Policy</a>.</p>"
+          "html": "<p>You are responsible for the data and images you store. You must comply with current legislation and our <a href=\"/legal/contenidos\">Content Policy</a>.</p>"
         },
         {
           "title": "6. Limitation of liability",
-          "html": "<p>The service is provided “as is” with reasonable diligence.</p>"
+          "html": "<p>The service is provided “as is” within reasonable diligence.</p>"
         }
       ]
     },
     "subscription": {
       "sections": [
         {
-          "title": "1. Purchase process",
-          "html": "<p>Subscriptions are managed through Stripe. Once payment is confirmed, access is activated.</p>"
+          "title": "1. Purchase",
+          "html": "<p>Payments via Stripe. 14-day withdrawal right as applicable.</p>"
         },
         {
           "title": "2. Renewals and notices",
-          "html": "<p>We may send renewal notices if you consent.</p>"
+          "html": "<p>We may send you renewal notices if you consent.</p>"
         },
         {
           "title": "3. Billing",
@@ -711,7 +703,7 @@
         },
         {
           "title": "4. Withdrawal",
-          "html": "<p>14-day right of withdrawal under consumer law, subject to applicable legal exceptions.</p>"
+          "html": "<p>14 days of withdrawal in accordance with consumer regulations, with applicable legal exceptions.</p>"
         }
       ]
     },
@@ -719,19 +711,19 @@
       "sections": [
         {
           "title": "1. Scope",
-          "html": "<p>Governs use of images and videos and recording data about third parties, including minors.</p>"
+          "html": "<p>Rules for user content and image rights.</p>"
         },
         {
           "title": "2. Image rights",
-          "html": "<p>If you store images or videos of third parties, you must have their consent. For minors, consent must be given by their legal guardian.</p>"
+          "html": "<p>If you store images or videos from third parties, you must have their consent. In the case of minors, consent must be granted by their legal representative.</p>"
         },
         {
           "title": "3. Prohibitions",
-          "html": "<p>Uploading or keeping unlawful, defamatory content or content that infringes third-party rights is prohibited.</p>"
+          "html": "<p>It is prohibited to upload or retain content that is illegal, defamatory or violates the rights of third parties.</p>"
         },
         {
-          "title": "4. Content removal",
-          "html": "<p>We may require removal of content that breaches this policy or the law. You can contact <a href=\"mailto:{{legal.data_subject_email}}\">{{legal.data_subject_email}}</a>.</p>"
+          "title": "4. Removal of content",
+          "html": "<p>We may require you to remove content that violates this policy or the law. You can contact at <a href=\"mailto:{{legal.data_subject_email}}\">{{legal.data_subject_email}}</a>.</p>"
         }
       ]
     }

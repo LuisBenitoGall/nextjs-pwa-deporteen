@@ -49,7 +49,6 @@ export default function AdminTabulatorTable<
   const dataRef = useRef(data);
   const [selectedRows, setSelectedRows] = useState<TRow[]>([]);
   const [isReady, setIsReady] = useState(false);
-  const [totalRows, setTotalRows] = useState(data.length);
 
   // Keep dataRef current without triggering effects
   dataRef.current = data;
@@ -122,14 +121,7 @@ export default function AdminTabulatorTable<
       const table = new TabulatorFull(containerRef.current!, options);
 
       table.on('tableBuilt', () => {
-        if (!cancelled) {
-          setIsReady(true);
-          setTotalRows(table.getDataCount());
-        }
-      });
-
-      table.on('dataFiltered', () => {
-        if (!cancelled) setTotalRows(table.getDataCount('active'));
+        if (!cancelled) setIsReady(true);
       });
 
       if (selectable) {
@@ -150,6 +142,7 @@ export default function AdminTabulatorTable<
       setIsReady(false);
       setSelectedRows([]);
     };
+    // Mount once: Tabulator uses initial columns/selectable/tableOptions; data syncs in a separate effect.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -157,7 +150,6 @@ export default function AdminTabulatorTable<
   useEffect(() => {
     if (!tableInstanceRef.current || !isReady) return;
     tableInstanceRef.current.replaceData(data).catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, isReady]);
 
   // ── Export handlers ──────────────────────────────────────────
@@ -218,8 +210,10 @@ export default function AdminTabulatorTable<
         </div>
       </div>
 
-      {/* ── Tabulator container ── */}
-      <div ref={containerRef} />
+      {/* ── Tabulator mount (scoped theme via .admin-tabulator-root in tabulator-theme.css) ── */}
+      <div className="admin-tabulator-root w-full min-w-0">
+        <div ref={containerRef} />
+      </div>
     </div>
   );
 }

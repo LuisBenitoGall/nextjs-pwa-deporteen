@@ -1,33 +1,40 @@
-import { defineConfig } from 'vitest/config'
-import { resolve } from 'path'
+import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
+import path from 'path';
 
-// Unit tests run in Node environment (default).
-// Component tests use // @vitest-environment jsdom at the top of each file.
 export default defineConfig({
-  esbuild: {
-    // Use React 17+ automatic JSX transform (no need to import React in test files)
-    jsx: 'automatic',
-  },
+  plugins: [react()],
   test: {
     globals: true,
-    environment: 'node',
+    environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    exclude: ['node_modules', '.next', 'dist'],
     coverage: {
       provider: 'v8',
-      include: ['src/lib/**', 'src/i18n/**'],
+      reporter: ['text', 'json', 'html', 'lcov'],
       exclude: [
-        'src/lib/supabase/**',
-        'src/lib/stripe/**',
-        'src/lib/database.types.ts',
+        'node_modules/',
+        'src/test/',
+        '**/*.d.ts',
+        '**/*.config.*',
+        '**/mockData/**',
+        '**/*.test.{ts,tsx}',
+        '**/*.spec.{ts,tsx}',
+        '.next/',
+        'dist/',
       ],
+      thresholds: {
+        lines: 60,
+        functions: 60,
+        branches: 50,
+        statements: 60,
+      },
     },
   },
   resolve: {
     alias: {
-      '@': resolve(__dirname, './src'),
-      // 'server-only' is a Next.js compile-time guard; in tests it's a no-op.
-      'server-only': resolve(__dirname, './src/test/server-only-mock.ts'),
+      '@': path.resolve(__dirname, './src'),
     },
   },
-})
+});
