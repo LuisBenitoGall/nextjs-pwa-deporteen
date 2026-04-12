@@ -44,7 +44,7 @@
 	- NEXT_PUBLIC_CLOUD_MEDIA=0   Con valor 1 permite subir los archivos a Cloud
 
 ## IDIOMAS:
-	- Actualizar: trabajar sobre es.json y ejecutar comando pnpm i18n:sync
+	- Actualizar: trabajar sobre es.json y ejecutar comando pnpm i18n:sync para sincronizar archivos de traducciones.
 	- Actualizar textos legales en  scripts/data/legal-full-en.json y legal-full-ca.json
 
 
@@ -53,7 +53,6 @@
 
 
 ## COMANDOS:
-	- pnpm i18n:sync   Sirve para la sincronización de los archivos de traducciones.
 
 
 

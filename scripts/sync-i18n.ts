@@ -16,18 +16,55 @@ import { SUPPORTED_LOCALES, DEFAULT_LOCALE, type Locale } from '../src/i18n/conf
 const MESSAGES_DIR = join(process.cwd(), 'src/i18n/messages');
 const BASE_LOCALE: Locale = DEFAULT_LOCALE; // 'es'
 
-// Mapeo de códigos de idioma para Google Translate
+// Mapeo de códigos de idioma para Google Translate (ISO 639-1 / códigos que acepta la API)
 const LOCALE_MAP: Record<Locale, string> = {
   es: 'es',
   en: 'en',
   ca: 'ca',
   it: 'it',
+  eu: 'eu', // euskera
+  gl: 'gl', // galego
 };
 
-// Delay entre traducciones para evitar rate limiting
-const TRANSLATE_DELAY = 500; // ms (aumentado para evitar rate limiting)
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 2000; // ms
+// Delay entre traducciones para evitar rate limiting (Google suele limitar IPs agresivamente)
+const TRANSLATE_DELAY = 1200; // ms
+const MAX_RETRIES = 4;
+const RETRY_DELAY = 4000; // ms
+
+/** Opcional: `pnpm i18n:sync -- --only=eu,gl` o `-- --only eu gl it`. */
+function parseOnlyLocalesArg(): Locale[] | undefined {
+  const parts: string[] = [];
+  const eqArg = process.argv.find((a) => a.startsWith('--only='));
+  if (eqArg) {
+    parts.push(
+      ...eqArg
+        .slice('--only='.length)
+        .split(/[\s,]+/)
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean)
+    );
+  } else {
+    const idx = process.argv.indexOf('--only');
+    if (idx >= 0) {
+      let i = idx + 1;
+      while (i < process.argv.length && !process.argv[i].startsWith('-')) {
+        parts.push(process.argv[i].toLowerCase());
+        i++;
+      }
+    }
+  }
+  if (!parts.length) return undefined;
+  const bad = parts.filter((p) => !(SUPPORTED_LOCALES as readonly string[]).includes(p));
+  if (bad.length) {
+    console.error(`Locales no válidos en --only: ${bad.join(', ')}`);
+    process.exit(1);
+  }
+  if (parts.includes(BASE_LOCALE)) {
+    console.error('No incluyas el locale base (es) en --only.');
+    process.exit(1);
+  }
+  return parts as Locale[];
+}
 
 /**
  * Lee un archivo JSON de traducción
@@ -44,11 +81,23 @@ function readTranslationFile(locale: Locale): Record<string, any> {
 }
 
 /**
+ * Ordena solo las claves de primer nivel (design: paridad con es.json en anidación; índice A–Z en raíz).
+ */
+function sortTopLevelKeys(obj: Record<string, any>): Record<string, any> {
+  const sorted: Record<string, any> = {};
+  for (const key of Object.keys(obj).sort((a, b) => a.localeCompare(b, 'es'))) {
+    sorted[key] = obj[key];
+  }
+  return sorted;
+}
+
+/**
  * Escribe un archivo JSON de traducción
  */
 function writeTranslationFile(locale: Locale, data: Record<string, any>): void {
   const filePath = join(MESSAGES_DIR, `${locale}.json`);
-  const content = JSON.stringify(data, null, 2) + '\n';
+  const payload = sortTopLevelKeys(data);
+  const content = JSON.stringify(payload, null, 2) + '\n';
   writeFileSync(filePath, content, 'utf-8');
   console.log(`✓ Actualizado: ${locale}.json`);
 }
@@ -58,10 +107,7 @@ function writeTranslationFile(locale: Locale, data: Record<string, any>): void {
  */
 async function translateText(text: string, targetLocale: Locale, retries: number = MAX_RETRIES): Promise<string> {
   if (targetLocale === BASE_LOCALE) return text;
-  
-  // Si el texto ya está marcado como pendiente, no traducir
-  if (text.startsWith('[PENDIENTE]')) return text;
-  
+
   try {
     const targetLang = LOCALE_MAP[targetLocale];
     const result = await translate(text, { to: targetLang });
@@ -76,14 +122,14 @@ async function translateText(text: string, targetLocale: Locale, retries: number
     }
     
     console.warn(`⚠ Error traduciendo "${text.substring(0, 50)}..." a ${targetLocale}:`, error?.message || error);
-    // Si falla la traducción, devolvemos el texto original marcado
-    return `[PENDIENTE] ${text}`;
+    // Si falla la API, conservamos el texto del idioma base (castellano) para no mostrar marcadores en UI
+    return text;
   }
 }
 
 /**
- * Compara y sincroniza recursivamente dos objetos
- * Retorna el objeto sincronizado con traducciones actualizadas
+ * Compara y sincroniza recursivamente dos objetos.
+ * Solo se emiten claves presentes en `base`: las que existían solo en destino se omiten (paridad estricta con es.json).
  */
 async function syncObject(
   base: Record<string, any>,
@@ -107,9 +153,9 @@ async function syncObject(
         synced[key] = await translateText(baseValue, targetLocale);
       } else if (typeof targetValue === 'string') {
         // Clave existe: verificar si necesita re-traducción
-        if (targetValue.startsWith('[PENDIENTE]')) {
-          // Traducción pendiente: intentar traducir de nuevo
-          console.log(`  Re-traduciendo (pendiente): ${currentPath}`);
+        if (/^\[PENDIENTE\]\s*/.test(targetValue)) {
+          // Legado: reintentar traducción desde el base
+          console.log(`  Re-traduciendo (marcador legado): ${currentPath}`);
           const translated = await translateText(baseValue, targetLocale);
           synced[key] = translated;
         } else if (targetValue === baseValue && targetLocale !== BASE_LOCALE) {
@@ -191,8 +237,15 @@ async function syncTranslations(): Promise<void> {
   const baseTranslations = readTranslationFile(BASE_LOCALE);
   console.log(`📖 Archivo base: ${BASE_LOCALE}.json (${Object.keys(baseTranslations).length} claves de primer nivel)\n`);
 
-  // Obtener idiomas a sincronizar (todos excepto el base)
-  const localesToSync = SUPPORTED_LOCALES.filter(locale => locale !== BASE_LOCALE);
+  const only = parseOnlyLocalesArg();
+  if (only?.length) {
+    console.log(`📌 Modo --only: ${only.join(', ')}\n`);
+  }
+
+  // Idiomas a sincronizar (todos excepto el base, o subconjunto con --only=)
+  const localesToSync = SUPPORTED_LOCALES.filter((locale) => locale !== BASE_LOCALE).filter(
+    (locale) => !only || only.includes(locale)
+  );
 
   // Sincronizar cada idioma
   for (const locale of localesToSync) {
@@ -214,7 +267,7 @@ async function syncTranslations(): Promise<void> {
   }
 
   console.log('\n✅ Sincronización completada!');
-  console.log('\n📝 Nota: Revisa las traducciones marcadas con [PENDIENTE] y tradúcelas manualmente si es necesario.');
+  console.log('\n📝 Nota: Si la API falló en parte, algunos textos pueden seguir en castellano hasta el próximo sync.');
 }
 
 // Ejecutar siempre cuando se llama el script

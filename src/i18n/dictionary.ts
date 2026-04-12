@@ -8,8 +8,9 @@ export async function getDictionary(locale?: string): Promise<{ locale: Locale; 
   switch (lc) {
     case 'en': return { locale: lc, dict: (await import('./messages/en.json')).default };
     case 'ca': return { locale: lc, dict: (await import('./messages/ca.json')).default };
-    //case 'eu': return { locale: lc, dict: (await import('./messages/eu.json')).default };
-    //case 'gl': return { locale: lc, dict: (await import('./messages/gl.json')).default };
+    case 'it': return { locale: lc, dict: (await import('./messages/it.json')).default };
+    case 'eu': return { locale: lc, dict: (await import('./messages/eu.json')).default };
+    case 'gl': return { locale: lc, dict: (await import('./messages/gl.json')).default };
     case 'es':
     default:   return { locale: 'es', dict: (await import('./messages/es.json')).default };
   }
