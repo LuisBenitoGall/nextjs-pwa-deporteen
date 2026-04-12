@@ -6,6 +6,9 @@ describe('isSupportedLocale', () => {
     expect(isSupportedLocale('es')).toBe(true)
     expect(isSupportedLocale('en')).toBe(true)
     expect(isSupportedLocale('ca')).toBe(true)
+    expect(isSupportedLocale('it')).toBe(true)
+    expect(isSupportedLocale('eu')).toBe(true)
+    expect(isSupportedLocale('gl')).toBe(true)
   })
 
   it('rejects unknown locales', () => {
@@ -21,8 +24,8 @@ describe('isSupportedLocale', () => {
 })
 
 describe('SUPPORTED_LOCALES', () => {
-  it('contains exactly es, en, ca, it', () => {
-    expect(SUPPORTED_LOCALES).toEqual(['es', 'en', 'ca', 'it'])
+  it('contains exactly es, en, ca, it, eu, gl', () => {
+    expect(SUPPORTED_LOCALES).toEqual(['es', 'en', 'ca', 'it', 'eu', 'gl'])
   })
 })
 
