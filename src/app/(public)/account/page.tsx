@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { RENEW_WINDOW_DAYS } from '@/config/constants';
 import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { intlLocaleTag } from '@/i18n/config';
 import { tServer } from '@/i18n/server';
 import { getSeatStatus } from '@/lib/seats';
 import { isSubscriptionActive } from '@/lib/subscriptions/shared';
@@ -109,7 +110,8 @@ export default async function AccountPage() {
         redirect('/logout');
     }
 
-    const { t } = await tServer(me?.locale || undefined);
+    const { t, locale: appLocale } = await tServer(me?.locale || undefined);
+    const intlLocale = intlLocaleTag(appLocale);
 
     // --- Jugadores del usuario (listado ligero) ---
     type RawPlayer = {
@@ -226,8 +228,6 @@ export default async function AccountPage() {
     const WINDOW_DAYS = RENEW_WINDOW_DAYS ?? 15;
     const horizon = new Date(Date.now() + WINDOW_DAYS * 24 * 60 * 60 * 1000);
     const needsRenewBanner = subs.some(s => s.end && new Date(s.end) <= horizon);
-
-    const locale = me?.locale || 'es-ES';
 
     // Server Action: borrado lógico + invalidación global de sesiones + signOut + redirect
     async function deleteAccount() {
@@ -421,7 +421,7 @@ export default async function AccountPage() {
           
                     <div>
                         <div className="text-gray-500">{t('fecha_alta')}</div>
-                        <div className="mt-0.5 font-medium text-gray-900">{formatDate(createdAt, locale)}</div>
+                        <div className="mt-0.5 font-medium text-gray-900">{formatDate(createdAt, intlLocale)}</div>
                     </div>
                 </div>
             </section>
@@ -478,14 +478,14 @@ export default async function AccountPage() {
                                               <span className="text-gray-900 font-medium">Free</span>
                                             ) : (
                                               <>
-                                                {formatAmount(s.amount, s.currency || 'EUR', locale)}{' '}
+                                                {formatAmount(s.amount, s.currency || 'EUR', intlLocale)}{' '}
                                                 <span className="text-gray-400">(IVA incl.)</span>
                                               </>
                                             )}
                                         </td>
 
-                                        <td className="py-3 pr-4 text-right">{formatDate(s.start, locale)}</td>
-                                        <td className="py-3 pr-4 text-right">{formatDate(s.end, locale)}</td>
+                                        <td className="py-3 pr-4 text-right">{formatDate(s.start, intlLocale)}</td>
+                                        <td className="py-3 pr-4 text-right">{formatDate(s.end, intlLocale)}</td>
 
                                         <td className="py-3 pr-4 text-right">
                                             {/* Mantengo tus clases del botón tal cual */}
@@ -584,7 +584,7 @@ export default async function AccountPage() {
                                     : null;
 
                             const refundAmountText = refundAmountForDisplay != null
-                                ? formatAmount(refundAmountForDisplay, currency, locale)
+                                ? formatAmount(refundAmountForDisplay, currency, intlLocale)
                                 : null;
 
                             const refundDescription = refundAmountText
@@ -610,10 +610,10 @@ export default async function AccountPage() {
                                                 <p className="text-sm font-medium text-gray-900">
                                                     {amountCents == null
                                                         ? '—'
-                                                        : formatAmount(amountCents, currency, locale)}
+                                                        : formatAmount(amountCents, currency, intlLocale)}
                                                 </p>
                                                 <p className="text-xs text-gray-500">
-                                                    {formatDate(p.paidAt, locale)} · {p.description || 'Stripe checkout'}
+                                                    {formatDate(p.paidAt, intlLocale)} · {p.description || 'Stripe checkout'}
                                                 </p>
                                             </div>
                                         </div>
@@ -720,7 +720,7 @@ export default async function AccountPage() {
                                             <span className="font-medium text-gray-900 break-words">{p.display}</span>
                                         </td>
                                         <td className="py-3 pr-4 text-right">
-                                            {formatDate(p.created_at, me?.locale || 'es-ES')}
+                                            {formatDate(p.created_at, intlLocale)}
                                         </td>
                                         <td className="py-3 pr-4 text-right">
                                             {/* Ver detalle del jugador */}
@@ -758,7 +758,7 @@ export default async function AccountPage() {
             </section>*/}
 
             {/* Almacenamiento de medios */}
-            <StorageSettingsSection locale={locale} />
+            <StorageSettingsSection locale={intlLocale} />
 
             {/* Cancelación de cuenta (borrado lógico) */}
             <section className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:p-6 shadow-sm">

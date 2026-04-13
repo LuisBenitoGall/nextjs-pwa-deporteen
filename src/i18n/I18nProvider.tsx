@@ -1,15 +1,34 @@
 'use client';
 
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import { I18N_DEFAULTS } from '@/config/constants';
 import {
   SUPPORTED_LOCALES,
   DEFAULT_LOCALE,
   LOCALE_LABELS,
+  LOCALE_COOKIE_NAME,
   isSupportedLocale,
   type Locale,
 } from './config';
 import { getDictionary, makeT } from './dictionary';
+
+const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 ano
+
+function writeLocaleCookie(locale: Locale) {
+  if (typeof document === 'undefined') return;
+  try {
+    document.cookie = `${LOCALE_COOKIE_NAME}=${locale};path=/;max-age=${LOCALE_COOKIE_MAX_AGE};SameSite=Lax`;
+  } catch {
+    /* ignore */
+  }
+}
+
+function readLocaleCookie(): string {
+  if (typeof document === 'undefined') return '';
+  const m = document.cookie.match(new RegExp(`(?:^|; )${LOCALE_COOKIE_NAME}=([^;]*)`));
+  return m ? decodeURIComponent(m[1]) : '';
+}
 
 type Messages = Record<string, any>;
 
@@ -28,8 +47,10 @@ const I18nContext = createContext<I18nCtx>({
 });
 
 export function I18nProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE);
   const [dict, setDict] = useState<Messages>({}); // se carga perezosamente
+  const didInitialRefresh = useRef(false);
 
   // Locale inicial: localStorage -> navegador -> default
   useEffect(() => {
@@ -40,10 +61,22 @@ export function I18nProvider({ children }: { children: ReactNode }) {
                     : isSupportedLocale(browser) ? (browser as Locale)
                     : DEFAULT_LOCALE;
       setLocaleState(initial);
+      const cookieBefore = readLocaleCookie();
+      writeLocaleCookie(initial);
+      // Refrescar só se a cookie non coincidía co preferido (evita petición extra cando o SSR xa veu a cookie correcta)
+      if (!didInitialRefresh.current && initial !== DEFAULT_LOCALE && cookieBefore !== initial) {
+        didInitialRefresh.current = true;
+        try {
+          router.refresh();
+        } catch {
+          /* ignore */
+        }
+      }
     } catch {
       setLocaleState(DEFAULT_LOCALE);
+      writeLocaleCookie(DEFAULT_LOCALE);
     }
-  }, []);
+  }, [router]);
 
   // Carga del diccionario cuando cambia el locale
   useEffect(() => {
@@ -65,8 +98,16 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     if (!isSupportedLocale(newLocale)) return;
     try {
       localStorage.setItem('locale', newLocale);
-    } catch {}
+    } catch {
+      /* ignore */
+    }
+    writeLocaleCookie(newLocale);
     setLocaleState(newLocale);
+    try {
+      router.refresh();
+    } catch {
+      /* ignore */
+    }
   };
 
   const t = useMemo(() => {

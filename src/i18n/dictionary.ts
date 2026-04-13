@@ -1,10 +1,10 @@
 // src/i18n/dictionary.ts
-import { DEFAULT_LOCALE, Locale } from './config';
+import { DEFAULT_LOCALE, Locale, normalizeToAppLocale } from './config';
 
 type Dict = Record<string, any>;
 
 export async function getDictionary(locale?: string): Promise<{ locale: Locale; dict: Dict }> {
-  const lc = (locale || DEFAULT_LOCALE) as Locale;
+  const lc = normalizeToAppLocale(locale) ?? DEFAULT_LOCALE;
   switch (lc) {
     case 'en': return { locale: lc, dict: (await import('./messages/en.json')).default };
     case 'ca': return { locale: lc, dict: (await import('./messages/ca.json')).default };
