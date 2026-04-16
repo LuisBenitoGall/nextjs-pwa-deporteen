@@ -2,6 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { intlLocaleTag } from '@/i18n/config';
 import { tServer } from '@/i18n/server';
 import { getSeatStatus } from '@/lib/seats';
 import { isSubscriptionActive } from '@/lib/subscriptions/shared';
@@ -15,6 +16,9 @@ type Player = {
     created_at: string;
     avatar_url: string | null;
 };
+
+const canUseNextImage = (u: string | null | undefined) =>
+    !!u && (/^https?:\/\//i.test(u) || u.startsWith('/'));
 
 export default async function DashboardPage() {
     const supabase = await createSupabaseServerClient();
@@ -41,7 +45,8 @@ export default async function DashboardPage() {
     const isDisabled = normalized === false || normalized === 'inactive' || normalized === 'false';
     if (me && isDisabled) redirect('/logout');
 
-    const { t } = await tServer(me?.locale || undefined);
+    const { t, locale: appLocale } = await tServer(me?.locale || undefined);
+    const intlLocale = intlLocaleTag(appLocale);
 
     // 1) Suscripciones: varias filas posibles
     // Regla: existe suscripción si hay >= 1 fila; está "activa" si la última no ha vencido aún,
@@ -66,9 +71,7 @@ export default async function DashboardPage() {
         seatsErrMsg = t('error_asientos_indisponibles'); // añade esta clave
     }
 
-    // 3) Jugadores + avatar de temporada vigente
-    // Estrategia: saco jugadores y, para cada uno, su avatar de la season marcada como vigente.
-    // Asumo columna booleana `is_current` en player_seasons. Si tu esquema usa otra, ajústalo aquí.
+    // 3) Jugadores + avatar de la temporada vigente (misma lógica que players/[id]/page.tsx)
     const { data: playersRaw, error: playersErr } = await supabase
     .from('players')
     .select('id, full_name, created_at')
@@ -76,20 +79,39 @@ export default async function DashboardPage() {
     .eq('status', true)
     .order('created_at', { ascending: false });
 
-    // Para evitar N+1 viajes, intentamos una sola query a player_seasons filtrando por jugadores y is_current = true
+    const now = new Date();
+    const y = now.getFullYear();
+    const aug1 = new Date(y, 7, 1); // 1 agosto
+    const startYear = now >= aug1 ? y : y - 1;
+    const endYear = startYear + 1;
+
+    const { data: currentSeason } = await supabase
+    .from('seasons')
+    .select('id, year_start, year_end')
+    .eq('year_start', startYear)
+    .eq('year_end', endYear)
+    .maybeSingle();
+
+    const currentSeasonId = currentSeason?.id ?? null;
+
     let players: Player[] = [];
     if (!playersErr && playersRaw && playersRaw.length) {
         const ids = playersRaw.map(p => p.id);
-        const { data: seasons, error: seasonsErr } = await supabase
-        .from('player_seasons')
-        .select('player_id, avatar')
-        .in('player_id', ids)
-        .eq('is_current', true);
-
         const avatarByPlayer = new Map<string, string | null>();
-        if (!seasonsErr && seasons) {
-            for (const s of seasons) {
-                if (!avatarByPlayer.has(s.player_id)) avatarByPlayer.set(s.player_id, s.avatar || null);
+
+        if (currentSeasonId) {
+            const { data: psRows, error: psErr } = await supabase
+            .from('player_seasons')
+            .select('player_id, avatar')
+            .in('player_id', ids)
+            .eq('season_id', currentSeasonId);
+
+            if (!psErr && psRows) {
+                for (const row of psRows) {
+                    if (!avatarByPlayer.has(row.player_id)) {
+                        avatarByPlayer.set(row.player_id, row.avatar || null);
+                    }
+                }
             }
         }
 
@@ -97,7 +119,7 @@ export default async function DashboardPage() {
             id: p.id,
             full_name: p.full_name,
             created_at: p.created_at,
-            avatar_url: avatarByPlayer.get(p.id) ?? null
+            avatar_url: avatarByPlayer.get(p.id) ?? null,
         }));
     } else if (!playersRaw) {
         players = [];
@@ -117,8 +139,6 @@ export default async function DashboardPage() {
             return '—';
         }
     }
-
-    const locale = (me as any)?.locale || 'es-ES';
 
     return (
         <div>
@@ -148,7 +168,7 @@ export default async function DashboardPage() {
             )}
 
             {/* Contenido del panel: info deportiva */}
-            <section className="mt-6 rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm">
+            <section className="mt-6 mb-6 rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm">
                 <div className="mb-6 flex items-center justify-between">
                     <h2 className="text-base font-semibold text-gray-800">{t('deportistas_mis')}</h2>
                     {canAddPlayers && (
@@ -196,8 +216,14 @@ export default async function DashboardPage() {
                                 <li key={p.id} className="rounded-2xl bg-green-50 border border-green-200 p-4 hover:shadow-sm">
                                     <div className="flex items-center gap-3">
                                         <div className="h-12 w-12 overflow-hidden rounded-full bg-gray-100">
-                                            {p.avatar_url ? (
-                                            <Image src={p.avatar_url} alt={p.full_name} width={48} height={48} />
+                                            {canUseNextImage(p.avatar_url) ? (
+                                            <Image
+                                                src={p.avatar_url!}
+                                                alt={p.full_name}
+                                                width={48}
+                                                height={48}
+                                                unoptimized
+                                            />
                                             ) : (
                                             <div className="grid h-full w-full place-content-center text-gray-400">🏃</div>
                                             )}
@@ -205,7 +231,7 @@ export default async function DashboardPage() {
                                         <div>
                                             <p className="font-medium">{p.full_name}</p>
                                             <p className="text-xs text-gray-500">
-                                            {t('fecha_alta')}: {formatDate(p.created_at as any, locale)}
+                                            {t('fecha_alta')}: {formatDate(p.created_at as any, intlLocale)}
                                             </p>
                                         </div>
                                     </div>
@@ -221,7 +247,7 @@ export default async function DashboardPage() {
 
                                         {/* Nuevo partido, con suscripción activa */}
                                         {subscribed && (
-                                            <Link href={`/players/${p.id}/add-match`} className="bg-white rounded-xl border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50">
+                                            <Link href={`/players/${p.id}/matches/new`} className="bg-white rounded-xl border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50">
                                                 {t('partido_nuevo')}
                                             </Link>
                                         )}

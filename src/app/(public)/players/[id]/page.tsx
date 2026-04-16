@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { redirect, notFound } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { intlLocaleTag } from '@/i18n/config';
 import { tServer } from '@/i18n/server';
 import { LIMITS } from '@/config/constants';
 import { isSubscriptionActive } from '@/lib/subscriptions/shared';
@@ -32,7 +33,8 @@ export default async function PlayerDetailPage({
     .select('locale, status')
     .eq('id', user.id)
     .maybeSingle();
-    const { t } = await tServer(me?.locale || undefined);
+    const { t, locale: appLocale } = await tServer(me?.locale || undefined);
+    const intlLocale = intlLocaleTag(appLocale);
 
     // Jugador
     const { data: player, error: pErr } = await supabase
@@ -133,7 +135,6 @@ export default async function PlayerDetailPage({
         const date = typeof d === 'string' ? new Date(d) : d;
         return new Intl.DateTimeFormat(locale, { year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
     }
-    const locale = me?.locale || 'es-ES';
     const seasonLabel = (row: any) =>
     row?.s ? `${row.s.year_start}-${row.s.year_end}` : String(row?.season_id ?? '—');
 
@@ -225,7 +226,11 @@ export default async function PlayerDetailPage({
 
     return (
         <div>
-            <TitleH1>{t('jugador')} <i>{player.full_name}</i></TitleH1>
+            <TitleH1>
+                <span className="inline">{t('jugador')}</span>
+                {' '}
+                <i>{player.full_name}</i>
+            </TitleH1>
 
             <div className="mb-6 flex gap-2">
                 <Link href="/dashboard">
@@ -285,7 +290,7 @@ export default async function PlayerDetailPage({
                         <p className="text-sm text-gray-500">
                             <span className="mr-1">{t('fecha_alta') || 'Fecha de alta'}:</span>
                             <span className="font-medium text-gray-900">
-                                {formatDate(player.created_at, locale)}
+                                {formatDate(player.created_at, intlLocale)}
                             </span>
                         </p>
                         {currentSeasonId ? (
@@ -326,7 +331,7 @@ export default async function PlayerDetailPage({
             <section className="mt-8 rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <h2 className="text-lg font-semibold">
-                        {t('competiciones')}.
+                        {t('competiciones')}.{' '}
                         <span className="text-gray-500 ml-3 align-baseline">
                             {t('temporada')}{' '}
                             <b>{currentSeason ? `${currentSeason.year_start}-${currentSeason.year_end}` : `${startYear}-${endYear}`}</b>

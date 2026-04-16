@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { intlLocaleTag } from '@/i18n/config';
 import { tServer } from '@/i18n/server';
 import { fetchUserPayments } from '@/lib/stripe-payments';
 
@@ -52,8 +53,8 @@ export default async function ReceiptsPage({
     .eq('id', userId)
     .maybeSingle();
 
-    const { t } = await tServer(me?.locale || undefined);
-    const locale = me?.locale || 'es-ES';
+    const { t, locale: appLocale } = await tServer(me?.locale || undefined);
+    const intlLocale = intlLocaleTag(appLocale);
 
     const resolvedSearchParams = await searchParams;
     const sid = resolvedSearchParams?.sid || null;
@@ -129,7 +130,7 @@ export default async function ReceiptsPage({
                                     const currency = payment.currency || 'EUR';
                                     const amountFormatted = amountCents == null
                                         ? '—'
-                                        : formatAmountCents(amountCents, currency, locale);
+                                        : formatAmountCents(amountCents, currency, intlLocale);
                                     const statusRaw = (payment.status || '').toLowerCase();
                                     const refundCents = payment.refundedAmount ?? 0;
                                     const hasRefund = refundCents > 0 || statusRaw.includes('refund');
@@ -153,7 +154,7 @@ export default async function ReceiptsPage({
                                             : null;
 
                                     const refundAmountText = refundAmountForDisplay != null
-                                        ? formatAmountCents(refundAmountForDisplay, currency, locale)
+                                        ? formatAmountCents(refundAmountForDisplay, currency, intlLocale)
                                         : null;
 
                                     const refundDescription = refundAmountText
@@ -167,7 +168,7 @@ export default async function ReceiptsPage({
                                     return (
                                         <tr key={payment.id} className="border-t border-gray-100 align-top">
                                             <td className="py-3 pr-4">
-                                                {formatDateISO(payment.paidAt, locale)}
+                                                {formatDateISO(payment.paidAt, intlLocale)}
                                             </td>
                                             <td className="py-3 pr-4">
                                                 <div className="flex flex-col gap-1">

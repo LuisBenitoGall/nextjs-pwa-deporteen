@@ -102,8 +102,10 @@ export default function AvatarUploadForm({
             )}
 
             <form onSubmit={handleSubmit} className="space-y-3">
-                <label className="flex items-center justify-center border-2 border-dashed rounded-lg p-6 bg-white cursor-pointer hover:bg-gray-50">
+                <label htmlFor="avatar_upload_file" className="flex items-center justify-center border-2 border-dashed rounded-lg p-6 bg-white cursor-pointer hover:bg-gray-50">
                     <input
+                        id="avatar_upload_file"
+                        name="avatar_upload_file"
                         type="file"
                         accept="image/*"
                         className="hidden"

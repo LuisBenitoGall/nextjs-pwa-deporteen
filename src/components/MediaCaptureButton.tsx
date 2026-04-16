@@ -161,6 +161,20 @@ export function MediaCaptureButton({
   const chunksRef = useRef<BlobPart[]>([]);
   const [isRecording, setIsRecording] = useState(false);
 
+  /** Misma estrategia que en la barra de partido: preferir webm con códec soportado. */
+  function pickVideoRecorderMimeType(): string | undefined {
+    if (typeof MediaRecorder === 'undefined') return undefined;
+    const candidates = [
+      'video/webm;codecs=vp9,opus',
+      'video/webm;codecs=vp8,opus',
+      'video/webm',
+    ];
+    for (const c of candidates) {
+      if (MediaRecorder.isTypeSupported(c)) return c;
+    }
+    return undefined;
+  }
+
   const handleDriveFilePicked = async (file: any) => {
     try {
       const blob = await fetchGoogleDriveFile(file);
@@ -271,19 +285,29 @@ export function MediaCaptureButton({
     if (!streamRef.current) return;
     try {
       chunksRef.current = [];
-      const mr = new MediaRecorder(streamRef.current, {
-        mimeType: 'video/webm;codecs=vp8,opus'
-      });
+      const mimeType = pickVideoRecorderMimeType();
+      const mr = new MediaRecorder(
+        streamRef.current,
+        mimeType ? { mimeType } : undefined
+      );
       mr.ondataavailable = (e) => {
         if (e.data && e.data.size > 0) chunksRef.current.push(e.data);
       };
-      mr.onstop = async () => {
-        const blob = new Blob(chunksRef.current, { type: 'video/webm' });
-        const f = new File([blob], `recording-${Date.now()}.webm`, {
-          type: 'video/webm',
-          lastModified: Date.now(),
-        });
-        processFile(f);
+      mr.onstop = () => {
+        void (async () => {
+          const outType = mr.mimeType && mr.mimeType.length > 0 ? mr.mimeType : 'video/webm';
+          const blob = new Blob(chunksRef.current, { type: outType });
+          const ext = outType.includes('mp4') ? 'mp4' : 'webm';
+          const f = new File([blob], `recording-${Date.now()}.${ext}`, {
+            type: outType,
+            lastModified: Date.now(),
+          });
+          await processFile(f);
+          stopCamera();
+          setIsOpen(false);
+          setIsRecording(false);
+          mediaRecorderRef.current = null;
+        })();
       };
       mediaRecorderRef.current = mr;
       mr.start();
@@ -299,9 +323,10 @@ export function MediaCaptureButton({
     if (!mr) return;
     try {
       mr.stop();
-    } finally {
+    } catch {
       setIsRecording(false);
     }
+    // isRecording y cierre del diálogo se resuelven en mr.onstop
   };
 
   const processFile = async (selectedFile: File) => {
@@ -345,7 +370,18 @@ export function MediaCaptureButton({
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {
-      stopCamera();
+      const mr = mediaRecorderRef.current;
+      if (mr && mr.state === 'recording') {
+        try {
+          mr.stop();
+        } catch {
+          stopCamera();
+          setIsRecording(false);
+        }
+      } else {
+        stopCamera();
+        setIsRecording(false);
+      }
     } else if (activeTab === 'camera') {
       // Small delay to allow dialog to open before starting camera
       setTimeout(startCamera, 100);

@@ -60,6 +60,17 @@ export default function NewPlayerForm({
     const MAX_BLOCKS = LIMITS.COMPETITION_NUM_MAX_BY_SEASON;
     const canAddMore = (n: number) => n < MAX_BLOCKS;
 
+    async function refreshSeats(userId: string): Promise<number | null> {
+        const { data, error } = await supabase.rpc('seats_remaining', { p_user_id: userId });
+        if (error) return null;
+        const n = typeof data === 'number' ? data : (data?.remaining ?? data?.seats ?? null);
+        if (typeof n === 'number') {
+        setSeatsRemaining(n);
+        return n;
+        }
+        return null;
+    }
+
     // Helpers
     function labelWithGender(c: Category) {
         switch (c.gender) {
@@ -119,12 +130,7 @@ export default function NewPlayerForm({
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (!mounted || !user) return;
-
-            const { data, error } = await supabase.rpc('seats_remaining', { p_user_id: user.id });
-            if (!error) {
-            const n = typeof data === 'number' ? data : (data?.remaining ?? data?.seats ?? null);
-            if (mounted && typeof n === 'number') setSeatsRemaining(n);
-            }
+            await refreshSeats(user.id);
         } finally {
             if (mounted) setCheckingSeats(false);
         }
@@ -200,8 +206,12 @@ export default function NewPlayerForm({
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('No autenticado.');
 
+        // Refresco de plazas justo antes de guardar para evitar estados obsoletos.
+        const liveSeats = await refreshSeats(user.id);
+        const effectiveSeats = typeof liveSeats === 'number' ? liveSeats : seatsRemaining;
+
         // 0) Barrera seats solo si NO hay código
-        if (!pendingCode && seatsRemaining !== null && seatsRemaining <= 0) {
+        if (!pendingCode && effectiveSeats !== null && effectiveSeats <= 0) {
             throw new Error(t('limite_deportistas_alcanzado') ?? 'Has alcanzado el límite de deportistas permitidos. Amplía tu suscripción para agregar más.');
         }
 
@@ -214,15 +224,29 @@ export default function NewPlayerForm({
         // 2) Crear jugador + suscripción (con o sin código) en la misma operación
         const seasonId = await getCurrentSeasonId(supabase);
 
-        const { data: rows, error: rpcErr } = await supabase.rpc(
-            'create_player_link_subscription',
-            {
+        let codeToUse = pendingCode?.trim() || null;
+        let { data: rows, error: rpcErr } = await supabase.rpc('create_player_link_subscription', {
+            p_full_name: name.trim(),
+            p_birthday: null, // si no capturas fecha en el formulario
+            p_status: true,
+            p_code_text: codeToUse,
+        });
+
+        // Si falla usando código pero ya hay plazas activas, reintenta sin código.
+        if (rpcErr && codeToUse) {
+            const refreshedSeats = await refreshSeats(user.id);
+            if (typeof refreshedSeats === 'number' && refreshedSeats > 0) {
+            const retry = await supabase.rpc('create_player_link_subscription', {
                 p_full_name: name.trim(),
-                p_birthday: null,                 // si no capturas fecha en el formulario
+                p_birthday: null,
                 p_status: true,
-                p_code_text: pendingCode?.trim() || null
+                p_code_text: null,
+            });
+            rows = retry.data;
+            rpcErr = retry.error;
+            codeToUse = null;
             }
-        );
+        }
         if (rpcErr || !rows) throw rpcErr || new Error('No se pudo crear el deportista');
 
         const row = Array.isArray(rows) ? rows[0] : rows;
@@ -292,6 +316,15 @@ export default function NewPlayerForm({
             if (cmpErr) throw cmpErr;
         }
 
+        // Evita reuso accidental del mismo código en altas posteriores.
+        if (pendingCode) {
+            setPendingCode('');
+            try {
+            localStorage.removeItem('pending_access_code');
+            sessionStorage.removeItem('pending_access_code');
+            } catch {}
+        }
+
         router.replace('/dashboard');
         return;
         } catch (e: any) {
@@ -344,6 +377,8 @@ export default function NewPlayerForm({
 
             <form onSubmit={createOne} className="space-y-4" aria-busy={busy}>
                 <Input
+                id="player_full_name"
+                name="player_full_name"
                 value={name}
                 onChange={(e: any) => setName(e.target.value)}
                 label={t('deportista_nombre')}
@@ -383,6 +418,8 @@ export default function NewPlayerForm({
 
                         <div>
                         <Input
+                            id={`competition_name_${i}`}
+                            name={`competition_name_${i}`}
                             value={b.competitionName}
                             onChange={(e: any) => setBlock(i, 'competitionName', e.target.value)}
                             label={t('competicion')}
@@ -414,6 +451,8 @@ export default function NewPlayerForm({
                         </div>
 
                         <Input
+                        id={`club_name_${i}`}
+                        name={`club_name_${i}`}
                         value={b.clubName}
                         onChange={(e: any) => setBlock(i, 'clubName', e.target.value)}
                         label="Club"
@@ -421,6 +460,8 @@ export default function NewPlayerForm({
                         />
 
                         <Input
+                        id={`team_name_${i}`}
+                        name={`team_name_${i}`}
                         value={b.teamName}
                         onChange={(e: any) => setBlock(i, 'teamName', e.target.value)}
                         label={t('equipo')}
@@ -433,8 +474,10 @@ export default function NewPlayerForm({
                             <label className="text-sm font-medium block mb-1 text-gray-700">
                             {t('avatar')} <small>({t('avatar_temporada')})</small>
                             </label>
-                            <label className="flex items-center justify-center border-2 border-dashed rounded-lg p-6 bg-white cursor-pointer hover:bg-gray-100">
+                            <label htmlFor={`avatar_file_${i}`} className="flex items-center justify-center border-2 border-dashed rounded-lg p-6 bg-white cursor-pointer hover:bg-gray-100">
                             <input
+                                id={`avatar_file_${i}`}
+                                name={`avatar_file_${i}`}
                                 type="file"
                                 accept="image/*"
                                 className="hidden"

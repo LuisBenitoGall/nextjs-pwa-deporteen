@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useEffect, useMemo, useRef, useState, use as usePromise } from 'react';
+import { useEffect, useMemo, useState, use as usePromise } from 'react';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useT } from '@/i18n/I18nProvider';
@@ -51,7 +51,10 @@ export default function NewMatchMetaPage({ params }: PageProps) {
   // Acepta ?competition=... y ?competition_id=...
   const preCompetition = searchParams.get('competition') || searchParams.get('competition_id') || '';
 
-  const dtRef = useRef<HTMLInputElement>(null);
+  const tr = (key: string, fallback: string) => {
+    const value = t(key);
+    return value === key ? fallback : value;
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -101,17 +104,24 @@ export default function NewMatchMetaPage({ params }: PageProps) {
     setSaving(true);
     setError(null);
 
-    if (!playerId)   { setError(t('jugador_obligatorio') || 'Jugador obligatorio.'); setSaving(false); return; }
-    if (!competitionId) { setError(t('competicion_selecciona') || 'Selecciona competición.'); setSaving(false); return; }
-    if (!sportId)    { setError(t('deporte_selecciona') || 'Selecciona deporte.'); setSaving(false); return; }
-    if (!dateAt)     { setError(t('fecha_requerida') || 'La fecha es obligatoria.'); setSaving(false); return; }
-    if (!teamId)     { setError(t('equipo_asignado_requerido') || 'Falta team_id en la competición.'); setSaving(false); return; }
+    const formData = new FormData(e.currentTarget as HTMLFormElement);
+    const dateFromForm = String(formData.get('date_at') || '').trim();
+    const effectiveDateAt = (dateAt || dateFromForm).trim();
+    if (effectiveDateAt && effectiveDateAt !== dateAt) {
+      setDateAt(effectiveDateAt);
+    }
+
+    if (!playerId)      { setError(tr('jugador_obligatorio', 'Jugador obligatorio.')); setSaving(false); return; }
+    if (!competitionId) { setError(tr('competicion_selecciona', 'Selecciona competición.')); setSaving(false); return; }
+    if (!sportId)       { setError(tr('deporte_selecciona', 'Selecciona deporte.')); setSaving(false); return; }
+    if (!effectiveDateAt) { setError(tr('fecha_requerida', 'La fecha es obligatoria.')); setSaving(false); return; }
+    if (!teamId)        { setError(tr('equipo_asignado_requerido', 'Falta team_id en la competición.')); setSaving(false); return; }
 
     const payload: any = {
       competition_id: competitionId,
       sport_id:       sportId,
       season_id:      seasonId || null,
-      date_at:        new Date(dateAt).toISOString(),
+      date_at:        new Date(effectiveDateAt).toISOString(),
       place:          place || null,
       is_home:        !!isHome,
       player_id:      playerId,
@@ -175,13 +185,18 @@ export default function NewMatchMetaPage({ params }: PageProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
             label={t('fecha') || 'Fecha'}
+            id="date_at"
+            name="date_at"
             type="datetime-local"
-            value={dateAt}
+            defaultValue={dateAt}
             onChange={(e:any)=>setDateAt(e.target.value)}
-            onClick={() => dtRef.current?.showPicker?.()}
+            onInput={(e:any)=>setDateAt(e.target.value)}
+            onClick={(e:any) => e.currentTarget?.showPicker?.()}
           />
           <Input
             label={t('lugar') || 'Lugar'}
+            id="place"
+            name="place"
             value={place}
             onChange={(e:any)=>setPlace(e.target.value)}
           />
@@ -191,6 +206,8 @@ export default function NewMatchMetaPage({ params }: PageProps) {
         <div className="grid grid-cols-1">
           <Input
             label={t('equipo_rival') || 'Nombre equipo rival'}
+            id="opponent_name"
+            name="opponent_name"
             value={opponentName}
             onChange={(e:any)=>setOpponentName(e.target.value)}
           />
@@ -216,7 +233,7 @@ export default function NewMatchMetaPage({ params }: PageProps) {
           <Submit
             text={t('continuar') || 'Continuar'}
             loadingText={t('guardando') || 'Guardando…'}
-            disabled={!competitionId || !dateAt || saving}
+            disabled={!competitionId || saving}
             className="w-full"
           />
         </div>

@@ -12,7 +12,18 @@
       "Bash(grep -v \"admin\\\\|api\\\\|\\(public\\)\\\\|app$\")",
       "Bash(cp:*)",
       "Bash(python3:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(find:*)",
+      "Bash(xargs ls:*)",
+      "Bash(vercel env:*)",
+      "Bash(npx vercel:*)",
+      "Read(//c/Users/lluis/.claude/**)",
+      "Bash(npx --yes vercel env pull .env.nextjs-pwa --project nextjs-pwa-deporteen)",
+      "Read(//c/Users/lluis/.local/share//**)",
+      "Read(//c/Users/lluis/AppData/Local/**)",
+      "Read(//c/Users/lluis/AppData/Roaming/**)",
+      "Bash(wc:*)",
+      "Bash(grep -E \"\\\\.\\(tsx?|json\\)$\")"
     ]
   }
 }
