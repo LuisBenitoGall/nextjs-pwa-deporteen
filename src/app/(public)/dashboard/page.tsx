@@ -247,7 +247,7 @@ export default async function DashboardPage() {
 
                                         {/* Nuevo partido, con suscripción activa */}
                                         {subscribed && (
-                                            <Link href={`/players/${p.id}/add-match`} className="bg-white rounded-xl border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50">
+                                            <Link href={`/players/${p.id}/matches/new`} className="bg-white rounded-xl border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50">
                                                 {t('partido_nuevo')}
                                             </Link>
                                         )}

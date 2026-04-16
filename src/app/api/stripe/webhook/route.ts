@@ -37,7 +37,7 @@ export async function POST(req: Request) {
         userId = (customer.metadata as any)?.supabase_user_id as string | undefined;
       }
     } catch {}
-    
+
     // Fallback: resolver por email si falta metadata
     if (!userId) {
       const email = (full.customer_details?.email || '').toLowerCase();
@@ -50,10 +50,10 @@ export async function POST(req: Request) {
         if (userRow?.id) userId = userRow.id;
       }
     }
-    
-    console.log('[Webhook checkout.session.completed]', { session_id: session.id, userId, customerId, price_id: price?.id });
 
-    // Registrar pago
+    console.log('[Webhook checkout.session.completed]', { session_id: session.id, userId, customerId, price_id: price?.id, type: full.metadata?.type });
+
+    // Registrar pago (siempre, independientemente del tipo)
     try {
       await supabaseAdmin.from('payments').insert({
         user_id: userId,
@@ -63,12 +63,74 @@ export async function POST(req: Request) {
         receipt_url: full.invoice ? null : full.url || null,
         amount_cents: full.amount_total ?? null,
         currency: (full.currency || 'EUR').toUpperCase(),
-        description: `Checkout ${full.id}`,
+        description: `Checkout ${full.id}${full.metadata?.type === 'storage' ? ' [almacenamiento]' : ''}`,
         status: 'succeeded',
         paid_at: new Date().toISOString(),
       });
     } catch {}
 
+    // ── ALMACENAMIENTO (Cloudflare R2) ────────────────────────────────────────
+    if (full.metadata?.type === 'storage') {
+      const metaUserId   = full.metadata?.user_id   || userId;
+      const metaPlanId   = full.metadata?.plan_id   || null;
+      const metaGbAmount = parseInt(full.metadata?.gb_amount || '10', 10);
+
+      if (metaUserId) {
+        try {
+          const now = new Date();
+          const days = 365;
+          const addedMs = days * 24 * 60 * 60 * 1000;
+
+          const { data: existingStoreSub } = await supabaseAdmin
+            .from('storage_subscriptions')
+            .select('id, current_period_end')
+            .eq('user_id', metaUserId)
+            .order('current_period_end', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          const existingEnd = existingStoreSub?.current_period_end
+            ? new Date(existingStoreSub.current_period_end) : null;
+          const baseDate = existingEnd && existingEnd > now ? existingEnd : now;
+          const endsAt   = new Date(baseDate.getTime() + addedMs).toISOString();
+
+          const storagePayload = {
+            user_id: metaUserId,
+            plan_id: metaPlanId,
+            gb_amount: metaGbAmount || 10,
+            amount_cents: full.amount_total ?? 0,
+            currency: (full.currency || 'EUR').toUpperCase(),
+            status: 'active' as const,
+            current_period_start: now.toISOString(),
+            current_period_end: endsAt,
+            stripe_customer_id: customerId || null,
+            stripe_payment_intent_id: full.payment_intent as string ?? null,
+            updated_at: now.toISOString(),
+          };
+
+          if (existingStoreSub?.id) {
+            const { error: updErr } = await supabaseAdmin
+              .from('storage_subscriptions')
+              .update(storagePayload)
+              .eq('id', existingStoreSub.id);
+            if (updErr) console.error('[Webhook] Error updating storage_subscriptions:', updErr);
+            else console.log('[Webhook] Storage subscription updated for user:', metaUserId);
+          } else {
+            const { error: insErr } = await supabaseAdmin
+              .from('storage_subscriptions')
+              .insert(storagePayload);
+            if (insErr) console.error('[Webhook] Error inserting storage_subscriptions:', insErr);
+            else console.log('[Webhook] Storage subscription created for user:', metaUserId);
+          }
+        } catch (e) {
+          console.error('[Webhook] Storage subscription error:', e);
+        }
+      }
+      // No continuar con el flujo de subscriptions normales
+      return NextResponse.json({ received: true });
+    }
+
+    // ── SUSCRIPCIÓN NORMAL (acceso deportistas) ───────────────────────────────
     // Aplicar acceso según plan (sumar días * quantity)
     if (userId && price?.id) {
       const { data: plan } = await supabaseAdmin
@@ -106,7 +168,7 @@ export async function POST(req: Request) {
           updated_at: new Date().toISOString(),
           plan_id: plan.id,
         }, { onConflict: 'user_id' });
-        
+
         if (subErr) {
           console.error('[Webhook] Error updating subscriptions:', subErr);
         } else {

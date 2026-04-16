@@ -3,12 +3,42 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { redirect, notFound } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { tServer } from '@/i18n/server';
+import { getDictionary, makeT } from '@/i18n/dictionary';
 import TitleH1 from '@/components/TitleH1';
-import ConfirmDeleteButton from '@/components/ConfirmDeleteButton';
 import AvatarUploadForm from './AvatarUploadForm';
 
 type PageParams = { id: string };
+
+async function clearAvatarAction(formData: FormData) {
+    'use server';
+    const playerId = String(formData.get('player_id') || '');
+    const seasonId = String(formData.get('season_id') || '');
+    if (!playerId || !seasonId) return;
+
+    const supabase = await createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) redirect('/login');
+
+    // Verificar pertenencia
+    const { data: owns } = await supabase
+        .from('players')
+        .select('id')
+        .eq('id', playerId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+    if (!owns) return;
+
+    const { getSupabaseAdmin } = await import('@/lib/supabase/admin');
+    const admin = getSupabaseAdmin();
+
+    await admin
+        .from('player_seasons')
+        .update({ avatar: null })
+        .eq('player_id', playerId)
+        .eq('season_id', seasonId);
+
+    redirect(`/players/${playerId}/media`);
+}
 
 function canUseNextImage(u: string | null | undefined) {
     return !!u && (/^https?:\/\//i.test(u) || u.startsWith('/'));
@@ -30,7 +60,8 @@ export default async function PlayerMediaPage({
         .select('locale')
         .eq('id', user.id)
         .maybeSingle();
-    const { t } = await tServer(me?.locale || undefined);
+    const { dict } = await getDictionary(me?.locale || undefined);
+    const t = makeT(dict);
 
     const { data: player, error: pErr } = await supabase
         .from('players')
@@ -82,36 +113,6 @@ export default async function PlayerMediaPage({
     const currentRow = rows.find(r => r.season_id === currentSeasonId) ?? null;
     const pastRows = rows.filter(r => r.season_id !== currentSeasonId);
 
-    // Server action: eliminar avatar (poner a null)
-    async function clearAvatarAction(bound: { playerId: string; seasonId: string }) {
-        'use server';
-        const { playerId, seasonId } = bound;
-
-        const supabase = await createSupabaseServerClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) redirect('/login');
-
-        // Verificar pertenencia
-        const { data: owns } = await supabase
-            .from('players')
-            .select('id')
-            .eq('id', playerId)
-            .eq('user_id', user.id)
-            .maybeSingle();
-        if (!owns) return;
-
-        const { getSupabaseAdmin } = await import('@/lib/supabase/admin');
-        const admin = getSupabaseAdmin();
-
-        await admin
-            .from('player_seasons')
-            .update({ avatar: null })
-            .eq('player_id', playerId)
-            .eq('season_id', seasonId);
-
-        redirect(`/players/${playerId}/media`);
-    }
-
     const seasonLabel = (row: any) =>
         row?.s ? `${row.s.year_start}-${row.s.year_end}` : String(row?.season_id ?? '—');
 
@@ -136,11 +137,14 @@ export default async function PlayerMediaPage({
             <section className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm">
                 <h2 className="text-base font-semibold text-gray-800 mb-1">
                     {t('temporada_actual')}
-                    {currentSeason && (
-                        <span className="ml-2 text-gray-500 font-normal">
-                            {currentSeason.year_start}-{currentSeason.year_end}
-                        </span>
-                    )}
+                    {currentSeason ? (
+                        <>
+                            {' '}
+                            <span className="text-gray-500 font-normal">
+                                {currentSeason.year_start}-{currentSeason.year_end}
+                            </span>
+                        </>
+                    ) : null}
                 </h2>
                 <p className="text-xs text-gray-500 mb-4">{t('avatar_temporada')}</p>
 
@@ -188,18 +192,16 @@ export default async function PlayerMediaPage({
 
                                 {/* Eliminar (solo si hay avatar) */}
                                 {row.avatar ? (
-                                    <ConfirmDeleteButton
-                                        onConfirm={clearAvatarAction.bind(null, {
-                                            playerId: player.id,
-                                            seasonId: row.season_id,
-                                        })}
-                                        ariaLabel={t('eliminar')}
-                                        confirmTitle={t('avatar_eliminar_confirmar')}
-                                        confirmMessage={t('avatar_eliminar_confirmar_texto')}
-                                        confirmCta={t('borrado_confirmar')}
-                                        cancelCta={t('cancelar')}
-                                        className="inline-flex items-center rounded-xl bg-red-100 border border-red-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-red-50"
-                                    />
+                                    <form action={clearAvatarAction}>
+                                        <input type="hidden" name="player_id" value={player.id} />
+                                        <input type="hidden" name="season_id" value={row.season_id} />
+                                        <button
+                                            type="submit"
+                                            className="inline-flex items-center rounded-xl bg-red-100 border border-red-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-red-50"
+                                        >
+                                            {t('eliminar')}
+                                        </button>
+                                    </form>
                                 ) : (
                                     <span className="text-xs text-gray-400">{t('avatar_sin')}</span>
                                 )}

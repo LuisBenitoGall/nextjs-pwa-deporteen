@@ -18,7 +18,12 @@
   "asistencias": "Asistencias",
   "asunto": "Asunto",
   "avatar": "Avatar",
+  "avatar_actualizar": "Actualizar avatar",
+  "avatar_max_size": "Tamaño maximo: 10 MB",
   "avatar_temporada": "Puedes incluir un nuevo avatar cada temporada",
+  "avatar_volver_deportista": "Volver al deportista",
+  "avatar_actualizado_ok": "Avatar actualizado correctamente.",
+  "avatares": "Avatares",
   "aviso_legal": "Aviso Legal",
   "baloncesto": "Baloncesto",
   "balonmano": "Balonmano",
@@ -146,6 +151,7 @@
   "estadisticas_individuales": "Estadísticas individuales",
   "estado": "Estado",
   "fecha": "Fecha",
+  "fecha_requerida": "La fecha es obligatoria.",
   "fecha_alta": "Fecha de alta",
   "fin": "Fin",
   "formulario_completa": "o completa el formulario",
@@ -206,6 +212,7 @@
   "logout": "Logout",
   "lugar": "Lugar",
   "mantener_pantalla": "Mantener pantalla activa",
+  "pantalla_activa": "Pantalla activa",
   "marcador": "Marcador",
   "marketing": "Marketing",
   "media_eliminar_confirmar": "Confirmar eliminación de archivo",
@@ -545,7 +552,7 @@
   "suscripcion_ampliar": "Ampliar suscripción",
   "suscripcion_inactiva_titulo": "No tienes ninguna suscripción activa en estos momentos.",
   "suscripcion_inactiva_texto": "Debes renovar tu suscripción para poder añadir nuevos partidos, y ampliarla para incluir nuevos deportistas.",
-  "suscripcion_planes_texto": "Todos los planes de suscripción incluyen las siguientes características: <br> · Acceso ilimitado a todo el historial registrado. <br> · Exportación del historial a .xls. <br> · Imágenes y videos se guardan en el propio dispositivo. <br> · Período de 14 días para solicitar reembolso.", 
+  "suscripcion_planes_texto": "Todos los planes de suscripción incluyen las siguientes características: <br> · Acceso ilimitado a todo el historial registrado. <br> · Exportación del historial a .xls. <br> · Imágenes y videos se guardan en el propio dispositivo. <br> · Período de 14 días para solicitar reembolso.",
   "suscripcion_renovar": "Renovar suscripción",
   "suscripcion_renovar_texto": "Selecciona alguno de nuestros planes para renovar tu suscripción.",
   "suscripcion_stripe": "Suscríbete con Stripe",
@@ -565,132 +572,199 @@
   "video": "Vídeo",
   "visitante": "Visitante",
   "voleibol": "Voleibol",
-    "volver_atras": "Volver atrás",
-    "waterpolo": "Waterpolo",
-
-
-
-
-
-    "legal": {
-        "legal_notice": {
-          "sections": [
-            {
-              "title": "1. Identificación del titular",
-              "html": "<p>Este sitio y la aplicación <b>{{product.app_name}}</b> ({{product.domain}}) son titularidad de <b>{{company.name}}</b>, con NIF {{company.nif}}, domicilio en {{company.address}}, {{company.country}}. Email de contacto: <a href=\"mailto:{{company.email}}\">{{company.email}}</a>.</p><p>Inscripción registral: {{company.reg_merc}}</p>"
-            },
-            {
-              "title": "2. Objeto y aceptación",
-              "html": "<p>El presente Aviso Legal regula el acceso y uso de {{product.app_name}}. El acceso implica la aceptación de estas condiciones y, cuando corresponda, de los <a href=\"/legal/terminos\" target=\"_blank\" rel=\"noopener\">Términos de Uso</a>.</p>"
-            },
-            {
-              "title": "3. Usuarios y menores",
-              "html": "<p>La plataforma está dirigida a personas adultas. <b>Los menores de 16 años no pueden crear cuenta</b>. Los adultos pueden registrar información deportiva de terceros, incluidos menores de edad, conforme a la <a href=\"/legal/contenidos\" target=\"_blank\" rel=\"noopener\">Política de Contenidos y Derechos de Imagen</a>.</p>"
-            },
-            {
-              "title": "4. Propiedad intelectual",
-              "html": "<p>El software, diseño e interfaz de {{product.app_name}} pertenecen a {{company.name}} o a sus licenciantes. El uso no supone cesión de ningún derecho de propiedad intelectual.</p>"
-            },
-            {
-              "title": "5. Responsabilidad",
-              "html": "<p>{{company.name}} no se hace responsable de los datos, imágenes o vídeos que suba el usuario al dispositivo, ni de daños derivados de un uso indebido de la aplicación.</p>"
-            },
-            {
-              "title": "6. Enlaces y servicios de terceros",
-              "html": "<p>La app integra servicios de terceros (p. ej., <b>Supabase</b> en {{providers.supabase_region}} para la base de datos, <b>Stripe</b> en {{providers.stripe_region}} para pagos, <b>{{providers.hosting}}</b> para alojamiento y <b>{{providers.analytics}}</b> para analítica). Véase la <a href=\"/legal/privacidad\">Política de Privacidad</a>.</p>"
-            },
-            {
-              "title": "7. Ley aplicable y jurisdicción",
-              "html": "<p>Se aplicará la legislación de {{legal.jurisdiction}} y, salvo norma imperativa, los juzgados del domicilio del usuario consumidor.</p>"
-            }
-          ]
+  "volver_atras": "Volver atrás",
+  "waterpolo": "Waterpolo",
+  "legal": {
+    "legal_notice": {
+      "sections": [
+        {
+          "title": "1. Identificación del titular",
+          "html": "<p>Este sitio y la aplicación <b>{{product.app_name}}</b> ({{product.domain}}) son titularidad de <b>{{company.name}}</b>, con NIF {{company.nif}}, domicilio en {{company.address}}, {{company.country}}. Email de contacto: <a href=\"mailto:{{company.email}}\">{{company.email}}</a>.</p><p>Inscripción registral: {{company.reg_merc}}</p>"
         },
-        "privacy": {
-          "sections": [
-            {
-              "title": "1. Responsable del tratamiento",
-              "html": "<p>Responsable: <b>{{company.name}}</b> ({{company.email}}). No se ha designado Delegado de Protección de Datos por el momento.</p>"
-            },
-            {
-              "title": "2. Datos tratados",
-              "html": "<ul><li><b>Cuenta</b>: nombre, apellidos, email y teléfono (opcional).</li><li><b>Uso del servicio</b>: estadísticas deportivas creadas por el usuario sobre terceros.</li><li><b>Medios</b>: imágenes y vídeos <b>almacenados localmente en el dispositivo</b>, no en la nube.</li><li><b>Pagos</b>: identificación de transacción gestionada por Stripe.</li><li><b>Analítica</b>: mediciones con {{providers.analytics}}.</li></ul>"
-            },
-            {
-              "title": "3. Finalidades y bases jurídicas",
-              "html": "<ul><li><b>Prestación del servicio y suscripción</b> (ejecución de contrato).</li><li><b>Analítica de uso</b> (consentimiento; véase <a href=\"/legal/cookies\">Política de Cookies</a>).</li><li><b>Notificaciones de renovación</b> (consentimiento).</li><li><b>Seguridad y prevención de fraude</b> (interés legítimo).</li></ul>"
-            },
-            {
-              "title": "4. Origen y veracidad",
-              "html": "<p>Los datos proceden del propio usuario. Si registra información sobre terceros, garantiza contar con legitimación suficiente (p. ej., consentimiento de los titulares de imagen en caso de menores).</p>"
-            },
-            {
-              "title": "5. Conservación",
-              "html": "<ul><li>Cuenta y registros: mientras exista la cuenta. Datos de facturación: <b>6 años</b>.</li><li>Logs de seguridad: <b>12 meses</b> salvo incidencias.</li><li>Analítica y consentimientos: hasta su revocación.</li></ul>"
-            },
-            {
-              "title": "6. Destinatarios y encargados",
-              "html": "<ul><li><b>Supabase</b> (UE/Irlanda) como proveedor de base de datos.</li><li><b>Stripe</b> para pagos.</li><li><b>{{providers.hosting}}</b> para alojamiento.</li><li><b>{{providers.analytics}}</b> (configurado según consentimiento).</li></ul><p>No se realizan transferencias internacionales fuera del EEE salvo las inherentes a estos proveedores y amparadas por sus mecanismos de cumplimiento.</p>"
-            },
-            {
-              "title": "7. Derechos",
-              "html": "<p>Puedes ejercer acceso, rectificación, supresión, oposición, limitación y portabilidad escribiendo a <a href=\"mailto:{{legal.data_subject_email}}\">{{legal.data_subject_email}}</a>. Plazo de respuesta: 1 mes.</p>"
-            },
-            {
-              "title": "8. Medidas de seguridad",
-              "html": "<p>Cifrado en tránsito (TLS) y en reposo en los servicios de base de datos, control de accesos, copias de seguridad en el proveedor y buenas prácticas de minimización. Los medios (fotos/vídeos) se guardan en el <b>almacenamiento local del dispositivo</b> que controla el usuario.</p>"
-            },
-            {
-              "title": "9. Menores",
-              "html": "<p>Los menores de 16 no pueden crear cuenta. Los adultos que registren datos o imágenes de menores declaran tener legitimación suficiente y respetar la <a href=\"/legal/contenidos\">Política de Contenidos y Derechos de Imagen</a>.</p>"
-            }
-          ]
+        {
+          "title": "2. Objeto y aceptación",
+          "html": "<p>El presente Aviso Legal regula el acceso y uso de {{product.app_name}}. El acceso implica la aceptación de estas condiciones y, cuando corresponda, de los <a href=\"/legal/terminos\" target=\"_blank\" rel=\"noopener\">Términos de Uso</a>.</p>"
         },
-        "cookies": {
-          "sections": [
-            {
-              "title": "1. ¿Qué son las cookies?",
-              "html": "<p>Utilizamos cookies y tecnologías similares para que la web funcione y, si lo aceptas, para medir el uso con {{providers.analytics}}.</p>"
-            },
-            {
-              "title": "2. Configuración",
-              "html": "<p>Puedes personalizar tus preferencias en el banner de <i>Preferencias de cookies</i>. Las categorías usadas son:</p><ul><li><b>Necesarias</b>: imprescindibles para el funcionamiento (login, seguridad).</li><li><b>Analítica</b>: medición de uso con {{providers.analytics}} (requiere consentimiento salvo modo exento AEPD).</li><li><b>Funcionales</b>: mejoras no esenciales.</li><li><b>Marketing</b>: no utilizamos actualmente.</li></ul>"
-            },
-            {
-              "title": "3. Cookies que utilizamos",
-              "html": "<p><b>Necesarias</b></p><ul><li>Sesión Supabase: {{cookies.session}}.</li><li>Stripe (checkout): {{cookies.stripe}}.</li></ul><p><b>Analítica</b></p><ul><li>Google Analytics 4: {{cookies.ga4}}.</li></ul><p>Además, podemos usar almacenamiento local (IndexedDB/localStorage) para contenido y preferencias.</p>"
-            },
-            {
-              "title": "4. Cómo cambiar o retirar el consentimiento",
-              "html": "<p>Puedes reabrir el panel de preferencias desde el enlace “Cookies” del pie de página, o borrar cookies desde la configuración del navegador.</p>"
-            }
-          ]
+        {
+          "title": "3. Usuarios y menores",
+          "html": "<p>La plataforma está dirigida a personas adultas. <b>Los menores de 16 años no pueden crear cuenta</b>. Los adultos pueden registrar información deportiva de terceros, incluidos menores de edad, conforme a la <a href=\"/legal/contenidos\" target=\"_blank\" rel=\"noopener\">Política de Contenidos y Derechos de Imagen</a>.</p>"
         },
-        "terms": {
-          "sections": [
-            { "title": "1. Objeto", "html": "<p>Estos Términos regulan el uso de {{product.app_name}}.</p>" },
-            { "title": "2. Cuenta y acceso", "html": "<p>La cuenta es personal y para mayores de 16. Un adulto puede registrar deportistas terceros.</p>" },
-            { "title": "3. Planes y pagos", "html": "<p>Los pagos se procesan con Stripe. La factura la emite Stripe.</p>" },
-            { "title": "4. Desistimiento y reembolsos", "html": "<p>Dispones de <b>14 días</b> desde la compra para solicitar reembolso si no has consumido prestaciones que lo impidan legalmente.</p>" },
-            { "title": "5. Contenidos del usuario", "html": "<p>Te responsabilizas de los datos e imágenes que almacenes. Debes cumplir la legislación vigente y nuestra <a href=\"/legal/contenidos\">Política de Contenidos</a>.</p>" },
-            { "title": "6. Limitación de responsabilidad", "html": "<p>El servicio se presta “tal cual” dentro de una diligencia razonable.</p>" }
-          ]
+        {
+          "title": "4. Propiedad intelectual",
+          "html": "<p>El software, diseño e interfaz de {{product.app_name}} pertenecen a {{company.name}} o a sus licenciantes. El uso no supone cesión de ningún derecho de propiedad intelectual.</p>"
         },
-        "subscription": {
-          "sections": [
-            { "title": "1. Proceso de compra", "html": "<p>La suscripción se gestiona mediante Stripe. Una vez confirmado el pago se activa el acceso.</p>" },
-            { "title": "2. Renovaciones y avisos", "html": "<p>Podemos enviarte avisos de renovación si lo consientes.</p>" },
-            { "title": "3. Facturación", "html": "<p>La factura es la generada por Stripe y estará disponible en tu recibo de pago.</p>" },
-            { "title": "4. Desistimiento", "html": "<p>14 días de desistimiento conforme a la normativa de consumo, con las excepciones legales aplicables.</p>" }
-          ]
+        {
+          "title": "5. Responsabilidad",
+          "html": "<p>{{company.name}} no se hace responsable de los datos, imágenes o vídeos que suba el usuario al dispositivo, ni de daños derivados de un uso indebido de la aplicación.</p>"
         },
-        "content_policy": {
-            "sections": [
-            { "title": "1. Ámbito", "html": "<p>Regula el uso de imágenes y vídeos y el registro de datos de terceros, incluidos menores.</p>" },
-            { "title": "2. Derechos de imagen", "html": "<p>Si almacenas imágenes o vídeos de terceros, debes contar con su consentimiento. En caso de menores, el consentimiento debe otorgarlo su representante legal.</p>" },
-            { "title": "3. Prohibiciones", "html": "<p>Queda prohibido subir o conservar contenidos ilícitos, difamatorios o que vulneren derechos de terceros.</p>" },
-            { "title": "4. Retirada de contenidos", "html": "<p>Podremos requerirte la retirada de contenidos que vulneren esta política o la ley. Puedes contactar en <a href=\"mailto:{{legal.data_subject_email}}\">{{legal.data_subject_email}}</a>.</p>" }
-            ]
+        {
+          "title": "6. Enlaces y servicios de terceros",
+          "html": "<p>La app integra servicios de terceros (p. ej., <b>Supabase</b> en {{providers.supabase_region}} para la base de datos, <b>Stripe</b> en {{providers.stripe_region}} para pagos, <b>{{providers.hosting}}</b> para alojamiento y <b>{{providers.analytics}}</b> para analítica). Véase la <a href=\"/legal/privacidad\">Política de Privacidad</a>.</p>"
+        },
+        {
+          "title": "7. Ley aplicable y jurisdicción",
+          "html": "<p>Se aplicará la legislación de {{legal.jurisdiction}} y, salvo norma imperativa, los juzgados del domicilio del usuario consumidor.</p>"
         }
+      ]
+    },
+    "privacy": {
+      "sections": [
+        {
+          "title": "1. Responsable del tratamiento",
+          "html": "<p>Responsable: <b>{{company.name}}</b> ({{company.email}}). No se ha designado Delegado de Protección de Datos por el momento.</p>"
+        },
+        {
+          "title": "2. Datos tratados",
+          "html": "<ul><li><b>Cuenta</b>: nombre, apellidos, email y teléfono (opcional).</li><li><b>Uso del servicio</b>: estadísticas deportivas creadas por el usuario sobre terceros.</li><li><b>Medios</b>: imágenes y vídeos <b>almacenados localmente en el dispositivo</b>, no en la nube.</li><li><b>Pagos</b>: identificación de transacción gestionada por Stripe.</li><li><b>Analítica</b>: mediciones con {{providers.analytics}}.</li></ul>"
+        },
+        {
+          "title": "3. Finalidades y bases jurídicas",
+          "html": "<ul><li><b>Prestación del servicio y suscripción</b> (ejecución de contrato).</li><li><b>Analítica de uso</b> (consentimiento; véase <a href=\"/legal/cookies\">Política de Cookies</a>).</li><li><b>Notificaciones de renovación</b> (consentimiento).</li><li><b>Seguridad y prevención de fraude</b> (interés legítimo).</li></ul>"
+        },
+        {
+          "title": "4. Origen y veracidad",
+          "html": "<p>Los datos proceden del propio usuario. Si registra información sobre terceros, garantiza contar con legitimación suficiente (p. ej., consentimiento de los titulares de imagen en caso de menores).</p>"
+        },
+        {
+          "title": "5. Conservación",
+          "html": "<ul><li>Cuenta y registros: mientras exista la cuenta. Datos de facturación: <b>6 años</b>.</li><li>Logs de seguridad: <b>12 meses</b> salvo incidencias.</li><li>Analítica y consentimientos: hasta su revocación.</li></ul>"
+        },
+        {
+          "title": "6. Destinatarios y encargados",
+          "html": "<ul><li><b>Supabase</b> (UE/Irlanda) como proveedor de base de datos.</li><li><b>Stripe</b> para pagos.</li><li><b>{{providers.hosting}}</b> para alojamiento.</li><li><b>{{providers.analytics}}</b> (configurado según consentimiento).</li></ul><p>No se realizan transferencias internacionales fuera del EEE salvo las inherentes a estos proveedores y amparadas por sus mecanismos de cumplimiento.</p>"
+        },
+        {
+          "title": "7. Derechos",
+          "html": "<p>Puedes ejercer acceso, rectificación, supresión, oposición, limitación y portabilidad escribiendo a <a href=\"mailto:{{legal.data_subject_email}}\">{{legal.data_subject_email}}</a>. Plazo de respuesta: 1 mes.</p>"
+        },
+        {
+          "title": "8. Medidas de seguridad",
+          "html": "<p>Cifrado en tránsito (TLS) y en reposo en los servicios de base de datos, control de accesos, copias de seguridad en el proveedor y buenas prácticas de minimización. Los medios (fotos/vídeos) se guardan en el <b>almacenamiento local del dispositivo</b> que controla el usuario.</p>"
+        },
+        {
+          "title": "9. Menores",
+          "html": "<p>Los menores de 16 no pueden crear cuenta. Los adultos que registren datos o imágenes de menores declaran tener legitimación suficiente y respetar la <a href=\"/legal/contenidos\">Política de Contenidos y Derechos de Imagen</a>.</p>"
+        }
+      ]
+    },
+    "cookies": {
+      "sections": [
+        {
+          "title": "1. ¿Qué son las cookies?",
+          "html": "<p>Utilizamos cookies y tecnologías similares para que la web funcione y, si lo aceptas, para medir el uso con {{providers.analytics}}.</p>"
+        },
+        {
+          "title": "2. Configuración",
+          "html": "<p>Puedes personalizar tus preferencias en el banner de <i>Preferencias de cookies</i>. Las categorías usadas son:</p><ul><li><b>Necesarias</b>: imprescindibles para el funcionamiento (login, seguridad).</li><li><b>Analítica</b>: medición de uso con {{providers.analytics}} (requiere consentimiento salvo modo exento AEPD).</li><li><b>Funcionales</b>: mejoras no esenciales.</li><li><b>Marketing</b>: no utilizamos actualmente.</li></ul>"
+        },
+        {
+          "title": "3. Cookies que utilizamos",
+          "html": "<p><b>Necesarias</b></p><ul><li>Sesión Supabase: {{cookies.session}}.</li><li>Stripe (checkout): {{cookies.stripe}}.</li></ul><p><b>Analítica</b></p><ul><li>Google Analytics 4: {{cookies.ga4}}.</li></ul><p>Además, podemos usar almacenamiento local (IndexedDB/localStorage) para contenido y preferencias.</p>"
+        },
+        {
+          "title": "4. Cómo cambiar o retirar el consentimiento",
+          "html": "<p>Puedes reabrir el panel de preferencias desde el enlace “Cookies” del pie de página, o borrar cookies desde la configuración del navegador.</p>"
+        }
+      ]
+    },
+    "terms": {
+      "sections": [
+        {
+          "title": "1. Objeto",
+          "html": "<p>Estos Términos regulan el uso de {{product.app_name}}.</p>"
+        },
+        {
+          "title": "2. Cuenta y acceso",
+          "html": "<p>La cuenta es personal y para mayores de 16. Un adulto puede registrar deportistas terceros.</p>"
+        },
+        {
+          "title": "3. Planes y pagos",
+          "html": "<p>Los pagos se procesan con Stripe. La factura la emite Stripe.</p>"
+        },
+        {
+          "title": "4. Desistimiento y reembolsos",
+          "html": "<p>Dispones de <b>14 días</b> desde la compra para solicitar reembolso si no has consumido prestaciones que lo impidan legalmente.</p>"
+        },
+        {
+          "title": "5. Contenidos del usuario",
+          "html": "<p>Te responsabilizas de los datos e imágenes que almacenes. Debes cumplir la legislación vigente y nuestra <a href=\"/legal/contenidos\">Política de Contenidos</a>.</p>"
+        },
+        {
+          "title": "6. Limitación de responsabilidad",
+          "html": "<p>El servicio se presta “tal cual” dentro de una diligencia razonable.</p>"
+        }
+      ]
+    },
+    "subscription": {
+      "sections": [
+        {
+          "title": "1. Proceso de compra",
+          "html": "<p>La suscripción se gestiona mediante Stripe. Una vez confirmado el pago se activa el acceso.</p>"
+        },
+        {
+          "title": "2. Renovaciones y avisos",
+          "html": "<p>Podemos enviarte avisos de renovación si lo consientes.</p>"
+        },
+        {
+          "title": "3. Facturación",
+          "html": "<p>La factura es la generada por Stripe y estará disponible en tu recibo de pago.</p>"
+        },
+        {
+          "title": "4. Desistimiento",
+          "html": "<p>14 días de desistimiento conforme a la normativa de consumo, con las excepciones legales aplicables.</p>"
+        }
+      ]
+    },
+    "content_policy": {
+      "sections": [
+        {
+          "title": "1. Ámbito",
+          "html": "<p>Regula el uso de imágenes y vídeos y el registro de datos de terceros, incluidos menores.</p>"
+        },
+        {
+          "title": "2. Derechos de imagen",
+          "html": "<p>Si almacenas imágenes o vídeos de terceros, debes contar con su consentimiento. En caso de menores, el consentimiento debe otorgarlo su representante legal.</p>"
+        },
+        {
+          "title": "3. Prohibiciones",
+          "html": "<p>Queda prohibido subir o conservar contenidos ilícitos, difamatorios o que vulneren derechos de terceros.</p>"
+        },
+        {
+          "title": "4. Retirada de contenidos",
+          "html": "<p>Podremos requerirte la retirada de contenidos que vulneren esta política o la ley. Puedes contactar en <a href=\"mailto:{{legal.data_subject_email}}\">{{legal.data_subject_email}}</a>.</p>"
+        }
+      ]
     }
-
+  },
+  "storage_active_until": "Activo hasta",
+  "storage_badge_activo": "Activo",
+  "storage_badge_max": "Máxima capacidad",
+  "storage_badge_popular": "Más popular",
+  "storage_checkout_btn": "Contratar almacenamiento con Stripe",
+  "storage_cloud_subtitle": "Guarda las fotos y vídeos de tus partidos en la nube de Deporteen (Cloudflare R2). Accede desde cualquier dispositivo, sin perder nada si cambias de teléfono.",
+  "storage_cloud_title": "Almacenamiento en la nube",
+  "storage_feature_dispositivos": "Acceso desde todos tus dispositivos",
+  "storage_feature_espacio": "{GB} GB de almacenamiento",
+  "storage_feature_multiequipo": "Ideal para múltiples equipos y temporadas",
+  "storage_feature_prioridad": "Subida y descarga de alta velocidad",
+  "storage_feature_r2": "Cloudflare R2 — infraestructura de nivel empresarial",
+  "storage_feature_reembolso": "14 días de garantía de devolución",
+  "storage_include_multi": "Acceso desde cualquier dispositivo",
+  "storage_include_r2": "Almacenamiento seguro en Cloudflare R2",
+  "storage_include_refund": "14 días de garantía de devolución",
+  "storage_include_soporte": "Soporte por correo electrónico",
+  "storage_include_ssl": "Cifrado SSL en tránsito y en reposo",
+  "storage_include_stack": "Acumulación de periodos al renovar",
+  "storage_pago_cancelado": "El pago fue cancelado. Puedes reintentar cuando quieras.",
+  "storage_pago_completado": "¡Perfecto! Tu almacenamiento en la nube ya está activo.",
+  "storage_plan_basico": "Plan Básico",
+  "storage_plan_estandar": "Plan Estándar",
+  "storage_plan_pro": "Plan Pro",
+  "storage_por_anio": "/ año",
+  "storage_por_mes": "mes",
+  "storage_renovar": "Renovar almacenamiento",
+  "storage_selecciona_plan": "Selecciona un plan para continuar.",
+  "storage_stripe_texto": "El pago es gestionado de forma segura por Stripe. No almacenamos los datos de tu tarjeta. Puedes solicitar reembolso en los primeros 14 días.",
+  "storage_what_includes_title": "Todos los planes incluyen",
+  "storage_ya_activo": "Almacenamiento en la nube activo"
 }

@@ -226,7 +226,11 @@ export default async function PlayerDetailPage({
 
     return (
         <div>
-            <TitleH1>{t('jugador')} <i>{player.full_name}</i></TitleH1>
+            <TitleH1>
+                <span className="inline">{t('jugador')}</span>
+                {' '}
+                <i>{player.full_name}</i>
+            </TitleH1>
 
             <div className="mb-6 flex gap-2">
                 <Link href="/dashboard">
@@ -327,7 +331,7 @@ export default async function PlayerDetailPage({
             <section className="mt-8 rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <h2 className="text-lg font-semibold">
-                        {t('competiciones')}.
+                        {t('competiciones')}.{' '}
                         <span className="text-gray-500 ml-3 align-baseline">
                             {t('temporada')}{' '}
                             <b>{currentSeason ? `${currentSeason.year_start}-${currentSeason.year_end}` : `${startYear}-${endYear}`}</b>

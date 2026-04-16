@@ -23,6 +23,7 @@ import Input from '@/components/Input';
 import Submit from '@/components/Submit';
 import Textarea from '@/components/Textarea';
 import TitleH1 from '@/components/TitleH1';
+import { MatchMediaCaptureInputs } from '@/components/MatchMediaCaptureInputs';
 
 type MatchRow = {
   id: string;
@@ -548,37 +549,7 @@ export default function LiveMatchPage() {
                         </span>
                         </button>
 
-                        {/* Foto */}
-                        <label className="block responsive-button">
-                            <input
-                                type="file"
-                                accept="image/*"
-                                capture="environment"
-                                className="hidden"
-                                disabled={busyMedia}
-                                onChange={(e) => onFilesSelected(e.currentTarget.files, 'image', e.currentTarget)}
-                            />
-                            <span className={`grid place-content-center gap-1 border rounded-lg text-xs ${busyMedia ? 'opacity-60 pointer-events-none' : ''} border-gray-300`}>
-                                <div className="text-base text-center">{busyMedia ? '⏳' : '📷'}</div>
-                                <div className="font-medium">{t('foto') || 'Foto'}</div>
-                            </span>
-                        </label>
-
-                        {/* Vídeo */}
-                        <label className="block responsive-button">
-                            <input
-                                type="file"
-                                accept="video/*"
-                                capture
-                                className="hidden"
-                                disabled={busyMedia}
-                                onChange={(e) => onFilesSelected(e.currentTarget.files, 'video', e.currentTarget)}
-                            />
-                            <span className={`grid place-content-center gap-1 border rounded-lg text-xs ${busyMedia ? 'opacity-60 pointer-events-none' : ''} border-gray-300`}>
-                                <div className="text-base text-center">{busyMedia ? '⏳' : '🎥'}</div>
-                                <div className="font-medium">{t('video') || 'Vídeo'}</div>
-                            </span>
-                        </label>
+                        <MatchMediaCaptureInputs busyMedia={busyMedia} onFilesSelected={onFilesSelected} />
 
                         {/* Galería */}
                         <Link

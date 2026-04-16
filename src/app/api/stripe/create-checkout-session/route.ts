@@ -8,9 +8,9 @@ export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   const secret = process.env.STRIPE_SECRET_KEY;
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL;
   if (!secret) return NextResponse.json({ error: 'Missing STRIPE_SECRET_KEY' }, { status: 500 });
-  if (!siteUrl) return NextResponse.json({ error: 'Missing NEXT_PUBLIC_SITE_URL' }, { status: 500 });
+  if (!siteUrl) return NextResponse.json({ error: 'Missing NEXT_PUBLIC_SITE_URL/NEXT_PUBLIC_APP_URL' }, { status: 500 });
 
   const stripe = new Stripe(secret, { apiVersion: '2025-08-27.basil' });
   const supabase = await createSupabaseServerClient();

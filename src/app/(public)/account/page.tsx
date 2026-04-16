@@ -40,9 +40,9 @@ async function openBillingPortal() {
     if (!secret) {
         throw new Error('Missing STRIPE_SECRET_KEY');
     }
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL;
     if (!siteUrl) {
-        throw new Error('Missing NEXT_PUBLIC_SITE_URL');
+        throw new Error('Missing NEXT_PUBLIC_SITE_URL/NEXT_PUBLIC_APP_URL');
     }
 
     const stripe = new Stripe(secret, { apiVersion: '2025-08-27.basil' });

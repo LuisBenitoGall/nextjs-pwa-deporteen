@@ -21,7 +21,9 @@
       "Bash(npx --yes vercel env pull .env.nextjs-pwa --project nextjs-pwa-deporteen)",
       "Read(//c/Users/lluis/.local/share//**)",
       "Read(//c/Users/lluis/AppData/Local/**)",
-      "Read(//c/Users/lluis/AppData/Roaming/**)"
+      "Read(//c/Users/lluis/AppData/Roaming/**)",
+      "Bash(wc:*)",
+      "Bash(grep -E \"\\\\.\\(tsx?|json\\)$\")"
     ]
   }
 }

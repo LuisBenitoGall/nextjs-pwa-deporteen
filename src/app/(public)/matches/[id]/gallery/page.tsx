@@ -211,7 +211,10 @@ export default function MatchGalleryPage() {
         );
     }
 
-    if (loading) return <div className="p-6">{t('cargando') || 'Cargando…'}</div>;
+    if (loading) {
+        const msg = t('cargando');
+        return <div className="p-6">{msg === 'cargando' ? 'Cargando…' : msg}</div>;
+    }
     if (error) return <div className="p-6 text-red-600">{error}</div>;
 
     return (
