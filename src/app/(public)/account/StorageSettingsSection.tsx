@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useStorageProvider, type StorageProvider } from '@/hooks/useStorageProvider';
 import { connectGoogleDrive } from '@/hooks/useGooglePicker';
+import { useT } from '@/i18n/I18nProvider';
 import Link from 'next/link';
 
 interface Props {
@@ -18,6 +19,7 @@ function Badge({ active, label }: { active: boolean; label: string }) {
 }
 
 export default function StorageSettingsSection({ locale }: Props) {
+    const t = useT();
     const { provider, driveConnected, r2Active, r2ExpiresAt, loading, setProvider } = useStorageProvider();
     const [driveReady, setDriveReady] = useState(driveConnected);
     const [connecting, setConnecting] = useState(false);
@@ -56,7 +58,7 @@ export default function StorageSettingsSection({ locale }: Props) {
     if (loading) {
         return (
             <section className="mt-8 rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm">
-                <h2 className="text-base font-semibold text-gray-800">Almacenamiento de medios</h2>
+                <h2 className="text-base font-semibold text-gray-800">{t('storage_settings_title')}</h2>
                 <div className="mt-4 h-24 animate-pulse rounded-xl bg-gray-100" />
             </section>
         );
@@ -73,45 +75,47 @@ export default function StorageSettingsSection({ locale }: Props) {
     }> = [
         {
             key: 'local',
-            title: 'Dispositivo local',
-            description: 'Las fotos y vídeos se guardan en este dispositivo (IndexedDB). Siempre disponible, sin coste, sin sincronización entre dispositivos.',
+            title: t('storage_settings_local_title'),
+            description: t('storage_settings_local_description'),
             available: true,
-            badge: 'Siempre disponible',
+            badge: t('storage_settings_local_badge'),
         },
         {
             key: 'drive',
-            title: 'Google Drive',
-            description: 'Guarda archivos en tu propio Google Drive. Gratis con tu cuenta Google. Los archivos quedan accesibles desde cualquier dispositivo.',
+            title: t('storage_settings_drive_title'),
+            description: t('storage_settings_drive_description'),
             available: driveReady,
-            unavailableReason: 'Conecta tu cuenta Google para activar esta opción.',
-            badge: driveReady ? 'Conectado' : 'No conectado',
+            unavailableReason: t('storage_settings_drive_unavailable_reason'),
+            badge: driveReady ? t('storage_settings_drive_badge_connected') : t('storage_settings_drive_badge_disconnected'),
             cta: !driveReady ? (
                 <button
                     onClick={handleConnectDrive}
                     disabled={connecting || !clientId}
                     className="mt-3 inline-flex items-center gap-2 rounded-xl border border-blue-300 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100 disabled:opacity-50"
                 >
-                    {connecting ? 'Conectando…' : 'Conectar Google Drive'}
+                    {connecting ? t('storage_settings_drive_connecting') : t('storage_settings_drive_connect_cta')}
                 </button>
             ) : (
-                <p className="mt-1 text-xs text-green-600 font-medium">Cuenta Google conectada en esta sesión.</p>
+                <p className="mt-1 text-xs text-green-600 font-medium">{t('storage_settings_drive_connected_session')}</p>
             ),
         },
         {
             key: 'r2',
-            title: 'Nube Deporteen (R2)',
+            title: t('storage_settings_r2_title'),
             description: r2Active
-                ? `Almacenamiento en la nube gestionado por Deporteen (Cloudflare R2). Suscripción activa${r2ExpiresAt ? ` hasta el ${formatDate(r2ExpiresAt)}` : ''}.`
-                : 'Almacenamiento en la nube gestionado por Deporteen (Cloudflare R2). Requiere suscripción de pago.',
+                ? (r2ExpiresAt
+                    ? t('storage_settings_r2_description_active', { DATE: formatDate(r2ExpiresAt) })
+                    : t('storage_settings_r2_description_active_no_date'))
+                : t('storage_settings_r2_description_inactive'),
             available: r2Active,
-            unavailableReason: 'Suscríbete para guardar medios en la nube de Deporteen.',
-            badge: r2Active ? 'Activo' : 'Sin suscripción',
+            unavailableReason: t('storage_settings_r2_unavailable_reason'),
+            badge: r2Active ? t('storage_settings_r2_badge_active') : t('storage_settings_r2_badge_inactive'),
             cta: !r2Active ? (
                 <Link
                     href="/subscription/storage"
                     className="mt-3 inline-flex items-center gap-2 rounded-xl border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
                 >
-                    Ver planes de almacenamiento
+                    {t('storage_settings_r2_cta')}
                 </Link>
             ) : null,
         },
@@ -119,9 +123,9 @@ export default function StorageSettingsSection({ locale }: Props) {
 
     return (
         <section className="mt-8 rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm">
-            <h2 className="text-base font-semibold text-gray-800">Almacenamiento de medios</h2>
+            <h2 className="text-base font-semibold text-gray-800">{t('storage_settings_title')}</h2>
             <p className="mt-1 text-sm text-gray-500">
-                Elige dónde se guardan las fotos y vídeos de los partidos. El proveedor activo se aplica a todas las subidas nuevas.
+                {t('storage_settings_subtitle')}
             </p>
 
             <div className="mt-4 flex flex-col gap-3">
@@ -141,7 +145,7 @@ export default function StorageSettingsSection({ locale }: Props) {
                                         <Badge active={card.available} label={card.badge} />
                                         {isSelected && (
                                             <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-indigo-100 text-indigo-700">
-                                                Seleccionado
+                                                {t('storage_settings_selected')}
                                             </span>
                                         )}
                                     </div>
@@ -156,7 +160,7 @@ export default function StorageSettingsSection({ locale }: Props) {
                                         onClick={() => handleSelectProvider(card.key)}
                                         className="shrink-0 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
                                     >
-                                        Usar este
+                                        {t('storage_settings_use_this')}
                                     </button>
                                 )}
                             </div>

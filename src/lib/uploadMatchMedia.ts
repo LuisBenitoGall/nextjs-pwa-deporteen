@@ -106,6 +106,7 @@ export async function uploadMatchMedia(params: {
       match_id: matchId,
       player_id: playerId,
       kind,
+      storage_provider: CLOUD_ENABLED ? 'supabase' : 'local',
       mime_type: mime,
       size_bytes: file.size,
       width, height, duration_ms,
