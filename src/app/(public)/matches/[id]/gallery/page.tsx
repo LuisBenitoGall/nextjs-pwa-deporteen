@@ -8,6 +8,8 @@ import { idbGet } from '@/lib/mediaLocal';
 import { useT } from '@/i18n/I18nProvider';
 import Image from 'next/image';
 import { useWakeLock } from '@/lib/useWakeLock';
+import { useStorageProvider } from '@/hooks/useStorageProvider';
+import CloudUsageStatus from '@/components/cloud/CloudUsageStatus';
 
 //Componentes
 import ConfirmDeleteButton from '@/components/ConfirmDeleteButton';
@@ -22,7 +24,9 @@ type MatchRow = {
 type MediaRow = {
   id: string;
   kind: 'image' | 'video';
+  storage_provider: 'local' | 'supabase' | 'drive' | 'r2' | null;
   storage_path: string | null;
+  google_drive_file_id: string | null;
   device_uri: string | null;
   mime_type: string | null;
   taken_at: string | null;
@@ -31,6 +35,7 @@ type MediaRow = {
 
 export default function MatchGalleryPage() {
   const t = useT();
+  const { provider } = useStorageProvider();
   const { id: matchId } = useParams() as { id: string };
   const supabase = useMemo(() => supabaseBrowser(), []);
 
@@ -88,7 +93,7 @@ export default function MatchGalleryPage() {
 
       const { data: mediaRows, error: mediaError } = await supabase
         .from('match_media')
-        .select('id, kind, storage_path, device_uri, mime_type, taken_at, created_at')
+        .select('id, kind, storage_provider, storage_path, google_drive_file_id, device_uri, mime_type, taken_at, created_at')
         .eq('match_id', matchId)
         .order('taken_at', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: false });
@@ -125,7 +130,12 @@ export default function MatchGalleryPage() {
     const created: string[] = [];
     for (const m of media) {
       try {
-        if (m.storage_path) {
+        if (m.storage_provider === 'r2' && m.storage_path) {
+          const base = process.env.NEXT_PUBLIC_CLOUDFLARE_R2_PUBLIC_URL?.replace(/\/$/, '');
+          if (base) out[m.id] = `${base}/${m.storage_path}`;
+        } else if (m.storage_provider === 'drive' && m.google_drive_file_id) {
+          out[m.id] = `https://drive.google.com/uc?id=${m.google_drive_file_id}&export=view`;
+        } else if (m.storage_path) {
           const { data, error } = await supabase
             .storage
             .from('matches')
@@ -180,6 +190,7 @@ export default function MatchGalleryPage() {
             if (selected?.id === id) {
                 setSelected(null);
             }
+            window.dispatchEvent(new CustomEvent('cloud-usage-refresh'));
         } finally {
         //setDeletingId(null);
         }
@@ -262,6 +273,10 @@ export default function MatchGalleryPage() {
 
             <div className="bg-gray-200 rounded-xl p-3 mb-4">
                 <p className="font-xs">{t('galeria_aviso')}</p>
+            </div>
+
+            <div className="mb-4">
+              <CloudUsageStatus enabled={provider === 'r2'} />
             </div>
 
             {media.length === 0 ? (

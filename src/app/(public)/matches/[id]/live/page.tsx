@@ -9,8 +9,18 @@ import { useParams } from 'next/navigation';
 import { getCurrentSeasonId } from '@/lib/seasons';
 import { getSportIconPath } from '@/lib/sports';
 import { useWakeLock } from '@/lib/useWakeLock';
-//import { guessExt, probeImage, probeVideo } from '@/lib/uploadMatchMedia';
 import { uploadMatchMedia } from '@/lib/uploadMatchMedia';
+import { useStorageProvider } from '@/hooks/useStorageProvider';
+import CloudUsageStatus from '@/components/cloud/CloudUsageStatus';
+import {
+  formatBytes,
+  hasQuotaForUpload,
+  isVideoDurationAllowed,
+  isVideoSizeAllowed,
+  getMaxVideoDurationSeconds,
+  MAX_VIDEO_FILE_BYTES,
+  readVideoDurationSeconds,
+} from '@/lib/cloud/guardrails';
 //import { enqueue, trySyncAll } from '@/lib/mediaSync';
 //import { idbPut } from '@/lib/mediaLocal';
 import { useT } from '@/i18n/I18nProvider';
@@ -58,6 +68,7 @@ export default function LiveMatchPage() {
     const t = useT();
     const { id: matchId } = useParams() as { id: string };
     const supabase = useMemo(() => supabaseBrowser(), []);
+    const { provider } = useStorageProvider();
 
     const { active: wakeActive, requesting: wakeRequesting, request: wakeRequest, release: wakeRelease } = useWakeLock();
 
@@ -83,6 +94,101 @@ export default function LiveMatchPage() {
     const [busyMsg] = useState<string | undefined>(undefined);
     //const [uploadStep, setUploadStep] = useState<string | null>(null);
 
+    const uploadMatchMediaToR2 = useCallback(async (file: File, currentMatch: MatchRow) => {
+        const usageRes = await fetch('/api/cloud/usage', { cache: 'no-store' });
+        if (!usageRes.ok) throw new Error(t('cloud_usage_error'));
+        const usageJson = await usageRes.json() as {
+            usage?: {
+                bytes_used: number;
+                bytes_quota: number;
+                bytes_remaining: number;
+                percentage_used: number;
+                plan_gb: number;
+            };
+        };
+        const usage = usageJson.usage;
+        if (!usage || usage.bytes_quota <= 0) {
+            throw new Error(t('storage_selecciona_plan'));
+        }
+        if (!hasQuotaForUpload(usage.bytes_used, usage.bytes_quota, file.size)) {
+            throw new Error(
+                t('cloud_usage_block_not_enough_space', {
+                    FILE_SIZE: formatBytes(file.size),
+                    AVAILABLE: formatBytes(usage.bytes_remaining),
+                })
+            );
+        }
+
+        let durationSeconds: number | null = null;
+        if (file.type.startsWith('video/')) {
+            if (!isVideoSizeAllowed(file.size)) {
+                throw new Error(
+                    t('cloud_usage_block_file_too_large', {
+                        FILE_SIZE: formatBytes(file.size),
+                        MAX: formatBytes(MAX_VIDEO_FILE_BYTES),
+                    })
+                );
+            }
+            durationSeconds = await readVideoDurationSeconds(file);
+            if (!durationSeconds) {
+                throw new Error(t('cloud_usage_block_video_metadata_unreadable'));
+            }
+            const maxDuration = getMaxVideoDurationSeconds(usage.plan_gb);
+            if (!isVideoDurationAllowed(durationSeconds, usage.plan_gb)) {
+                throw new Error(
+                    t('cloud_usage_block_video_too_long', {
+                        DURATION: durationSeconds,
+                        MAX: maxDuration,
+                    })
+                );
+            }
+        }
+
+        const form = new FormData();
+        form.append('file', file);
+        form.append('matchId', currentMatch.id);
+        form.append('playerId', currentMatch.player_id ?? '');
+        if (durationSeconds) form.append('duration_seconds', String(durationSeconds));
+
+        const uploadRes = await fetch('/api/r2/upload', {
+            method: 'POST',
+            body: form,
+        });
+        const uploadBody = await uploadRes.json().catch(() => ({} as any));
+        if (!uploadRes.ok) {
+            if (uploadBody?.code === 'QUOTA_EXCEEDED') {
+                throw new Error(
+                    t('cloud_usage_block_not_enough_space', {
+                        FILE_SIZE: formatBytes(file.size),
+                        AVAILABLE: formatBytes(uploadBody.bytesRemaining ?? 0),
+                    })
+                );
+            }
+            if (uploadBody?.code === 'VIDEO_FILE_TOO_LARGE') {
+                throw new Error(
+                    t('cloud_usage_block_file_too_large', {
+                        FILE_SIZE: formatBytes(file.size),
+                        MAX: formatBytes(uploadBody.maxBytes ?? MAX_VIDEO_FILE_BYTES),
+                    })
+                );
+            }
+            if (uploadBody?.code === 'VIDEO_DURATION_EXCEEDED') {
+                throw new Error(
+                    t('cloud_usage_block_video_too_long', {
+                        DURATION: durationSeconds ?? 0,
+                        MAX: uploadBody.maxDurationSeconds ?? getMaxVideoDurationSeconds(usage.plan_gb),
+                    })
+                );
+            }
+            if (uploadBody?.code === 'VIDEO_METADATA_UNREADABLE') {
+                throw new Error(t('cloud_usage_block_video_metadata_unreadable'));
+            }
+            throw new Error(uploadBody?.error || 'Error al subir archivo a R2');
+        }
+
+        window.dispatchEvent(new CustomEvent('cloud-usage-refresh'));
+    }, [supabase, t]);
+
     const onFilesSelected = useCallback(async (fileList: FileList | null, kind: 'image'|'video', inputEl?: HTMLInputElement | null) => {
         if (!fileList || !fileList.length || !match) return;
 
@@ -90,20 +196,25 @@ export default function LiveMatchPage() {
         setError(null);
         try {
             for (const file of Array.from(fileList)) {
-            await uploadMatchMedia({
-                matchId: match.id,
-                playerId: match.player_id ?? null,
-                file,
-                kind // el helper normaliza por MIME igualmente
-            });
+                if (provider === 'r2') {
+                    await uploadMatchMediaToR2(file, match);
+                } else {
+                    await uploadMatchMedia({
+                        matchId: match.id,
+                        playerId: match.player_id ?? null,
+                        file,
+                        kind, // el helper normaliza por MIME igualmente
+                    });
+                }
             }
+            window.dispatchEvent(new CustomEvent('cloud-usage-refresh'));
         } catch (e: any) {
             setError(e?.message || 'Error al procesar los ficheros');
         } finally {
             if (inputEl) inputEl.value = '';
             setBusyMedia(false);
         }
-    }, [match]);
+    }, [match, provider, uploadMatchMediaToR2]);
 
     // Ref para que el debounce de inputs de marcador capture siempre los valores más recientes
     const latestScoresRef = useRef({ my: myScore, rival: rivalScore });
@@ -445,6 +556,10 @@ export default function LiveMatchPage() {
                     <div>{t('competicion')}: <b>{sport?.name} - {competition?.name}</b></div>
                     <div>{t('fecha')}: <b>{new Date(match.date_at).toLocaleString()}</b></div>
                     <div>{t('lugar')}: <b>{match.place}</b></div>
+                </div>
+
+                <div className="mb-4">
+                    <CloudUsageStatus enabled={provider === 'r2'} />
                 </div>
 
                 {/* Marcador */}

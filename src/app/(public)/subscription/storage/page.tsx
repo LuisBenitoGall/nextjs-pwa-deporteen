@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
+import Link from 'next/link';
 import { useT } from '@/i18n/I18nProvider';
 import TitleH1 from '@/components/TitleH1';
 import Submit from '@/components/Submit';
@@ -9,7 +10,6 @@ import {
     LOCAL_STORAGE_PLANS,
     applyI18nToStoragePlans,
     storagePriceEuros,
-    storageMonthlyEuros,
     type StoragePlanChoice,
 } from '@/lib/storage-plans';
 
@@ -38,7 +38,6 @@ function PlanCard({
 }) {
     const isActive  = currentPlanId === plan.id;
     const priceYear = storagePriceEuros(plan.amount_cents);
-    const priceMonth = storageMonthlyEuros(plan.amount_cents, plan.days);
 
     return (
         <button
@@ -88,9 +87,6 @@ function PlanCard({
             <div className="mt-2 flex items-baseline gap-1">
                 <span className="text-2xl font-extrabold text-indigo-700">{priceYear}€</span>
                 <span className="text-sm text-gray-500">{t('storage_por_anio')}</span>
-            </div>
-            <div className="text-xs text-gray-400">
-                ≈ {priceMonth}€ / {t('storage_por_mes')}
             </div>
 
             {/* Separador */}
@@ -295,6 +291,17 @@ export default function StorageSubscriptionPage() {
     return (
         <div>
             <TitleH1>{t('storage_cloud_title')}</TitleH1>
+
+            <div className="mb-6 flex gap-2">
+                <Link href="/account">
+                    <button className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-3 py-2 rounded-lg shadow transition">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path d="M15 18L9 12L15 6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        <span>{t('cuenta_mi_volver')}</span>
+                    </button>
+                </Link>
+            </div>
 
             <div className="mx-auto max-w-3xl px-4 pb-12 space-y-6">
 
