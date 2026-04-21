@@ -6,6 +6,7 @@ import { userCanAccessAdminPanel } from '@/lib/auth/adminAccess';
 import { fetchUserPayments } from '@/lib/stripe-payments';
 import type { StoragePlan } from '@/components/admin/suscripciones/SubscriptionsTable';
 import EditSubscriptionForm from './EditSubscriptionForm';
+import { detectAdminSubscriptionsSource } from '@/lib/admin/subscriptionsAdminSource';
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -38,18 +39,63 @@ export default async function AdminSubscriptionDetailPage({ params }: PageProps)
   }
 
   const supabase = getSupabaseAdmin();
+  const source = await detectAdminSubscriptionsSource(supabase);
 
-  const [{ data: sub }, { data: plans }] = await Promise.all([
-    supabase
-      .from('storage_subscriptions')
-      .select('id, user_id, plan_id, gb_amount, amount_cents, currency, status, current_period_start, current_period_end, updated_at, created_at')
-      .eq('id', id)
-      .maybeSingle(),
-    supabase
-      .from('storage_plans')
-      .select('id, name, gb_amount, amount_cents, currency')
-      .order('gb_amount'),
-  ]);
+  const [{ data: subRaw }, { data: plansRaw }] = await Promise.all(
+    source === 'storage'
+      ? [
+          supabase
+            .from('storage_subscriptions')
+            .select('id, user_id, plan_id, gb_amount, amount_cents, currency, status, current_period_start, current_period_end, updated_at, created_at')
+            .eq('id', id)
+            .maybeSingle(),
+          supabase
+            .from('storage_plans')
+            .select('id, name, gb_amount, amount_cents, currency')
+            .order('gb_amount'),
+        ]
+      : [
+          supabase
+            .from('subscriptions')
+            .select('id, user_id, plan_id, status, current_period_end, created_at, updated_at, amount, currency, seats')
+            .eq('id', id)
+            .maybeSingle(),
+          supabase
+            .from('subscription_plans')
+            .select('id, name, amount_cents, currency')
+            .order('amount_cents'),
+        ]
+  );
+
+  const sub =
+    source === 'storage'
+      ? (subRaw as any)
+      : subRaw
+        ? {
+            id: (subRaw as any).id,
+            user_id: (subRaw as any).user_id,
+            plan_id: (subRaw as any).plan_id ?? null,
+            gb_amount: Number((subRaw as any).seats ?? 0),
+            amount_cents: Number((subRaw as any).amount ?? 0),
+            currency: String((subRaw as any).currency ?? 'EUR'),
+            status: String((subRaw as any).status ?? 'cancelled'),
+            current_period_start: (subRaw as any).created_at,
+            current_period_end: (subRaw as any).current_period_end,
+            created_at: (subRaw as any).created_at,
+            updated_at: (subRaw as any).updated_at,
+          }
+        : null;
+
+  const plans =
+    source === 'storage'
+      ? (plansRaw as any[])
+      : ((plansRaw as any[]) ?? []).map((p) => ({
+          id: p.id,
+          name: p.name,
+          gb_amount: 0,
+          amount_cents: Number(p.amount_cents ?? 0),
+          currency: String(p.currency ?? 'EUR'),
+        }));
 
   if (!sub) notFound();
 

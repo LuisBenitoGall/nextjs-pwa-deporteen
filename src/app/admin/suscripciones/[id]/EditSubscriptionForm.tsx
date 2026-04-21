@@ -10,12 +10,11 @@ import type { StoragePlan } from '@/components/admin/suscripciones/Subscriptions
 import {
   STORAGE_SUBSCRIPTION_STATUSES,
   STORAGE_SUBSCRIPTION_STATUS_LABELS,
-  type StorageSubscriptionStatus,
 } from '@/lib/admin/storageSubscriptions';
 
 type EditableSubscription = {
   id: string;
-  status: StorageSubscriptionStatus;
+  status: string;
   current_period_end: string;
   plan_id: string | null;
   gb_amount: number;
@@ -31,7 +30,7 @@ export default function EditSubscriptionForm({
   const router = useRouter();
   const { showToast } = useToast();
 
-  const [status, setStatus] = useState<StorageSubscriptionStatus>(subscription.status);
+  const [status, setStatus] = useState<string>(subscription.status);
   const [periodEnd, setPeriodEnd] = useState(subscription.current_period_end?.slice(0, 10) ?? '');
   const [planId, setPlanId] = useState(subscription.plan_id ?? '');
   const [gbAmount, setGbAmount] = useState(String(subscription.gb_amount));
@@ -42,6 +41,12 @@ export default function EditSubscriptionForm({
     () => plans.find((p) => p.id === planId) ?? null,
     [planId, plans]
   );
+
+  const statusOptions = useMemo(() => {
+    const base = [...STORAGE_SUBSCRIPTION_STATUSES];
+    if (subscription.status && !base.includes(subscription.status)) base.push(subscription.status);
+    return base;
+  }, [subscription.status]);
 
   async function handleSave() {
     setSaving(true);
@@ -88,12 +93,12 @@ export default function EditSubscriptionForm({
           <Label className="text-slate-300">Estado</Label>
           <select
             value={status}
-            onChange={(e) => setStatus(e.target.value as StorageSubscriptionStatus)}
+            onChange={(e) => setStatus(e.target.value)}
             className="h-10 w-full rounded-md border border-slate-700 bg-slate-950/70 px-3 text-sm text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
           >
-            {STORAGE_SUBSCRIPTION_STATUSES.map((st) => (
+            {statusOptions.map((st) => (
               <option key={st} value={st}>
-                {STORAGE_SUBSCRIPTION_STATUS_LABELS[st]}
+                {STORAGE_SUBSCRIPTION_STATUS_LABELS[st] ?? st}
               </option>
             ))}
           </select>
