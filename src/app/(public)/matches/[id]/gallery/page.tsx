@@ -131,7 +131,7 @@ export default function MatchGalleryPage() {
     for (const m of media) {
       try {
         if (m.storage_provider === 'r2' && m.storage_path) {
-          const base = process.env.NEXT_PUBLIC_CLOUDFLARE_R2_PUBLIC_URL?.replace(/\/$/, '');
+          const base = process.env.NEXT_PUBLIC_R2_PUBLIC_URL?.replace(/\/$/, '');
           if (base) out[m.id] = `${base}/${m.storage_path}`;
         } else if (m.storage_provider === 'drive' && m.google_drive_file_id) {
           out[m.id] = `https://drive.google.com/uc?id=${m.google_drive_file_id}&export=view`;

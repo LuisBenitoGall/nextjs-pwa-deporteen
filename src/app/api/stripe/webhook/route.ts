@@ -4,6 +4,11 @@ import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 export const runtime = 'nodejs';
 
+// Stripe API Version: 2025-08-27.basil
+// This is the current GA (General Availability) version from the Basil release (August 2025).
+// Basil is Stripe's second release in their new API versioning model.
+// See: https://docs.stripe.com/changelog/basil
+
 export async function POST(req: Request) {
   const supabaseAdmin = getSupabaseAdmin();
   const sig = req.headers.get('stripe-signature');

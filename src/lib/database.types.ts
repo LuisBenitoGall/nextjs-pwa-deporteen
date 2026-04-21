@@ -150,7 +150,7 @@ export interface Database {
           user_id: string
           match_id: string
           player_id: string | null
-          kind: 'photo' | 'video' | 'file'
+          kind: 'image' | 'video' | 'file'
           storage_provider: 'local' | 'supabase' | 'drive' | 'r2' | null
           storage_path: string | null
           google_drive_file_id: string | null
