@@ -5,6 +5,7 @@ import {
   isStorageSubscriptionStatus,
   parseIsoDateStrict,
 } from '@/lib/admin/storageSubscriptions';
+import { detectAdminSubscriptionsSource } from '@/lib/admin/subscriptionsAdminSource';
 
 function jsonError(
   status: number,
@@ -20,13 +21,21 @@ export async function GET() {
   if (!guard.ok) return guard.response;
 
   const supabase = getSupabaseAdmin();
-  const { data, error } = await supabase
-    .from('storage_subscriptions')
-    .select(`
-      *,
-      plan:storage_plans(id, name, gb_amount, amount_cents, currency)
-    `)
-    .order('created_at', { ascending: false });
+  const source = await detectAdminSubscriptionsSource(supabase);
+
+  const { data, error } =
+    source === 'storage'
+      ? await supabase
+          .from('storage_subscriptions')
+          .select(`
+            *,
+            plan:storage_plans(id, name, gb_amount, amount_cents, currency)
+          `)
+          .order('created_at', { ascending: false })
+      : await supabase
+          .from('subscriptions')
+          .select('id,user_id,plan_id,status,current_period_end,created_at,updated_at,amount,currency,seats')
+          .order('created_at', { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
@@ -113,35 +122,61 @@ export async function PATCH(req: Request) {
   }
 
   const supabase = getSupabaseAdmin();
+  const source = await detectAdminSubscriptionsSource(supabase);
 
   if ((body as any).plan_id !== undefined && (body as any).plan_id !== null) {
-    const { data: plan, error: planError } = await supabase
-      .from('storage_plans')
-      .select('id, gb_amount')
-      .eq('id', (body as any).plan_id)
-      .maybeSingle();
+    const { data: plan, error: planError } =
+      source === 'storage'
+        ? await supabase
+            .from('storage_plans')
+            .select('id, gb_amount')
+            .eq('id', (body as any).plan_id)
+            .maybeSingle()
+        : await supabase
+            .from('subscription_plans')
+            .select('id')
+            .eq('id', (body as any).plan_id)
+            .maybeSingle();
     if (planError || !plan) {
       return jsonError(400, 'plan_not_found', 'El plan indicado no existe');
     }
-    if ((body as any).gb_amount !== undefined && Number((body as any).gb_amount) !== plan.gb_amount) {
+    if (
+      source === 'storage' &&
+      (body as any).gb_amount !== undefined &&
+      Number((body as any).gb_amount) !== (plan as any).gb_amount
+    ) {
       return jsonError(
         400,
         'plan_gb_mismatch',
         'gb_amount no coincide con el almacenamiento definido para el plan',
-        { expectedGbAmount: plan.gb_amount }
+        { expectedGbAmount: (plan as any).gb_amount }
       );
     }
-    if ((body as any).gb_amount === undefined) {
-      update.gb_amount = plan.gb_amount;
+    if (source === 'storage' && (body as any).gb_amount === undefined) {
+      update.gb_amount = (plan as any).gb_amount;
     }
   }
 
-  const { data, error } = await supabase
-    .from('storage_subscriptions')
-    .update(update)
-    .eq('id', id)
-    .select('id, status, current_period_end, plan_id, gb_amount, updated_at')
-    .maybeSingle();
+  // En esquema legacy (public.subscriptions), el campo análogo editable es `seats`.
+  if (source === 'legacy' && update.gb_amount !== undefined) {
+    update.seats = update.gb_amount;
+    delete update.gb_amount;
+  }
+
+  const { data, error } =
+    source === 'storage'
+      ? await supabase
+          .from('storage_subscriptions')
+          .update(update)
+          .eq('id', id)
+          .select('id, status, current_period_end, plan_id, gb_amount, updated_at')
+          .maybeSingle()
+      : await supabase
+          .from('subscriptions')
+          .update(update)
+          .eq('id', id)
+          .select('id, status, current_period_end, plan_id, seats, updated_at')
+          .maybeSingle();
 
   if (error) {
     return jsonError(400, 'update_failed', 'No se pudo actualizar la suscripción', {
@@ -163,10 +198,11 @@ export async function DELETE(req: Request) {
   if (!id) return jsonError(400, 'missing_id', 'id requerido');
 
   const supabase = getSupabaseAdmin();
-  const { error } = await supabase
-    .from('storage_subscriptions')
-    .delete()
-    .eq('id', id);
+  const source = await detectAdminSubscriptionsSource(supabase);
+  const { error } =
+    source === 'storage'
+      ? await supabase.from('storage_subscriptions').delete().eq('id', id)
+      : await supabase.from('subscriptions').delete().eq('id', id);
 
   if (error) return jsonError(400, 'delete_failed', 'No se pudo eliminar la suscripción', { reason: error.message });
   return NextResponse.json({ ok: true });

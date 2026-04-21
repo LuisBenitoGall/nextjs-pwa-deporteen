@@ -25,7 +25,7 @@ export interface AdminSubscription {
   gb_amount: number;
   amount_cents: number;
   currency: string;
-  status: 'active' | 'expired' | 'cancelled';
+  status: string;
   current_period_start: string;
   current_period_end: string;
   created_at: string;
@@ -147,15 +147,26 @@ export default function SubscriptionsTable({
       minWidth: 110,
       headerFilter: 'list' as const,
       headerFilterParams: {
-        values: { '': 'Todos', active: 'Activo', expired: 'Expirado', cancelled: 'Cancelado' },
+        values: {
+          '': 'Todos',
+          active: 'Activo',
+          trialing: 'En prueba',
+          past_due: 'Pago pendiente',
+          unpaid: 'Impagado',
+          incomplete: 'Incompleta',
+          incomplete_expired: 'Incompleta expirada',
+          paused: 'Pausada',
+          expired: 'Expirado',
+          cancelled: 'Cancelado',
+        },
         clearable: true,
       },
       formatter: (cell) => {
         const status = cell.getValue() as string;
-        const key = isStorageSubscriptionStatus(status) ? status : 'cancelled';
+        const key = isStorageSubscriptionStatus(status) ? status : 'paused';
         const span = document.createElement('span');
-        span.className = STORAGE_SUBSCRIPTION_STATUS_CLASSES[key];
-        span.textContent = STORAGE_SUBSCRIPTION_STATUS_LABELS[key];
+        span.className = STORAGE_SUBSCRIPTION_STATUS_CLASSES[key] ?? STORAGE_SUBSCRIPTION_STATUS_CLASSES.paused;
+        span.textContent = STORAGE_SUBSCRIPTION_STATUS_LABELS[key] ?? status;
         return span;
       },
     },
