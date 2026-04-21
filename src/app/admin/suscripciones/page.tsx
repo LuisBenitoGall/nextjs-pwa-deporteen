@@ -1,6 +1,6 @@
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import SubscriptionsTable from '@/components/admin/suscripciones/SubscriptionsTable';
-import type { AdminSubscription, StoragePlan } from '@/components/admin/suscripciones/SubscriptionsTable';
+import type { AdminSubscription } from '@/components/admin/suscripciones/SubscriptionsTable';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,16 +9,10 @@ export const metadata = { title: 'Suscripciones — Admin' };
 export default async function AdminSuscripcionesPage() {
   const supabase = getSupabaseAdmin();
 
-  const [{ data: subsData }, { data: plansData }] = await Promise.all([
-    supabase
-      .from('storage_subscriptions')
-      .select('*, plan:storage_plans(id, name, gb_amount, amount_cents, currency)')
-      .order('created_at', { ascending: false }),
-    supabase
-      .from('storage_plans')
-      .select('id, name, gb_amount, amount_cents, currency')
-      .order('gb_amount'),
-  ]);
+  const { data: subsData } = await supabase
+    .from('storage_subscriptions')
+    .select('*, plan:storage_plans(id, name, gb_amount, amount_cents, currency)')
+    .order('created_at', { ascending: false });
 
   const userIds = [...new Set(subsData?.map((s) => s.user_id) ?? [])];
   const { data: profiles } = userIds.length
@@ -44,7 +38,6 @@ export default async function AdminSuscripcionesPage() {
       </div>
       <SubscriptionsTable
         subscriptions={subscriptions}
-        plans={(plansData ?? []) as StoragePlan[]}
       />
     </div>
   );

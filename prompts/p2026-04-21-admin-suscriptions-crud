@@ -1,0 +1,55 @@
+Change: c2026-04-21-admin-suscriptions-crud
+Rule: 10-architecture
+Summary: Normalizar y ampliar la funcionalidad de suscripciones en Admin para mostrar todas (activas e inactivas), reflejar claramente su estado y habilitar edición completa en una vista dedicada.
+Goals:
+- Definir contrato funcional para listar todas las suscripciones en Admin (sin excluir inactivas), con columna Estado explícita y consistente.
+- Diseñar una vista de edición de suscripción con formulario para activar/desactivar, cambiar fecha fin y consultar/gestionar histórico de pagos y datos relacionados.
+NonGoals:
+- No implementar todavía cambios de UI/API/DB (solo arquitectura y artefactos OpenSpec).
+- No rediseñar otras secciones de Admin fuera del módulo de suscripciones.
+Notes:
+- Estado actual a revisar: `src/app/admin/suscripciones/page.tsx` y `src/components/admin/suscripciones/SubscriptionsTable.tsx`.
+- La tabla ya tiene columna `Estado` y columna `Acciones` (alineación derecha), pero hay que formalizar requisitos y completar el flujo de edición en vista dedicada.
+- Existe `EditSubscriptionDialog.tsx`; este cambio pide definir una **vista de edición** de suscripción (ruta/página) y su contrato funcional.
+- Debe incluir claramente el tratamiento de suscripciones activas e inactivas y su representación en listado/edición.
+- En el diseño, aclarar impacto sobre datos de suscripción y relación con histórico de pagos.
+
+## ADDED Requirements
+
+### Requirement: Edición completa de suscripción en vista dedicada
+El sistema SHALL proporcionar una vista de edición de suscripción en Admin que permita modificar el estado (activar/desactivar), la fecha de fin de suscripción y consultar/actualizar la información asociada, incluyendo histórico de pagos.
+
+#### Scenario: Acceso a edición desde listado
+- **WHEN** el administrador pulsa el botón de editar en la columna Acciones de una suscripción
+- **THEN** el sistema abre una vista dedicada de edición para esa suscripción con los datos precargados
+
+#### Scenario: Cambio de estado de suscripción
+- **WHEN** el administrador cambia el estado (activa/inactiva) y guarda
+- **THEN** el estado actualizado se persiste y se refleja en la columna Estado del listado
+
+#### Scenario: Cambio de fecha fin
+- **WHEN** el administrador modifica la fecha fin de la suscripción y guarda
+- **THEN** la nueva fecha se persiste y se muestra correctamente en listado y detalle
+
+#### Scenario: Consulta de histórico de pagos
+- **WHEN** el administrador abre la vista de edición
+- **THEN** el sistema muestra el histórico de pagos asociado a la suscripción con datos suficientes para auditoría funcional (fechas, importes, estado, referencia)
+
+---
+
+## MODIFIED Requirements
+
+### Requirement: Gestión de suscripciones en Admin (listado)
+Se modifica el comportamiento del listado de suscripciones para requerir explícitamente la inclusión de suscripciones activas e inactivas y la consistencia visual/funcional de la columna Estado y Acciones.
+
+#### Scenario: Carga completa de suscripciones
+- **WHEN** el administrador accede a `/admin/suscripciones`
+- **THEN** el sistema lista todas las suscripciones relevantes (activas e inactivas) sin filtrar por estado por defecto
+
+#### Scenario: Estado visible y consistente
+- **WHEN** se renderiza cada fila del listado
+- **THEN** la columna Estado muestra la situación real de la suscripción con etiquetas claras y consistentes con el modelo de datos
+
+#### Scenario: Acciones alineadas y botón editar
+- **WHEN** se renderiza la columna Acciones
+- **THEN** los botones aparecen alineados a la derecha e incluyen, como mínimo, la acción de editar suscripción

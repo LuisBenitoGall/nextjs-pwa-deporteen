@@ -5,8 +5,12 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/toast';
 import type { ColumnDefinition } from 'tabulator-tables';
 import ConfirmDialog from '@/components/admin/ConfirmDialog';
-import EditSubscriptionDialog from './EditSubscriptionDialog';
 import AdminTabulatorTable from '@/components/admin/shared/AdminTabulatorTable';
+import {
+  STORAGE_SUBSCRIPTION_STATUS_CLASSES,
+  STORAGE_SUBSCRIPTION_STATUS_LABELS,
+  isStorageSubscriptionStatus,
+} from '@/lib/admin/storageSubscriptions';
 import {
   makeEditBtn,
   makeDeleteBtn,
@@ -38,34 +42,16 @@ export interface StoragePlan {
   currency: string;
 }
 
-const STATUS_CLASSES: Record<string, string> = {
-  active:
-    'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-emerald-600/20 text-emerald-400 border border-emerald-600/30',
-  expired:
-    'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-yellow-600/20 text-yellow-400 border border-yellow-600/30',
-  cancelled:
-    'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-red-600/20 text-red-400 border border-red-600/30',
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  active: 'Activo',
-  expired: 'Expirado',
-  cancelled: 'Cancelado',
-};
-
 export default function SubscriptionsTable({
   subscriptions,
-  plans,
 }: {
   subscriptions: AdminSubscription[];
-  plans: StoragePlan[];
 }) {
   const router = useRouter();
   const { showToast } = useToast();
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmSub, setConfirmSub] = useState<AdminSubscription | null>(null);
-  const [editSub, setEditSub] = useState<AdminSubscription | null>(null);
 
   // Bridge: listen for Tabulator action events
   useEffect(() => {
@@ -73,12 +59,12 @@ export default function SubscriptionsTable({
     if (!el) return;
     const handler = (e: Event) => {
       const { action, row } = (e as CustomEvent<{ action: string; row: AdminSubscription }>).detail;
-      if (action === 'edit') setEditSub(row);
+      if (action === 'edit') router.push(`/admin/suscripciones/${row.id}`);
       if (action === 'delete') setConfirmSub(row);
     };
     el.addEventListener('tabulator-action', handler);
     return () => el.removeEventListener('tabulator-action', handler);
-  }, []);
+  }, [router]);
 
   async function handleDelete(id: string) {
     setDeletingId(id);
@@ -166,9 +152,10 @@ export default function SubscriptionsTable({
       },
       formatter: (cell) => {
         const status = cell.getValue() as string;
+        const key = isStorageSubscriptionStatus(status) ? status : 'cancelled';
         const span = document.createElement('span');
-        span.className = STATUS_CLASSES[status] ?? STATUS_CLASSES.cancelled;
-        span.textContent = STATUS_LABELS[status] ?? status;
+        span.className = STORAGE_SUBSCRIPTION_STATUS_CLASSES[key];
+        span.textContent = STORAGE_SUBSCRIPTION_STATUS_LABELS[key];
         return span;
       },
     },
@@ -227,18 +214,6 @@ export default function SubscriptionsTable({
         loading={deletingId !== null}
         onConfirm={() => confirmSub && handleDelete(confirmSub.id)}
       />
-
-      {editSub && (
-        <EditSubscriptionDialog
-          subscription={editSub}
-          plans={plans}
-          onClose={() => setEditSub(null)}
-          onSaved={() => {
-            setEditSub(null);
-            router.refresh();
-          }}
-        />
-      )}
     </div>
   );
 }
