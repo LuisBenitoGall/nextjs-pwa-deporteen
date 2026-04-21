@@ -30,7 +30,7 @@ export default function EditSubscriptionForm({
   const router = useRouter();
   const { showToast } = useToast();
 
-  const [status, setStatus] = useState<string>(subscription.status);
+  const [status, setStatus] = useState<StorageSubscriptionStatus>(subscription.status);
   const [periodEnd, setPeriodEnd] = useState(subscription.current_period_end?.slice(0, 10) ?? '');
   const [planId, setPlanId] = useState(subscription.plan_id ?? '');
   const [gbAmount, setGbAmount] = useState(String(subscription.gb_amount));
