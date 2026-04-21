@@ -29,12 +29,12 @@ CREATE TABLE IF NOT EXISTS storage_plans (
     created_at      timestamptz NOT NULL DEFAULT now()
 );
 
--- Tiers de ejemplo
+-- Tiers de ejemplo (precios en céntimos: 1690 = €16.90, 4690 = €46.90, 9990 = €99.90)
 INSERT INTO storage_plans (name, name_key, gb_amount, amount_cents, currency, active)
 VALUES
-    ('Básico',      'storage_plan_basic',   10,  499,  'EUR', true),
-    ('Estándar',    'storage_plan_standard',50,  1499, 'EUR', true),
-    ('Pro',         'storage_plan_pro',     200, 3999, 'EUR', true);
+    ('Básico',      'storage_plan_basico',   10,  1690,  'EUR', true),
+    ('Estándar',    'storage_plan_estandar',50,  4690, 'EUR', true),
+    ('Pro',         'storage_plan_pro',     200, 9990, 'EUR', true);
 
 -- RLS: solo lectura pública para los planes activos
 ALTER TABLE storage_plans ENABLE ROW LEVEL SECURITY;

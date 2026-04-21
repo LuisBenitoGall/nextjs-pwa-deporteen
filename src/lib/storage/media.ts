@@ -45,7 +45,7 @@ export async function createMatchMediaRecord(opts: {
   mimeType?: string;
   sizeBytes?: number;
   takenAt?: Date;
-  kind?: 'photo' | 'video' | 'file';
+  kind?: 'image' | 'video' | 'file';
 }) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('No hay sesión de usuario.');
@@ -53,7 +53,7 @@ export async function createMatchMediaRecord(opts: {
   const kind =
     opts.kind ??
     (opts.mimeType?.startsWith('image/')
-      ? 'photo'
+      ? 'image'
       : opts.mimeType?.startsWith('video/')
       ? 'video'
       : 'file');

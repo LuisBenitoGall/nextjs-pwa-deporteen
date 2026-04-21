@@ -14,13 +14,13 @@ export function getR2Client(): S3Client {
     }
 
     if (!globalThis.__r2_client__) {
-        const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-        const accessKeyId = process.env.CLOUDFLARE_R2_ACCESS_KEY_ID;
-        const secretAccessKey = process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY;
+        const accountId = process.env.R2_ACCOUNT_ID;
+        const accessKeyId = process.env.R2_ACCESS_KEY_ID;
+        const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
 
-        if (!accountId)       throw new Error('[R2] Falta CLOUDFLARE_ACCOUNT_ID');
-        if (!accessKeyId)     throw new Error('[R2] Falta CLOUDFLARE_R2_ACCESS_KEY_ID');
-        if (!secretAccessKey) throw new Error('[R2] Falta CLOUDFLARE_R2_SECRET_ACCESS_KEY');
+        if (!accountId)       throw new Error('[R2] Falta R2_ACCOUNT_ID');
+        if (!accessKeyId)     throw new Error('[R2] Falta R2_ACCESS_KEY_ID');
+        if (!secretAccessKey) throw new Error('[R2] Falta R2_SECRET_ACCESS_KEY');
 
         globalThis.__r2_client__ = new S3Client({
             region: 'auto',
@@ -33,14 +33,14 @@ export function getR2Client(): S3Client {
 }
 
 export function getR2Bucket(): string {
-    const bucket = process.env.CLOUDFLARE_R2_BUCKET_NAME;
-    if (!bucket) throw new Error('[R2] Falta CLOUDFLARE_R2_BUCKET_NAME');
+    const bucket = process.env.R2_BUCKET_NAME;
+    if (!bucket) throw new Error('[R2] Falta R2_BUCKET_NAME');
     return bucket;
 }
 
 /** URL pública base del bucket (ej. https://pub-xxx.r2.dev) */
 export function getR2PublicUrl(): string {
-    const url = process.env.CLOUDFLARE_R2_PUBLIC_URL;
-    if (!url) throw new Error('[R2] Falta CLOUDFLARE_R2_PUBLIC_URL');
+    const url = process.env.R2_PUBLIC_URL;
+    if (!url) throw new Error('[R2] Falta R2_PUBLIC_URL');
     return url.replace(/\/$/, '');
 }
