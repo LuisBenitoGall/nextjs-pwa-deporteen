@@ -7,15 +7,43 @@ function relationMissing(error: unknown, relation: string): boolean {
   return message.includes('does not exist') && message.includes(relation.toLowerCase());
 }
 
+/**
+ * Elige la fuente de datos del panel admin.
+ *
+ * Importante: en algunos entornos existe `storage_subscriptions` (tabla creada por migración)
+ * pero vacía, mientras que el histórico real sigue en `subscriptions`. Si solo comprobamos
+ * existencia de la tabla, el listado queda vacío. Por eso usamos conteos.
+ */
 export async function detectAdminSubscriptionsSource(
   supabase: SupabaseClient
 ): Promise<AdminSubscriptionsSource> {
-  const { error } = await supabase
+  const storageProbe = await supabase
     .from('storage_subscriptions')
     .select('id', { head: true, count: 'exact' });
 
-  if (error && relationMissing(error, 'storage_subscriptions')) {
+  if (storageProbe.error && relationMissing(storageProbe.error, 'storage_subscriptions')) {
     return 'legacy';
   }
+
+  const storageCount = storageProbe.count ?? 0;
+
+  const legacyProbe = await supabase
+    .from('subscriptions')
+    .select('id', { head: true, count: 'exact' });
+
+  if (legacyProbe.error && relationMissing(legacyProbe.error, 'subscriptions')) {
+    return 'storage';
+  }
+
+  const legacyCount = legacyProbe.count ?? 0;
+
+  if (storageCount > 0) {
+    return 'storage';
+  }
+
+  if (legacyCount > 0) {
+    return 'legacy';
+  }
+
   return 'storage';
 }

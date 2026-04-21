@@ -22,6 +22,7 @@ const LOCALE_MAP: Record<Locale, string> = {
   en: 'en',
   ca: 'ca',
   it: 'it',
+  pt: 'pt',
   eu: 'eu', // euskera
   gl: 'gl', // galego
 };
@@ -108,6 +109,11 @@ function writeTranslationFile(locale: Locale, data: Record<string, any>): void {
 async function translateText(text: string, targetLocale: Locale, retries: number = MAX_RETRIES): Promise<string> {
   if (targetLocale === BASE_LOCALE) return text;
 
+  /** Sin llamadas externas: rellena huecos con el texto base (castellano) para paridad estructural rápida. */
+  if (process.env.I18N_SYNC_SKIP_TRANSLATE === '1') {
+    return text;
+  }
+
   try {
     const targetLang = LOCALE_MAP[targetLocale];
     const result = await translate(text, { to: targetLang });
@@ -159,9 +165,15 @@ async function syncObject(
           const translated = await translateText(baseValue, targetLocale);
           synced[key] = translated;
         } else if (targetValue === baseValue && targetLocale !== BASE_LOCALE) {
-          // Si la traducción es igual al texto base, probablemente no está traducida
-          console.log(`  Re-traduciendo (igual al base): ${currentPath}`);
-          synced[key] = await translateText(baseValue, targetLocale);
+          // Igual al base: puede ser cognado o término internacional ("total", "email"...).
+          // En modo solo-estructura NO forzar reemplazo (evita volcar castellano sobre locales válidos).
+          if (process.env.I18N_SYNC_SKIP_TRANSLATE === '1') {
+            synced[key] = targetValue;
+          } else {
+            // Si la traducción es igual al texto base, probablemente no está traducida
+            console.log(`  Re-traduciendo (igual al base): ${currentPath}`);
+            synced[key] = await translateText(baseValue, targetLocale);
+          }
         } else {
           // Traducción existente válida: mantener
           synced[key] = targetValue;

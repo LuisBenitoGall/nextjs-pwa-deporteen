@@ -2,7 +2,7 @@
 
 ## Descripción
 
-Sistema de internacionalización que soporta múltiples idiomas (español, catalán, inglés) para toda la interfaz de usuario.
+Sistema de internacionalización que soporta múltiples idiomas para toda la interfaz de usuario. Los códigos de idioma y los ficheros de mensajes MUST alinearse con `SUPPORTED_LOCALES` en `src/i18n/config.ts` (actualmente: castellano, catalán, inglés, italiano, portugués, euskera y galego).
 
 ## Requisitos Funcionales
 
@@ -12,10 +12,10 @@ Sistema de internacionalización que soporta múltiples idiomas (español, catal
 
 **Criterios de Aceptación**:
 - Idioma se guarda en perfil de usuario (`users.locale`)
-- Idiomas disponibles: es-ES, ca-ES, en-US
+- Idiomas disponibles definidos en `src/i18n/config.ts` (`SUPPORTED_LOCALES`) y etiquetas en `LOCALE_LABELS`
 - Cambio de idioma actualiza toda la interfaz
 - Preferencia persiste entre sesiones
-- Idioma por defecto: es-ES
+- Idioma por defecto: `es` (castellano), coherente con `DEFAULT_LOCALE`
 
 **Flujo**:
 1. Usuario cambia idioma en configuración
@@ -60,9 +60,7 @@ Sistema de internacionalización que soporta múltiples idiomas (español, catal
 ## Modelo de Datos
 
 ### Archivos de Traducción
-- `src/i18n/messages/es.json`: Español
-- `src/i18n/messages/ca.json`: Catalán
-- `src/i18n/messages/en.json`: Inglés
+- Un fichero por locale en `src/i18n/messages/{locale}.json` para cada entrada de `SUPPORTED_LOCALES` (p. ej. `es.json`, `en.json`, `ca.json`, `it.json`, `pt.json`, `eu.json`, `gl.json`).
 
 ### Estructura de Claves
 ```json
@@ -76,7 +74,7 @@ Sistema de internacionalización que soporta múltiples idiomas (español, catal
 
 ## Integraciones
 
-- **next-intl**: Framework de internacionalización
+- **Implementación propia** en `src/i18n/` (mensajes JSON, helpers `t` / `tServer` según el código)
 - **Intl API**: Formateo de fechas y números
 
 ## Estados y Flujos
@@ -101,19 +99,21 @@ Usuario cambia idioma → Actualizar users.locale → Recargar traducciones → 
 
 **Criterios de Aceptación**:
 - El idioma base es `es.json` (castellano)
-- Todos los archivos de traducción deben tener la misma estructura y claves que `es.json`
-- Cuando se añade una clave en `es.json`, se añade automáticamente a todos los idiomas
+- Todos los archivos de traducción MUST tener la misma estructura y claves que `es.json` (paridad estricta; las claves solo en destino se eliminan al sincronizar)
+- Cuando se añade una clave en `es.json`, se añade a todos los locales en `SUPPORTED_LOCALES` excepto el base
 - Cuando se elimina una clave en `es.json`, se elimina de todos los idiomas
-- Las claves nuevas se traducen automáticamente usando Google Translate API
-- Las traducciones existentes se preservan (no se sobrescriben)
+- Las claves nuevas se rellenan mediante traducción automática (Google Translate API) salvo modo solo-estructura (ver abajo)
+- Las traducciones existentes se preservan; los marcadores `[PENDIENTE]` legados se reintentan desde el base
+- Tras escribir cada `{locale}.json`, las **claves de primer nivel** MUST quedar ordenadas alfabéticamente
 - Soporta claves anidadas y arrays
 - Se ejecuta mediante `pnpm i18n:sync`
+- Modo opcional **solo estructura** (sin llamadas a la API): `I18N_SYNC_SKIP_TRANSLATE=1` + `pnpm i18n:sync` — rellena huecos con el texto del base y mantiene paridad de claves (útil en CI o sin red); las cadenas nuevas pueden quedar en castellano hasta un sync completo
 
 **Flujo**:
 1. Desarrollador modifica `src/i18n/messages/es.json`
 2. Ejecuta `pnpm i18n:sync`
 3. El script lee `es.json` como referencia
-4. Para cada idioma (en, ca, it):
+4. Para cada locale destino en `SUPPORTED_LOCALES` excepto `es`:
    - Compara estructura con `es.json`
    - Añade claves faltantes (traducidas automáticamente)
    - Elimina claves que no existen en `es.json`
@@ -128,11 +128,11 @@ Usuario cambia idioma → Actualizar users.locale → Recargar traducciones → 
 - Documentación: `scripts/README-i18n-sync.md`
 
 **Notas**:
-- Las traducciones automáticas pueden requerir revisión manual para contexto específico
-- Las claves que fallan en la traducción se marcan con `[PENDIENTE]`
-- El script incluye un delay de 500ms entre traducciones y 3 reintentos automáticos para evitar rate limiting
-- Si se alcanza el rate limit, espera unos minutos y ejecuta el script nuevamente
-- Para buscar traducciones pendientes: `grep -r "\[PENDIENTE\]" src/i18n/messages/`
+- Las traducciones automáticas pueden requerir revisión manual para contexto específico (p. ej. textos legales)
+- Si la API falla tras reintentos, se conserva temporalmente el texto del idioma base en ese campo
+- El script incluye un retardo entre traducciones y reintentos ante rate limiting (ver constantes en `scripts/sync-i18n.ts`)
+- Si se alcanza el rate limit, esperar y repetir `pnpm i18n:sync` o usar `--only=locale1,locale2` para continuar por idiomas
+- Valores idénticos al castellano en un locale (cognados) no deben forzarse a re-traducción en modo solo-estructura
 
 ## Claves de Traducción Principales
 
