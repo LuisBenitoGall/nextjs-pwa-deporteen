@@ -166,7 +166,7 @@ export function getMediaDisplayUrl(row: {
                 ? `https://drive.google.com/uc?id=${row.google_drive_file_id}&export=view`
                 : null;
         case 'r2': {
-            const base = process.env.NEXT_PUBLIC_CLOUDFLARE_R2_PUBLIC_URL?.replace(/\/$/, '');
+            const base = process.env.NEXT_PUBLIC_R2_PUBLIC_URL?.replace(/\/$/, '');
             return base && row.storage_path ? `${base}/${row.storage_path}` : null;
         }
         case 'supabase':
