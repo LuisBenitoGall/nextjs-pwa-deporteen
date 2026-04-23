@@ -3,20 +3,13 @@
 import { useRef, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/toast';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import type { ColumnDefinition } from 'tabulator-tables';
 import AdminTabulatorTable from '@/components/admin/shared/AdminTabulatorTable';
+import ConfirmDialog from '@/components/admin/ConfirmDialog';
 import {
   makeDeleteBtn,
   makeEditBtn,
+  makeExternalLinkBtn,
   makeActionsContainer,
   dispatchAction,
 } from '@/components/admin/shared/tabulatorUtils';
@@ -222,13 +215,7 @@ export default function CouponsTable({ rows, labels, statusOptions }: CouponsTab
           dispatchAction(cell.getElement(), 'edit', r);
         });
 
-        const linkBtn = document.createElement('a');
-        linkBtn.href = r.dashboardUrl;
-        linkBtn.target = '_blank';
-        linkBtn.rel = 'noreferrer';
-        linkBtn.className =
-          'inline-flex items-center gap-1 h-7 px-2 rounded text-xs border border-slate-700 text-emerald-400 hover:text-emerald-300 transition-colors';
-        linkBtn.textContent = labels.viewInStripe;
+        const linkBtn = makeExternalLinkBtn(r.dashboardUrl, labels.viewInStripe);
 
         const delBtn = makeDeleteBtn(labels.delete);
         delBtn.addEventListener('click', (e) => {
@@ -236,7 +223,7 @@ export default function CouponsTable({ rows, labels, statusOptions }: CouponsTab
           dispatchAction(cell.getElement(), 'delete', r);
         });
 
-        return makeActionsContainer(editBtn, linkBtn as unknown as HTMLButtonElement, delBtn);
+        return makeActionsContainer(editBtn, linkBtn, delBtn);
       },
     },
   ];
@@ -275,37 +262,16 @@ export default function CouponsTable({ rows, labels, statusOptions }: CouponsTab
         />
       )}
 
-      {/* Delete confirm dialog */}
-      <Dialog
+      <ConfirmDialog
         open={confirmOpen}
         onOpenChange={(open) => (open ? setConfirmOpen(true) : closeDialog())}
-      >
-        <DialogContent className="bg-slate-900 text-slate-100">
-          <DialogHeader>
-            <DialogTitle>{labels.delete}</DialogTitle>
-            <DialogDescription>{labels.deleteConfirm}</DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={closeDialog}
-              className="text-slate-300 hover:text-white"
-              disabled={deletingId !== null}
-            >
-              {labels.cancel}
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={() => couponToDelete && handleDelete(couponToDelete.id)}
-              disabled={deletingId !== null || !couponToDelete}
-            >
-              {deletingId !== null ? `${labels.delete}…` : labels.delete}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        title={labels.delete}
+        description={labels.deleteConfirm}
+        confirmLabel={labels.delete}
+        cancelLabel={labels.cancel}
+        loading={deletingId !== null}
+        onConfirm={() => couponToDelete && handleDelete(couponToDelete.id)}
+      />
     </div>
   );
 }

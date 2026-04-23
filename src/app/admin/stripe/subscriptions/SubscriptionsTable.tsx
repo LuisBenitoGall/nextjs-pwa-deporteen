@@ -2,6 +2,7 @@
 
 import type { ColumnDefinition } from 'tabulator-tables';
 import AdminTabulatorTable from '@/components/admin/shared/AdminTabulatorTable';
+import { makeActionsContainer, makeExternalLinkBtn } from '@/components/admin/shared/tabulatorUtils';
 
 interface StatusOption {
   value: string;
@@ -118,13 +119,7 @@ export default function SubscriptionsTable({
       hozAlign: 'right',
       formatter: (cell) => {
         const r = cell.getData() as SubscriptionRow;
-        const a = document.createElement('a');
-        a.href = r.dashboardUrl;
-        a.target = '_blank';
-        a.rel = 'noreferrer';
-        a.className = 'text-xs font-medium text-emerald-400 hover:text-emerald-300 transition-colors';
-        a.textContent = labels.viewInStripe;
-        return a;
+        return makeActionsContainer(makeExternalLinkBtn(r.dashboardUrl, labels.viewInStripe));
       },
     },
   ];
