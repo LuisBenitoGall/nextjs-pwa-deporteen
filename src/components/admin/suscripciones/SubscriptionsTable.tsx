@@ -31,7 +31,7 @@ export interface AdminSubscription {
   created_at: string;
   updated_at: string;
   plan: { id: string; name: string; gb_amount: number; amount_cents: number; currency: string } | null;
-  profile: { id: string; username: string | null; full_name: string | null } | null;
+  profile: { id: string; name: string | null; surname: string | null; email: string | null } | null;
 }
 
 export interface StoragePlan {
@@ -105,19 +105,20 @@ export default function SubscriptionsTable({
       headerFilter: 'input' as const,
       headerFilterFunc: (filterVal: unknown, rowVal: unknown) => {
         const p = rowVal as AdminSubscription['profile'];
-        const text = `${p?.full_name ?? ''} ${p?.username ?? ''}`.toLowerCase();
+        const text = `${p?.name ?? ''} ${p?.surname ?? ''} ${p?.email ?? ''}`.toLowerCase();
         return text.includes((filterVal as string).toLowerCase());
       },
       sorter: (a: unknown, b: unknown) =>
-        ((a as AdminSubscription['profile'])?.full_name ?? '').localeCompare(
-          (b as AdminSubscription['profile'])?.full_name ?? ''
+        `${(a as AdminSubscription['profile'])?.surname ?? ''} ${(a as AdminSubscription['profile'])?.name ?? ''}`.localeCompare(
+          `${(b as AdminSubscription['profile'])?.surname ?? ''} ${(b as AdminSubscription['profile'])?.name ?? ''}`
         ),
       formatter: (cell) => {
         const p = cell.getValue() as AdminSubscription['profile'];
+        const fullName = [p?.name, p?.surname].filter(Boolean).join(' ').trim();
         const div = document.createElement('div');
         div.innerHTML =
-          `<div class="font-medium text-slate-100">${p?.full_name ?? '—'}</div>` +
-          `<div class="text-xs text-slate-400">@${p?.username ?? 'sin usuario'}</div>`;
+          `<div class="font-medium text-slate-100">${fullName || '—'}</div>` +
+          `<div class="text-xs text-slate-400">${p?.email ?? 'sin email'}</div>`;
         return div;
       },
     },
@@ -221,7 +222,7 @@ export default function SubscriptionsTable({
         open={!!confirmSub}
         onOpenChange={(open) => !open && setConfirmSub(null)}
         title="Eliminar suscripción"
-        description={`¿Eliminar permanentemente la suscripción de ${confirmSub?.profile?.full_name ?? confirmSub?.user_id}?`}
+        description={`¿Eliminar permanentemente la suscripción de ${[confirmSub?.profile?.name, confirmSub?.profile?.surname].filter(Boolean).join(' ') || confirmSub?.profile?.email || confirmSub?.user_id}?`}
         loading={deletingId !== null}
         onConfirm={() => confirmSub && handleDelete(confirmSub.id)}
       />

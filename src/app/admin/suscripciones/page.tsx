@@ -44,7 +44,7 @@ export default async function AdminSuscripcionesPage() {
 
   const userIds = [...new Set(subsData?.map((s) => s.user_id) ?? [])];
   const { data: profiles } = userIds.length
-    ? await supabase.from('profiles').select('id, username, full_name').in('id', userIds)
+    ? await supabase.from('users').select('id, name, surname, email').in('id', userIds)
     : { data: [] };
 
   const profileMap = new Map(profiles?.map((p) => [p.id, p]) ?? []);
