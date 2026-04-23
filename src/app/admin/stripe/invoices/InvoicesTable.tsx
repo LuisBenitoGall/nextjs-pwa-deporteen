@@ -2,6 +2,7 @@
 
 import type { ColumnDefinition } from 'tabulator-tables';
 import AdminTabulatorTable from '@/components/admin/shared/AdminTabulatorTable';
+import { makeActionsContainer, makeExternalLinkBtn } from '@/components/admin/shared/tabulatorUtils';
 
 interface StatusOption {
   value: string;
@@ -145,25 +146,10 @@ export default function InvoicesTable({ rows, labels, statusOptions }: InvoicesT
       hozAlign: 'right',
       formatter: (cell) => {
         const r = cell.getData() as InvoiceRow;
-        const container = document.createElement('div');
-        container.className = 'flex items-center gap-2 justify-end flex-wrap';
-
-        function makeLink(href: string, text: string): HTMLAnchorElement {
-          const a = document.createElement('a');
-          a.href = href;
-          a.target = '_blank';
-          a.rel = 'noreferrer';
-          a.className =
-            'text-xs font-medium text-emerald-400 hover:text-emerald-300 transition-colors';
-          a.textContent = text;
-          return a;
-        }
-
-        container.appendChild(makeLink(r.dashboardUrl, labels.viewInStripe));
-        if (r.hostedUrl) container.appendChild(makeLink(r.hostedUrl, labels.viewHosted));
-        if (r.pdfUrl) container.appendChild(makeLink(r.pdfUrl, labels.viewPdf));
-
-        return container;
+        const actions: HTMLElement[] = [makeExternalLinkBtn(r.dashboardUrl, labels.viewInStripe)];
+        if (r.hostedUrl) actions.push(makeExternalLinkBtn(r.hostedUrl, labels.viewHosted));
+        if (r.pdfUrl) actions.push(makeExternalLinkBtn(r.pdfUrl, labels.viewPdf));
+        return makeActionsContainer(...actions);
       },
     },
   ];

@@ -24,34 +24,60 @@ const SVG_TOGGLE =
   `<circle cx="8" cy="12" r="3"/>` +
   `</svg>`;
 
-/** Edit button: outline style */
-export function makeEditBtn(label = 'Editar'): HTMLButtonElement {
+const SVG_EXTERNAL =
+  `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" ` +
+  `stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">` +
+  `<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>` +
+  `<polyline points="15 3 21 3 21 9"/>` +
+  `<line x1="10" y1="14" x2="21" y2="3"/>` +
+  `</svg>`;
+
+function makeIconActionBtn(
+  iconSvg: string,
+  label: string,
+  kind: 'neutral' | 'danger' | 'success' = 'neutral'
+): HTMLButtonElement {
   const btn = document.createElement('button');
   btn.type = 'button';
-  btn.className =
-    'inline-flex items-center gap-1 h-7 px-2 rounded text-xs border border-slate-600 bg-transparent text-slate-300 hover:text-white hover:border-slate-400 transition-colors';
-  btn.innerHTML = `${SVG_EDIT}<span>${label}</span>`;
+  const palette =
+    kind === 'danger'
+      ? 'border-red-700/50 bg-red-950/30 text-red-400 hover:text-red-300 hover:bg-red-900/40'
+      : kind === 'success'
+        ? 'border-emerald-700/50 bg-emerald-950/30 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-900/30'
+        : 'border-slate-700 bg-slate-900/60 text-slate-300 hover:text-slate-100 hover:border-slate-500';
+  btn.className = `relative inline-flex h-8 w-8 items-center justify-center rounded-md border transition-colors ${palette}`;
+  btn.setAttribute('aria-label', label);
+  btn.innerHTML = `${iconSvg}<span class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-[11px] text-slate-100 opacity-0 shadow-md transition-opacity duration-150 group-hover:opacity-100">${label}</span>`;
+  btn.classList.add('group');
   return btn;
 }
 
-/** Delete button: destructive red style */
+/** Edit button: icon only + popover tooltip */
+export function makeEditBtn(label = 'Editar'): HTMLButtonElement {
+  return makeIconActionBtn(SVG_EDIT, label, 'neutral');
+}
+
+/** Delete button: icon only + popover tooltip */
 export function makeDeleteBtn(label = 'Eliminar'): HTMLButtonElement {
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className =
-    'inline-flex items-center gap-1 h-7 px-2 rounded text-xs border border-red-700/50 bg-red-950/30 text-red-400 hover:text-red-300 hover:bg-red-900/40 transition-colors';
-  btn.innerHTML = `${SVG_DELETE}<span>${label}</span>`;
-  return btn;
+  return makeIconActionBtn(SVG_DELETE, label, 'danger');
 }
 
 /** Toggle button: ghost style */
 export function makeToggleBtn(label: string): HTMLButtonElement {
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className =
-    'inline-flex items-center gap-1 h-7 px-2 rounded text-xs border border-slate-700 bg-transparent text-slate-400 hover:text-slate-100 hover:border-slate-500 transition-colors';
-  btn.innerHTML = `${SVG_TOGGLE}<span>${label}</span>`;
-  return btn;
+  return makeIconActionBtn(SVG_TOGGLE, label, 'neutral');
+}
+
+/** External-link action button */
+export function makeExternalLinkBtn(url: string, label = 'Ver en Stripe'): HTMLAnchorElement {
+  const a = document.createElement('a');
+  a.href = url;
+  a.target = '_blank';
+  a.rel = 'noreferrer';
+  a.className =
+    'group relative inline-flex h-8 w-8 items-center justify-center rounded-md border border-emerald-700/50 bg-emerald-950/30 text-emerald-400 transition-colors hover:border-emerald-600 hover:text-emerald-300 hover:bg-emerald-900/30';
+  a.setAttribute('aria-label', label);
+  a.innerHTML = `${SVG_EXTERNAL}<span class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-[11px] text-slate-100 opacity-0 shadow-md transition-opacity duration-150 group-hover:opacity-100">${label}</span>`;
+  return a;
 }
 
 /**
@@ -65,9 +91,9 @@ export function dispatchAction(element: HTMLElement, action: string, row: unknow
 }
 
 /** Wraps buttons in a right-aligned flex container */
-export function makeActionsContainer(...buttons: HTMLButtonElement[]): HTMLDivElement {
+export function makeActionsContainer(...buttons: HTMLElement[]): HTMLDivElement {
   const container = document.createElement('div');
-  container.className = 'flex items-center gap-1.5 justify-end';
+  container.className = 'flex items-center gap-2 justify-end';
   buttons.forEach((btn) => container.appendChild(btn));
   return container;
 }

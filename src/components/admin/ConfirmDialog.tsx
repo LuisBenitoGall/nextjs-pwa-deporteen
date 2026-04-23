@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { AlertTriangle } from 'lucide-react';
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -33,10 +34,17 @@ export default function ConfirmDialog({
 }: ConfirmDialogProps) {
   return (
     <Dialog open={open} onOpenChange={(v) => !loading && onOpenChange(v)}>
-      <DialogContent className="bg-slate-900 text-slate-100">
+      <DialogContent className="border-red-900/60 bg-slate-950 text-slate-100">
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription className="text-slate-400">{description}</DialogDescription>
+          <div className="mb-2 flex items-center gap-3">
+            <div className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-red-800/60 bg-red-950/60 text-red-400">
+              <AlertTriangle className="h-5 w-5" />
+            </div>
+            <div>
+              <DialogTitle>{title}</DialogTitle>
+              <DialogDescription className="text-slate-400">{description}</DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
         <DialogFooter className="gap-2">
           <Button

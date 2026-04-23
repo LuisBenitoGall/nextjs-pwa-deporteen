@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import type { Options, ColumnDefinition, TabulatorFull } from 'tabulator-tables';
 import './tabulator-theme.css';
 import { exportToXls, exportToPdf } from './tableExports';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export interface AdminTabulatorTableProps<
   TRow extends object = Record<string, unknown>,
@@ -191,22 +192,34 @@ export default function AdminTabulatorTable<
 
         <div className="flex items-center gap-2">
           {toolbarRight}
-          <button
-            onClick={handleExportXls}
-            title="Exportar a Excel"
-            className="inline-flex items-center gap-1.5 rounded-md border border-slate-700 bg-slate-800/50 px-3 py-1.5 text-xs text-slate-400 hover:text-slate-100 hover:border-slate-600 transition-colors"
-            dangerouslySetInnerHTML={{
-              __html: `${ICON_XLS}<span>XLS</span>`,
-            }}
-          />
-          <button
-            onClick={handleExportPdf}
-            title="Exportar a PDF"
-            className="inline-flex items-center gap-1.5 rounded-md border border-slate-700 bg-slate-800/50 px-3 py-1.5 text-xs text-slate-400 hover:text-slate-100 hover:border-slate-600 transition-colors"
-            dangerouslySetInnerHTML={{
-              __html: `${ICON_PDF}<span>PDF</span>`,
-            }}
-          />
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={handleExportXls}
+                  aria-label="Exportar a Excel"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-slate-700 bg-slate-800/50 px-3 py-1.5 text-xs text-slate-400 hover:text-slate-100 hover:border-slate-600 transition-colors"
+                  dangerouslySetInnerHTML={{
+                    __html: `${ICON_XLS}<span>XLS</span>`,
+                  }}
+                />
+              </TooltipTrigger>
+              <TooltipContent>Exportar a Excel</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={handleExportPdf}
+                  aria-label="Exportar a PDF"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-slate-700 bg-slate-800/50 px-3 py-1.5 text-xs text-slate-400 hover:text-slate-100 hover:border-slate-600 transition-colors"
+                  dangerouslySetInnerHTML={{
+                    __html: `${ICON_PDF}<span>PDF</span>`,
+                  }}
+                />
+              </TooltipTrigger>
+              <TooltipContent>Exportar a PDF</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </div>
 
