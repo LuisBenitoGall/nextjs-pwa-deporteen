@@ -79,7 +79,12 @@ export default function EditSubscriptionDialog({ subscription: sub, plans, onClo
         <DialogHeader>
           <DialogTitle>Modificar suscripción</DialogTitle>
           <p className="text-xs text-slate-400 mt-1">
-            Usuario: <span className="text-slate-200">{sub.profile?.full_name || sub.user_id}</span>
+            Usuario:{' '}
+            <span className="text-slate-200">
+              {[sub.profile?.name, sub.profile?.surname].filter(Boolean).join(' ') ||
+                sub.profile?.email ||
+                sub.user_id}
+            </span>
           </p>
         </DialogHeader>
 

@@ -99,18 +99,11 @@ export default async function AdminSubscriptionDetailPage({ params }: PageProps)
 
   if (!sub) notFound();
 
-  const [{ data: profile }, { data: appUser }] = await Promise.all([
-    supabase
-      .from('profiles')
-      .select('id, username, full_name')
-      .eq('id', sub.user_id)
-      .maybeSingle(),
-    supabase
-      .from('users')
-      .select('id, email')
-      .eq('id', sub.user_id)
-      .maybeSingle(),
-  ]);
+  const { data: appUser } = await supabase
+    .from('users')
+    .select('id, name, surname, email')
+    .eq('id', sub.user_id)
+    .maybeSingle();
 
   const directPayments = await fetchUserPayments({
     supabase,
@@ -139,7 +132,10 @@ export default async function AdminSubscriptionDetailPage({ params }: PageProps)
     payments = fallbackPayments.payments;
   }
 
-  const userLabel = profile?.full_name || profile?.username || sub.user_id;
+  const userLabel =
+    [appUser?.name, appUser?.surname].filter(Boolean).join(' ').trim() ||
+    appUser?.email ||
+    sub.user_id;
 
   return (
     <div className="space-y-6">

@@ -2,11 +2,13 @@ import Link from 'next/link';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, CreditCard, Trophy, User, Medal, BarChart3 } from 'lucide-react';
+import { detectAdminSubscriptionsSource } from '@/lib/admin/subscriptionsAdminSource';
 
 export const dynamic = 'force-dynamic';
 
 async function getStats() {
   const supabase = getSupabaseAdmin();
+  const source = await detectAdminSubscriptionsSource(supabase);
   const [
     { count: usersCount },
     { count: playersCount },
@@ -14,14 +16,19 @@ async function getStats() {
     { count: competitionsCount },
     { count: activeSubsCount },
   ] = await Promise.all([
-    supabase.from('profiles').select('*', { count: 'exact', head: true }),
+    supabase.from('users').select('*', { count: 'exact', head: true }),
     supabase.from('players').select('*', { count: 'exact', head: true }),
     supabase.from('matches').select('*', { count: 'exact', head: true }),
     supabase.from('competitions').select('*', { count: 'exact', head: true }),
-    supabase
-      .from('storage_subscriptions')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'active'),
+    source === 'storage'
+      ? supabase
+          .from('storage_subscriptions')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'active')
+      : supabase
+          .from('subscriptions')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'active'),
   ]);
   return { usersCount, playersCount, matchesCount, competitionsCount, activeSubsCount };
 }
