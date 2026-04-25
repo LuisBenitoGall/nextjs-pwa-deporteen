@@ -1,6 +1,7 @@
 ## Documentación
 
 - Visión global del repositorio (stack, carpetas, rutas): [`docs/PROJECT-OVERVIEW.md`](docs/PROJECT-OVERVIEW.md).
+- Guía rápida de Chrome DevTools: [`docs/CHROME_DEVTOOLS.md`](docs/CHROME_DEVTOOLS.md).
 
 ## PNPM:
 	- Comandos reinstalación:

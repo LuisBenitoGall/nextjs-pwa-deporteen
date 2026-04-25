@@ -62,3 +62,5 @@ next-env.d.ts
 ehthumbs.db
 Thumbs.db
 *.md
+!docs/
+!docs/CHROME_DEVTOOLS.md
