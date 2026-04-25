@@ -154,7 +154,10 @@ export function connectGoogleDrive(clientId: string, onSuccess?: () => void): vo
             scope: 'https://www.googleapis.com/auth/drive.file',
             callback: (tokenResponse: google.accounts.oauth2.TokenResponse) => {
                 if (tokenResponse?.access_token) {
-                    try { sessionStorage.setItem('google_access_token', tokenResponse.access_token); } catch {}
+                    try {
+                        sessionStorage.setItem('google_access_token', tokenResponse.access_token);
+                        localStorage.setItem('google_drive_connected_at', new Date().toISOString());
+                    } catch {}
                     onSuccess?.();
                 }
             },

@@ -24,9 +24,7 @@ type MatchRow = {
 type MediaRow = {
   id: string;
   kind: 'image' | 'video';
-  storage_provider: 'local' | 'supabase' | 'drive' | 'r2' | null;
   storage_path: string | null;
-  google_drive_file_id: string | null;
   device_uri: string | null;
   mime_type: string | null;
   taken_at: string | null;
@@ -93,7 +91,7 @@ export default function MatchGalleryPage() {
 
       const { data: mediaRows, error: mediaError } = await supabase
         .from('match_media')
-        .select('id, kind, storage_provider, storage_path, google_drive_file_id, device_uri, mime_type, taken_at, created_at')
+        .select('id, kind, storage_path, device_uri, mime_type, taken_at, created_at')
         .eq('match_id', matchId)
         .order('taken_at', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: false });
@@ -130,24 +128,27 @@ export default function MatchGalleryPage() {
     const created: string[] = [];
     for (const m of media) {
       try {
-        if (m.storage_provider === 'r2' && m.storage_path) {
+        if (m.device_uri) {
+          const blob = await idbGet(m.device_uri);
+          if (blob) {
+            const u = URL.createObjectURL(blob);
+            created.push(u);
+            out[m.id] = u;
+            continue;
+          }
+        }
+
+        if (m.storage_path?.startsWith('r2:')) {
           const base = process.env.NEXT_PUBLIC_R2_PUBLIC_URL?.replace(/\/$/, '');
-          if (base) out[m.id] = `${base}/${m.storage_path}`;
-        } else if (m.storage_provider === 'drive' && m.google_drive_file_id) {
-          out[m.id] = `https://drive.google.com/uc?id=${m.google_drive_file_id}&export=view`;
+          if (base) out[m.id] = `${base}/${m.storage_path.slice(3)}`;
+        } else if (m.storage_path?.startsWith('drive:')) {
+          out[m.id] = `https://drive.google.com/uc?id=${m.storage_path.slice(6)}&export=view`;
         } else if (m.storage_path) {
           const { data, error } = await supabase
             .storage
             .from('matches')
             .createSignedUrl(m.storage_path, 60 * 60); // 1h
           if (!error && data?.signedUrl) out[m.id] = data.signedUrl;
-        } else if (m.device_uri) {
-          const blob = await idbGet(m.device_uri);
-          if (blob) {
-            const u = URL.createObjectURL(blob);
-            created.push(u);
-            out[m.id] = u;
-          }
         }
       } catch {/* silencio administrativo */}
     }

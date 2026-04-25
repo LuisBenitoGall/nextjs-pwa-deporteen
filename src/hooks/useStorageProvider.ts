@@ -16,6 +16,21 @@ export type StorageProviderStatus = {
     setProvider: (p: StorageProvider) => Promise<void>;
 };
 
+const PROVIDER_KEY_PREFIX = 'deporteen_media_provider:';
+
+function readStoredProvider(userId: string): StorageProvider {
+    if (typeof localStorage === 'undefined') return 'local';
+    const value = localStorage.getItem(`${PROVIDER_KEY_PREFIX}${userId}`);
+    return value === 'drive' || value === 'r2' || value === 'supabase' || value === 'local'
+        ? value
+        : 'local';
+}
+
+function writeStoredProvider(userId: string, provider: StorageProvider) {
+    if (typeof localStorage === 'undefined') return;
+    localStorage.setItem(`${PROVIDER_KEY_PREFIX}${userId}`, provider);
+}
+
 export function useStorageProvider(): StorageProviderStatus {
     const [provider, setProviderState] = useState<StorageProvider>('local');
     const [driveConnected, setDriveConnected] = useState(false);
@@ -29,23 +44,21 @@ export function useStorageProvider(): StorageProviderStatus {
             const { data: { user } } = await supabase.auth.getUser();
             if (!mounted || !user) { setLoading(false); return; }
 
-            // Proveedor por defecto del perfil
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('media_provider')
-                .eq('id', user.id)
-                .maybeSingle();
+            // Proveedor por defecto: el esquema actual no tiene profiles/media_provider.
+            // Persistimos la preferencia por usuario en localStorage para conservarla entre vistas.
+            const prov = readStoredProvider(user.id);
 
-            // Estado suscripción R2
+            // Estado suscripción R2. En el esquema actual la tabla activa es subscriptions.
             const { data: r2Sub } = await supabase
-                .from('storage_subscriptions')
+                .from('subscriptions')
                 .select('status, current_period_end')
                 .eq('user_id', user.id)
+                .eq('status', 'active')
+                .order('current_period_end', { ascending: false })
                 .maybeSingle();
 
             if (!mounted) return;
 
-            const prov = (profile?.media_provider as StorageProvider) || 'local';
             setProviderState(prov);
 
             if (r2Sub?.status === 'active' && r2Sub.current_period_end) {
@@ -70,10 +83,7 @@ export function useStorageProvider(): StorageProviderStatus {
         setProviderState(p);
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
-        await supabase
-            .from('profiles')
-            .update({ media_provider: p })
-            .eq('id', user.id);
+        writeStoredProvider(user.id, p);
     }, []);
 
     return { provider, driveConnected, r2Active, r2ExpiresAt, loading, setProvider };

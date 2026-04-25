@@ -31,9 +31,9 @@ export async function getActiveCloudPlanGb(supabase: AppSupabase, userId: string
 export async function getCloudBytesUsed(supabase: AppSupabase, userId: string): Promise<number> {
   const { data, error } = await supabase
     .from('match_media')
-    .select('size_bytes')
+    .select('size_bytes,storage_path')
     .eq('user_id', userId)
-    .eq('storage_provider', 'r2');
+    .like('storage_path', 'r2:%');
 
   if (error || !data) return 0;
   return (data as Array<{ size_bytes?: number | null }>).reduce(

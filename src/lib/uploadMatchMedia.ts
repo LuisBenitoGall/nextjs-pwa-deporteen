@@ -63,6 +63,8 @@ export async function uploadMatchMedia(params: {
   playerId?: string | null;
   file: File;
   kind: 'image' | 'video'; // se re-normaliza por MIME igualmente
+  provider?: 'local' | 'supabase' | 'drive';
+  googleAccessToken?: string | null;
   width?: number;
   height?: number;
   duration_ms?: number;
@@ -93,26 +95,74 @@ export async function uploadMatchMedia(params: {
   // Identificadores y clave local
   const mediaId = (crypto?.randomUUID?.() ?? `m_${Math.random().toString(36).slice(2)}${Date.now()}`);
   const deviceKey = `media:${mediaId}`;
+  const mime = file.type || (kind === 'image' ? 'image/jpeg' : 'video/mp4');
 
-  // 1) Guardar local
+  // 1) Guardar local siempre: sirve como caché inmediata aunque el proveedor sea Drive/Supabase.
   await idbPut(deviceKey, file);
 
-  // 2) Insert en BD (sin nube)
-  const mime = file.type || (kind === 'image' ? 'image/jpeg' : 'video/mp4');
+  const requestedProvider = params.provider ?? (CLOUD_ENABLED ? 'supabase' : 'local');
+  let storagePath: string | null = null;
+  let syncedAt: string | null = null;
+
+  if (requestedProvider === 'drive') {
+    const accessToken = params.googleAccessToken;
+    if (!accessToken) throw new Error('Se requiere autenticación con Google Drive.');
+
+    const metadata = {
+      name: file.name || `${mediaId}${guessExt(mime) || ''}`,
+      mimeType: mime,
+    };
+    const form = new FormData();
+    form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+    form.append('file', file);
+
+    const uploadRes = await fetch(
+      'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}` },
+        body: form,
+      }
+    );
+
+    if (!uploadRes.ok) {
+      const err = await uploadRes.text().catch(() => '');
+      throw new Error(`No se pudo subir a Google Drive. ${err}`.trim());
+    }
+
+    const { id: driveFileId } = await uploadRes.json() as { id?: string };
+    if (!driveFileId) throw new Error('Google Drive no devolvió identificador de archivo.');
+
+    await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}/permissions`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ role: 'reader', type: 'anyone' }),
+    }).catch(() => {
+      // La galería puede seguir usando la caché local aunque no se pueda publicar el enlace.
+    });
+
+    storagePath = `drive:${driveFileId}`;
+    syncedAt = new Date().toISOString();
+  }
+
+  // 2) Insert en BD con el esquema real de match_media.
   const insertRes = await supabase
     .from('match_media')
     .insert({
       id: mediaId,
+      user_id: uid,
       match_id: matchId,
       player_id: playerId,
       kind,
-      storage_provider: CLOUD_ENABLED ? 'supabase' : 'local',
       mime_type: mime,
       size_bytes: file.size,
       width, height, duration_ms,
       device_uri: deviceKey,
-      storage_path: null,
-      synced_at: null,
+      storage_path: storagePath,
+      synced_at: syncedAt,
       taken_at: new Date().toISOString()
     })
     .select('id')
@@ -120,10 +170,8 @@ export async function uploadMatchMedia(params: {
 
   if (insertRes.error) throw new Error(insertRes.error.message || 'No se pudo insertar en match_media');
 
-  // 3) Subida opcional a Storage (solo si activas el flag)
-  let storagePath: string | null = null;
-
-  if (CLOUD_ENABLED) {
+  // 3) Subida opcional a Supabase Storage (solo si activas el flag o se pide explícitamente)
+  if (requestedProvider === 'supabase') {
     const ext = guessExt(mime) || (kind === 'image' ? '.jpg' : '.mp4');
     storagePath = `${uid}/matches/${matchId}/${mediaId}${ext}`;
 

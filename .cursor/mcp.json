@@ -7,7 +7,7 @@
       "url": "https://mcp.supabase.com/mcp?read_only=true&project_ref=suxcbrkneaaadzdftzae"
     },
     "chrome-devtools": {
-      "command": "npx",
+      "command": "npx.cmd",
       "args": ["-y", "chrome-devtools-mcp@latest"]
     }
   }

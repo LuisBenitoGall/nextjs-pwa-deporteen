@@ -16,7 +16,7 @@ export async function DELETE(_req: Request, context: { params: Promise<{ id: str
     const supabase = await createSupabaseServerClient();
     const { data: mediaRow } = await supabase
       .from('match_media')
-      .select('storage_provider,storage_path,google_drive_file_id')
+      .select('storage_path')
       .eq('id', mediaId)
       .eq('user_id', user.id)
       .maybeSingle();
@@ -25,13 +25,15 @@ export async function DELETE(_req: Request, context: { params: Promise<{ id: str
       return NextResponse.json({ error: 'Media no encontrado' }, { status: 404 });
     }
 
+    const storagePath = mediaRow.storage_path as string | null;
+
     // Delete from R2
-    if (mediaRow.storage_provider === 'r2' && mediaRow.storage_path) {
+    if (storagePath?.startsWith('r2:')) {
       try {
         const r2 = getR2Client();
         await r2.send(new DeleteObjectCommand({
           Bucket: getR2Bucket(),
-          Key: mediaRow.storage_path,
+          Key: storagePath.slice(3),
         }));
       } catch (err) {
         console.error('[Delete R2] Error:', err);
@@ -40,11 +42,11 @@ export async function DELETE(_req: Request, context: { params: Promise<{ id: str
     }
 
     // Delete from Supabase Storage
-    if (mediaRow.storage_provider === 'supabase' && mediaRow.storage_path) {
+    if (storagePath && !storagePath.startsWith('r2:') && !storagePath.startsWith('drive:')) {
       try {
         const { error: storageError } = await supabase.storage
           .from('matches')
-          .remove([mediaRow.storage_path]);
+          .remove([storagePath]);
         if (storageError) {
           console.error('[Delete Supabase Storage] Error:', storageError);
         }
@@ -57,8 +59,8 @@ export async function DELETE(_req: Request, context: { params: Promise<{ id: str
     // Delete from Drive (requires user's access token from sessionStorage)
     // Note: This is a best-effort deletion since we don't have the access token server-side
     // The file will remain in Drive but the reference will be removed from the database
-    if (mediaRow.storage_provider === 'drive' && mediaRow.google_drive_file_id) {
-      console.log('[Delete Drive] File ID:', mediaRow.google_drive_file_id, '- Deletion skipped (requires client-side token)');
+    if (storagePath?.startsWith('drive:')) {
+      console.log('[Delete Drive] File ID:', storagePath.slice(6), '- Deletion skipped (requires client-side token)');
     }
 
     const { error } = await supabase

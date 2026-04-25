@@ -187,7 +187,7 @@ export default function LiveMatchPage() {
         }
 
         window.dispatchEvent(new CustomEvent('cloud-usage-refresh'));
-    }, [supabase, t]);
+    }, [t]);
 
     const onFilesSelected = useCallback(async (fileList: FileList | null, kind: 'image'|'video', inputEl?: HTMLInputElement | null) => {
         if (!fileList || !fileList.length || !match) return;
@@ -199,11 +199,17 @@ export default function LiveMatchPage() {
                 if (provider === 'r2') {
                     await uploadMatchMediaToR2(file, match);
                 } else {
+                    const googleAccessToken =
+                        provider === 'drive' && typeof sessionStorage !== 'undefined'
+                            ? sessionStorage.getItem('google_access_token')
+                            : null;
                     await uploadMatchMedia({
                         matchId: match.id,
                         playerId: match.player_id ?? null,
                         file,
                         kind, // el helper normaliza por MIME igualmente
+                        provider: provider === 'drive' ? 'drive' : 'local',
+                        googleAccessToken,
                     });
                 }
             }
