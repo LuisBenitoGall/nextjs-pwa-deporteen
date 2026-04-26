@@ -198,18 +198,26 @@ export default function LiveMatchPage() {
             for (const file of Array.from(fileList)) {
                 if (provider === 'r2') {
                     await uploadMatchMediaToR2(file, match);
+                } else if (provider === 'drive') {
+                    const form = new FormData();
+                    form.append('file', file);
+                    form.append('matchId', match.id);
+                    form.append('playerId', match.player_id ?? '');
+                    const res = await fetch('/api/google/drive/upload', {
+                        method: 'POST',
+                        body: form,
+                    });
+                    if (!res.ok) {
+                        const payload = await res.json().catch(() => ({} as any));
+                        throw new Error(payload?.error || t('storage_settings_drive_unavailable_reason'));
+                    }
                 } else {
-                    const googleAccessToken =
-                        provider === 'drive' && typeof sessionStorage !== 'undefined'
-                            ? sessionStorage.getItem('google_access_token')
-                            : null;
                     await uploadMatchMedia({
                         matchId: match.id,
                         playerId: match.player_id ?? null,
                         file,
                         kind, // el helper normaliza por MIME igualmente
-                        provider: provider === 'drive' ? 'drive' : 'local',
-                        googleAccessToken,
+                        provider: 'local',
                     });
                 }
             }

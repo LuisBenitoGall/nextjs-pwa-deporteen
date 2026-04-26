@@ -10,6 +10,7 @@ import Image from 'next/image';
 import { useWakeLock } from '@/lib/useWakeLock';
 import { useStorageProvider } from '@/hooks/useStorageProvider';
 import CloudUsageStatus from '@/components/cloud/CloudUsageStatus';
+import { resolveDriveMediaSource } from '@/lib/googleDrive/mediaResolution';
 
 //Componentes
 import ConfirmDeleteButton from '@/components/ConfirmDeleteButton';
@@ -42,6 +43,7 @@ export default function MatchGalleryPage() {
   const [match, setMatch] = useState<MatchRow | null>(null);
   const [media, setMedia] = useState<MediaRow[]>([]);
   const [selected, setSelected] = useState<MediaRow | null>(null);
+  const [unavailable, setUnavailable] = useState<Record<string, string>>({});
   //const [deletingId, setDeletingId] = useState<string | null>(null);
     const [urls, setUrls] = useState<Record<string, string>>({}); // id -> src usable
     const blobUrlsRef = useRef<string[]>([]);
@@ -103,6 +105,10 @@ export default function MatchGalleryPage() {
         return;
       }
 
+      // #region agent log
+      fetch('http://127.0.0.1:7591/ingest/ce72ccef-7017-451c-8968-3b282ff493ff',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c441fc'},body:JSON.stringify({sessionId:'c441fc',runId:'pre-fix',hypothesisId:'H1,H4',location:'src/app/(public)/matches/[id]/gallery/page.tsx:108',message:'gallery media rows loaded',data:{count:(mediaRows||[]).length,rows:(mediaRows||[]).slice(0,5).map((m:any)=>({kind:m.kind,storagePathKind:m.storage_path?.startsWith('drive:')?'drive':m.storage_path?.startsWith('r2:')?'r2':m.storage_path?'supabaseOrOther':'none',hasDeviceUri:!!m.device_uri,hasTakenAt:!!m.taken_at}))},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
+
       setMedia((mediaRows as MediaRow[]) || []);
       setLoading(false);
     })();
@@ -128,28 +134,50 @@ export default function MatchGalleryPage() {
     const created: string[] = [];
     for (const m of media) {
       try {
-        if (m.device_uri) {
+        let resolvedSource = 'none';
+        const isDrive = m.storage_path?.startsWith('drive:');
+        if (!isDrive && m.device_uri) {
           const blob = await idbGet(m.device_uri);
           if (blob) {
             const u = URL.createObjectURL(blob);
             created.push(u);
             out[m.id] = u;
+            resolvedSource = 'device_uri_blob';
+            // #region agent log
+            fetch('http://127.0.0.1:7591/ingest/ce72ccef-7017-451c-8968-3b282ff493ff',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c441fc'},body:JSON.stringify({sessionId:'c441fc',runId:'pre-fix',hypothesisId:'H1,H3',location:'src/app/(public)/matches/[id]/gallery/page.tsx:141',message:'gallery resolved media from device cache',data:{kind:m.kind,storagePathKind:m.storage_path?.startsWith('drive:')?'drive':m.storage_path?.startsWith('r2:')?'r2':m.storage_path?'supabaseOrOther':'none',hasDeviceUri:!!m.device_uri,resolvedSource},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
             continue;
           }
         }
 
         if (m.storage_path?.startsWith('r2:')) {
           const base = process.env.NEXT_PUBLIC_R2_PUBLIC_URL?.replace(/\/$/, '');
-          if (base) out[m.id] = `${base}/${m.storage_path.slice(3)}`;
-        } else if (m.storage_path?.startsWith('drive:')) {
-          out[m.id] = `https://drive.google.com/uc?id=${m.storage_path.slice(6)}&export=view`;
+          if (base) {
+            out[m.id] = `${base}/${m.storage_path.slice(3)}`;
+            resolvedSource = 'r2_public_url';
+          }
+        } else if (isDrive) {
+          const fileId = m.storage_path!.slice(6);
+          const result = await resolveDriveMediaSource(fileId);
+          if (result.available) {
+            out[m.id] = result.src;
+            resolvedSource = 'drive_proxy_url';
+          } else {
+            setUnavailable((prev) => ({ ...prev, [m.id]: t('media_no_disponible') || t('sin_preview') || 'No disponible' }));
+          }
         } else if (m.storage_path) {
           const { data, error } = await supabase
             .storage
             .from('matches')
             .createSignedUrl(m.storage_path, 60 * 60); // 1h
-          if (!error && data?.signedUrl) out[m.id] = data.signedUrl;
+          if (!error && data?.signedUrl) {
+            out[m.id] = data.signedUrl;
+            resolvedSource = 'supabase_signed_url';
+          }
         }
+        // #region agent log
+        fetch('http://127.0.0.1:7591/ingest/ce72ccef-7017-451c-8968-3b282ff493ff',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c441fc'},body:JSON.stringify({sessionId:'c441fc',runId:'pre-fix',hypothesisId:'H1,H2,H3,H4,H5',location:'src/app/(public)/matches/[id]/gallery/page.tsx:168',message:'gallery resolved media from remote branch',data:{kind:m.kind,storagePathKind:m.storage_path?.startsWith('drive:')?'drive':m.storage_path?.startsWith('r2:')?'r2':m.storage_path?'supabaseOrOther':'none',hasDeviceUri:!!m.device_uri,resolvedSource,hasUrl:!!out[m.id]},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
       } catch {/* silencio administrativo */}
     }
     if (!cancelled) {
@@ -202,7 +230,7 @@ export default function MatchGalleryPage() {
         if (!src) {
             return (
                 <div className="w-full h-28 bg-gray-100 p-3 border border-dashed border-gray-300 flex items-center justify-center text-xs text-gray-500">
-                {t('sin_preview') || 'Sin vista previa'}
+                {unavailable[item.id] || t('sin_preview') || 'Sin vista previa'}
                 </div>
             );
         }

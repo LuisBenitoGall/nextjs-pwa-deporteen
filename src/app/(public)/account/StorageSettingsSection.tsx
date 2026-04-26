@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useStorageProvider, type StorageProvider } from '@/hooks/useStorageProvider';
-import { connectGoogleDrive } from '@/hooks/useGooglePicker';
 import { useT } from '@/i18n/I18nProvider';
 import Link from 'next/link';
 
@@ -20,26 +19,31 @@ function Badge({ active, label }: { active: boolean; label: string }) {
 
 export default function StorageSettingsSection({ locale }: Props) {
     const t = useT();
-    const { provider, driveConnected, r2Active, r2ExpiresAt, loading, setProvider } = useStorageProvider();
-    const [driveReady, setDriveReady] = useState(driveConnected);
+    const { provider, driveStatus, r2Active, r2ExpiresAt, loading, setProvider } = useStorageProvider();
+    const [driveReady, setDriveReady] = useState(driveStatus === 'connected');
     const [connecting, setConnecting] = useState(false);
+    const [disconnecting, setDisconnecting] = useState(false);
 
     useEffect(() => {
-        setDriveReady(driveConnected);
-    }, [driveConnected]);
-
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
+        setDriveReady(driveStatus === 'connected');
+    }, [driveStatus]);
 
     function handleConnectDrive() {
-        if (!clientId) return;
         setConnecting(true);
-        connectGoogleDrive(clientId, () => {
-            setDriveReady(true);
-            setConnecting(false);
-        });
-        // If the popup is dismissed without success we need to reset
-        // There's no reliable cancellation event; reset after a delay
-        setTimeout(() => setConnecting(false), 60_000);
+        window.location.href = '/api/google/drive/connect';
+    }
+
+    async function handleDisconnectDrive() {
+        setDisconnecting(true);
+        try {
+            await fetch('/api/google/drive/disconnect', { method: 'POST' });
+            setDriveReady(false);
+            if (provider === 'drive') {
+                await setProvider('local');
+            }
+        } finally {
+            setDisconnecting(false);
+        }
     }
 
     function handleSelectProvider(p: StorageProvider) {
@@ -86,17 +90,30 @@ export default function StorageSettingsSection({ locale }: Props) {
             description: t('storage_settings_drive_description'),
             available: driveReady,
             unavailableReason: t('storage_settings_drive_unavailable_reason'),
-            badge: driveReady ? t('storage_settings_drive_badge_connected') : t('storage_settings_drive_badge_disconnected'),
-            cta: !driveReady ? (
+            badge: driveStatus === 'reconnect-required'
+                ? (t('storage_settings_drive_badge_disconnected') || 'Reconexión requerida')
+                : driveReady
+                    ? t('storage_settings_drive_badge_connected')
+                    : t('storage_settings_drive_badge_disconnected'),
+            cta: !driveReady || driveStatus === 'reconnect-required' ? (
                 <button
                     onClick={handleConnectDrive}
-                    disabled={connecting || !clientId}
+                    disabled={connecting}
                     className="mt-3 inline-flex items-center gap-2 rounded-xl border border-blue-300 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100 disabled:opacity-50"
                 >
                     {connecting ? t('storage_settings_drive_connecting') : t('storage_settings_drive_connect_cta')}
                 </button>
             ) : (
-                <p className="mt-1 text-xs text-green-600 font-medium">{t('storage_settings_drive_connected_session')}</p>
+                <div className="mt-2 flex items-center gap-2">
+                    <p className="text-xs text-green-600 font-medium">{t('storage_settings_drive_connected_session')}</p>
+                    <button
+                        onClick={handleDisconnectDrive}
+                        disabled={disconnecting}
+                        className="inline-flex items-center rounded-lg border border-red-300 bg-red-50 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-100 disabled:opacity-50"
+                    >
+                        {disconnecting ? (t('guardando') || 'Procesando...') : (t('desconectar') || 'Desconectar')}
+                    </button>
+                </div>
             ),
         },
         {

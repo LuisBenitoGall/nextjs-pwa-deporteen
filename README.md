@@ -43,6 +43,10 @@
 
 ## VARIABLES DE ENTORNO:
 	- NEXT_PUBLIC_CLOUD_MEDIA=0   Con valor 1 permite subir los archivos a Cloud
+	- GOOGLE_CLIENT_ID=...         OAuth server-side para Google Drive
+	- GOOGLE_CLIENT_SECRET=...     Secreto OAuth server-side (no exponer al cliente)
+	- GOOGLE_DRIVE_REDIRECT_URI=... Callback de Google OAuth (ej.: https://app/api/google/drive/callback)
+	- GOOGLE_DRIVE_TOKEN_SECRET=... Clave para cifrar refresh tokens en base de datos
 
 ## IDIOMAS:
 	- Actualizar: trabajar sobre es.json y ejecutar comando pnpm i18n:sync para sincronizar archivos de traducciones.

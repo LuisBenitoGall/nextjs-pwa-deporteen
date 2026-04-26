@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createSupabaseServerClient, getServerUser } from '@/lib/supabase/server';
 import { getR2Bucket, getR2Client } from '@/lib/r2/client';
 import { DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { decryptToken, getDriveConnection, refreshGoogleAccessToken } from '@/lib/googleDrive/server';
 
 export async function DELETE(_req: Request, context: { params: Promise<{ id: string }> }) {
   try {
@@ -56,11 +57,19 @@ export async function DELETE(_req: Request, context: { params: Promise<{ id: str
       }
     }
 
-    // Delete from Drive (requires user's access token from sessionStorage)
-    // Note: This is a best-effort deletion since we don't have the access token server-side
-    // The file will remain in Drive but the reference will be removed from the database
     if (storagePath?.startsWith('drive:')) {
-      console.log('[Delete Drive] File ID:', storagePath.slice(6), '- Deletion skipped (requires client-side token)');
+      try {
+        const conn = await getDriveConnection(user.id);
+        if (conn?.refresh_token_encrypted) {
+          const access = await refreshGoogleAccessToken(decryptToken(conn.refresh_token_encrypted));
+          await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(storagePath.slice(6))}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${access.access_token}` },
+          });
+        }
+      } catch (err) {
+        console.error('[Delete Drive] Error:', err);
+      }
     }
 
     const { error } = await supabase
