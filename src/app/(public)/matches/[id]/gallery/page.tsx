@@ -105,10 +105,6 @@ export default function MatchGalleryPage() {
         return;
       }
 
-      // #region agent log
-      fetch('http://127.0.0.1:7591/ingest/ce72ccef-7017-451c-8968-3b282ff493ff',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c441fc'},body:JSON.stringify({sessionId:'c441fc',runId:'pre-fix',hypothesisId:'H1,H4',location:'src/app/(public)/matches/[id]/gallery/page.tsx:108',message:'gallery media rows loaded',data:{count:(mediaRows||[]).length,rows:(mediaRows||[]).slice(0,5).map((m:any)=>({kind:m.kind,storagePathKind:m.storage_path?.startsWith('drive:')?'drive':m.storage_path?.startsWith('r2:')?'r2':m.storage_path?'supabaseOrOther':'none',hasDeviceUri:!!m.device_uri,hasTakenAt:!!m.taken_at}))},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
-
       setMedia((mediaRows as MediaRow[]) || []);
       setLoading(false);
     })();
@@ -143,9 +139,6 @@ export default function MatchGalleryPage() {
             created.push(u);
             out[m.id] = u;
             resolvedSource = 'device_uri_blob';
-            // #region agent log
-            fetch('http://127.0.0.1:7591/ingest/ce72ccef-7017-451c-8968-3b282ff493ff',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c441fc'},body:JSON.stringify({sessionId:'c441fc',runId:'pre-fix',hypothesisId:'H1,H3',location:'src/app/(public)/matches/[id]/gallery/page.tsx:141',message:'gallery resolved media from device cache',data:{kind:m.kind,storagePathKind:m.storage_path?.startsWith('drive:')?'drive':m.storage_path?.startsWith('r2:')?'r2':m.storage_path?'supabaseOrOther':'none',hasDeviceUri:!!m.device_uri,resolvedSource},timestamp:Date.now()})}).catch(()=>{});
-            // #endregion
             continue;
           }
         }
@@ -175,9 +168,6 @@ export default function MatchGalleryPage() {
             resolvedSource = 'supabase_signed_url';
           }
         }
-        // #region agent log
-        fetch('http://127.0.0.1:7591/ingest/ce72ccef-7017-451c-8968-3b282ff493ff',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c441fc'},body:JSON.stringify({sessionId:'c441fc',runId:'pre-fix',hypothesisId:'H1,H2,H3,H4,H5',location:'src/app/(public)/matches/[id]/gallery/page.tsx:168',message:'gallery resolved media from remote branch',data:{kind:m.kind,storagePathKind:m.storage_path?.startsWith('drive:')?'drive':m.storage_path?.startsWith('r2:')?'r2':m.storage_path?'supabaseOrOther':'none',hasDeviceUri:!!m.device_uri,resolvedSource,hasUrl:!!out[m.id]},timestamp:Date.now()})}).catch(()=>{});
-        // #endregion
       } catch {/* silencio administrativo */}
     }
     if (!cancelled) {

@@ -104,10 +104,6 @@ export async function uploadMatchMedia(params: {
   let storagePath: string | null = null;
   let syncedAt: string | null = null;
 
-  // #region agent log
-  fetch('http://127.0.0.1:7591/ingest/ce72ccef-7017-451c-8968-3b282ff493ff',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c441fc'},body:JSON.stringify({sessionId:'c441fc',runId:'pre-fix',hypothesisId:'H1,H4',location:'src/lib/uploadMatchMedia.ts:106',message:'upload provider selected',data:{requestedProvider,kind,mime,fileSize:file.size,hasGoogleAccessToken:!!params.googleAccessToken,willCreateDeviceCache:true},timestamp:Date.now()})}).catch(()=>{});
-  // #endregion
-
   if (requestedProvider === 'drive') {
     const accessToken = params.googleAccessToken;
     if (!accessToken) throw new Error('Se requiere autenticación con Google Drive.');
@@ -151,9 +147,6 @@ export async function uploadMatchMedia(params: {
     storagePath = `drive:${driveFileId}`;
     syncedAt = new Date().toISOString();
 
-    // #region agent log
-    fetch('http://127.0.0.1:7591/ingest/ce72ccef-7017-451c-8968-3b282ff493ff',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c441fc'},body:JSON.stringify({sessionId:'c441fc',runId:'pre-fix',hypothesisId:'H4,H5',location:'src/lib/uploadMatchMedia.ts:153',message:'drive upload completed before db insert',data:{hasDriveFileId:!!driveFileId,storagePathKind:'drive',hasDeviceUri:true,syncedAtSet:!!syncedAt},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
   }
 
   // 2) Insert en BD con el esquema real de match_media.
@@ -177,10 +170,6 @@ export async function uploadMatchMedia(params: {
     .single();
 
   if (insertRes.error) throw new Error(insertRes.error.message || 'No se pudo insertar en match_media');
-
-  // #region agent log
-  fetch('http://127.0.0.1:7591/ingest/ce72ccef-7017-451c-8968-3b282ff493ff',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c441fc'},body:JSON.stringify({sessionId:'c441fc',runId:'pre-fix',hypothesisId:'H1,H4',location:'src/lib/uploadMatchMedia.ts:179',message:'media row inserted',data:{requestedProvider,hasStoragePath:!!storagePath,storagePathKind:storagePath?.startsWith('drive:')?'drive':storagePath?.startsWith('r2:')?'r2':storagePath?'supabaseOrOther':'none',hasDeviceUri:true,hasSyncedAt:!!syncedAt},timestamp:Date.now()})}).catch(()=>{});
-  // #endregion
 
   // 3) Subida opcional a Supabase Storage (solo si activas el flag o se pide explícitamente)
   if (requestedProvider === 'supabase') {
