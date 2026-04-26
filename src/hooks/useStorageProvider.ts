@@ -9,31 +9,16 @@ export type StorageProvider = 'local' | 'supabase' | 'drive' | 'r2';
 
 export type StorageProviderStatus = {
     provider: StorageProvider;
-    driveConnected: boolean;   // token Google disponible en esta sesión
+    driveStatus: 'connected' | 'reconnect-required' | 'disconnected';
     r2Active: boolean;         // suscripción R2 activa
     r2ExpiresAt: Date | null;
     loading: boolean;
     setProvider: (p: StorageProvider) => Promise<void>;
 };
 
-const PROVIDER_KEY_PREFIX = 'deporteen_media_provider:';
-
-function readStoredProvider(userId: string): StorageProvider {
-    if (typeof localStorage === 'undefined') return 'local';
-    const value = localStorage.getItem(`${PROVIDER_KEY_PREFIX}${userId}`);
-    return value === 'drive' || value === 'r2' || value === 'supabase' || value === 'local'
-        ? value
-        : 'local';
-}
-
-function writeStoredProvider(userId: string, provider: StorageProvider) {
-    if (typeof localStorage === 'undefined') return;
-    localStorage.setItem(`${PROVIDER_KEY_PREFIX}${userId}`, provider);
-}
-
 export function useStorageProvider(): StorageProviderStatus {
     const [provider, setProviderState] = useState<StorageProvider>('local');
-    const [driveConnected, setDriveConnected] = useState(false);
+    const [driveStatus, setDriveStatus] = useState<'connected' | 'reconnect-required' | 'disconnected'>('disconnected');
     const [r2Active, setR2Active] = useState(false);
     const [r2ExpiresAt, setR2ExpiresAt] = useState<Date | null>(null);
     const [loading, setLoading] = useState(true);
@@ -44,9 +29,12 @@ export function useStorageProvider(): StorageProviderStatus {
             const { data: { user } } = await supabase.auth.getUser();
             if (!mounted || !user) { setLoading(false); return; }
 
-            // Proveedor por defecto: el esquema actual no tiene profiles/media_provider.
-            // Persistimos la preferencia por usuario en localStorage para conservarla entre vistas.
-            const prov = readStoredProvider(user.id);
+            const prefRes = await fetch('/api/storage/provider', { cache: 'no-store' });
+            const prefJson = (await prefRes.json().catch(() => ({}))) as {
+                provider?: StorageProvider;
+                driveStatus?: 'connected' | 'reconnect-required' | 'disconnected';
+            };
+            const prov = prefJson.provider ?? 'local';
 
             // Estado suscripción R2. En el esquema actual la tabla activa es subscriptions.
             const { data: r2Sub } = await supabase
@@ -59,7 +47,8 @@ export function useStorageProvider(): StorageProviderStatus {
 
             if (!mounted) return;
 
-            setProviderState(prov);
+            setProviderState(prov === 'drive' && prefJson.driveStatus !== 'connected' ? 'local' : prov);
+            setDriveStatus(prefJson.driveStatus ?? 'disconnected');
 
             if (r2Sub?.status === 'active' && r2Sub.current_period_end) {
                 const exp = new Date(r2Sub.current_period_end);
@@ -68,23 +57,26 @@ export function useStorageProvider(): StorageProviderStatus {
                 setR2ExpiresAt(exp);
             }
 
-            // Drive: token disponible si Google inicializó y devolvió access_token
-            const token = typeof sessionStorage !== 'undefined'
-                ? sessionStorage.getItem('google_access_token')
-                : null;
-            setDriveConnected(!!token);
-
             setLoading(false);
         })();
         return () => { mounted = false; };
     }, []);
 
     const setProvider = useCallback(async (p: StorageProvider) => {
+        const res = await fetch('/api/storage/provider', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ provider: p }),
+        });
+        if (!res.ok) {
+            const payload = (await res.json().catch(() => ({}))) as { code?: string };
+            if (p === 'drive' && payload.code === 'reconnect-required') {
+                setDriveStatus('reconnect-required');
+            }
+            return;
+        }
         setProviderState(p);
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-        writeStoredProvider(user.id, p);
     }, []);
 
-    return { provider, driveConnected, r2Active, r2ExpiresAt, loading, setProvider };
+    return { provider, driveStatus, r2Active, r2ExpiresAt, loading, setProvider };
 }
