@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useStorageProvider, type StorageProvider } from '@/hooks/useStorageProvider';
 import { useT } from '@/i18n/I18nProvider';
 import Link from 'next/link';
@@ -19,10 +20,23 @@ function Badge({ active, label }: { active: boolean; label: string }) {
 
 export default function StorageSettingsSection({ locale }: Props) {
     const t = useT();
+    const searchParams = useSearchParams();
     const { provider, driveStatus, r2Active, r2ExpiresAt, loading, setProvider } = useStorageProvider();
     const [driveReady, setDriveReady] = useState(driveStatus === 'connected');
     const [connecting, setConnecting] = useState(false);
     const [disconnecting, setDisconnecting] = useState(false);
+
+    const driveParam = searchParams.get('drive');
+    const driveBanner: { type: 'success' | 'error'; message: string } | null =
+        driveParam === 'connected'
+            ? { type: 'success', message: t('storage_settings_drive_connected_ok') || 'Google Drive conectado correctamente.' }
+            : driveParam === 'no-refresh-token'
+            ? { type: 'error', message: t('storage_settings_drive_no_refresh_token') || 'Google no devolvió un token de acceso duradero. Intenta desconectar y volver a conectar.' }
+            : driveParam === 'csrf-error'
+            ? { type: 'error', message: t('storage_settings_drive_csrf_error') || 'Error de seguridad en el proceso de conexión. Inténtalo de nuevo.' }
+            : driveParam === 'error'
+            ? { type: 'error', message: searchParams.get('msg') || t('storage_settings_drive_generic_error') || 'Error al conectar Google Drive.' }
+            : null;
 
     useEffect(() => {
         setDriveReady(driveStatus === 'connected');
@@ -36,11 +50,14 @@ export default function StorageSettingsSection({ locale }: Props) {
     async function handleDisconnectDrive() {
         setDisconnecting(true);
         try {
-            await fetch('/api/google/drive/disconnect', { method: 'POST' });
+            const res = await fetch('/api/google/drive/disconnect', { method: 'POST' });
+            if (!res.ok) throw new Error('disconnect failed');
             setDriveReady(false);
             if (provider === 'drive') {
                 await setProvider('local');
             }
+        } catch {
+            // El servidor no pudo desconectar; no actualizamos el estado local
         } finally {
             setDisconnecting(false);
         }
@@ -144,6 +161,12 @@ export default function StorageSettingsSection({ locale }: Props) {
             <p className="mt-1 text-sm text-gray-500">
                 {t('storage_settings_subtitle')}
             </p>
+
+            {driveBanner && (
+                <div className={`mt-3 rounded-xl border px-4 py-2.5 text-sm font-medium ${driveBanner.type === 'success' ? 'border-green-200 bg-green-50 text-green-800' : 'border-red-200 bg-red-50 text-red-800'}`}>
+                    {driveBanner.message}
+                </div>
+            )}
 
             <div className="mt-4 flex flex-col gap-3">
                 {cards.map((card) => {

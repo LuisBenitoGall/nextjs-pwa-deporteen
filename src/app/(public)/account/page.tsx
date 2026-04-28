@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { RENEW_WINDOW_DAYS } from '@/config/constants';
 import { redirect } from 'next/navigation';
@@ -758,7 +759,9 @@ export default async function AccountPage() {
             </section>*/}
 
             {/* Almacenamiento de medios */}
-            <StorageSettingsSection locale={intlLocale} />
+            <Suspense fallback={<div className="mt-8 h-24 animate-pulse rounded-2xl bg-gray-100" />}>
+                <StorageSettingsSection locale={intlLocale} />
+            </Suspense>
 
             {/* Cancelación de cuenta (borrado lógico) */}
             <section className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:p-6 shadow-sm">

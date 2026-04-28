@@ -4,12 +4,22 @@ import { buildGoogleConnectUrl, createOAuthState, saveOAuthStateCookie } from '@
 
 export const runtime = 'nodejs';
 
-export async function GET() {
-  const { user } = await getServerUser();
-  if (!user) return NextResponse.redirect(new URL('/login', process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'));
+export async function GET(request: Request) {
+  try {
+    const { user } = await getServerUser();
 
-  const state = createOAuthState();
-  await saveOAuthStateCookie(state);
+    if (!user) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
 
-  return NextResponse.redirect(buildGoogleConnectUrl(state));
+    const state = createOAuthState();
+    await saveOAuthStateCookie(state);
+    const googleUrl = buildGoogleConnectUrl(state);
+
+    return NextResponse.redirect(googleUrl);
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error('[drive/connect]', msg);
+    return NextResponse.json({ error: 'drive_connect_failed', detail: msg.slice(0, 200) }, { status: 500 });
+  }
 }

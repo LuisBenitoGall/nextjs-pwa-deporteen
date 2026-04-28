@@ -63,7 +63,7 @@ export async function uploadMatchMedia(params: {
   playerId?: string | null;
   file: File;
   kind: 'image' | 'video'; // se re-normaliza por MIME igualmente
-  provider?: 'local' | 'supabase' | 'drive';
+  provider?: 'local' | 'supabase' | 'drive' | 'r2';
   googleAccessToken?: string | null;
   width?: number;
   height?: number;
@@ -101,12 +101,26 @@ export async function uploadMatchMedia(params: {
   await idbPut(deviceKey, file);
 
   const requestedProvider = params.provider ?? (CLOUD_ENABLED ? 'supabase' : 'local');
+
+  // R2: la API maneja tanto el upload como el insert en match_media
+  if (requestedProvider === 'r2') {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('matchId', matchId);
+    if (playerId) form.append('playerId', playerId);
+    if (duration_ms != null) form.append('duration_seconds', String(duration_ms / 1000));
+    const res = await fetch('/api/r2/upload', { method: 'POST', body: form });
+    if (!res.ok) {
+      const { error } = await res.json().catch(() => ({ error: 'Error R2' }));
+      throw new Error(error || 'No se pudo subir a R2.');
+    }
+    const { mediaId: r2Id, path } = await res.json() as { mediaId: string; path: string };
+    return { id: r2Id, storagePath: path };
+  }
+
   let storagePath: string | null = null;
   let syncedAt: string | null = null;
-
-  // #region agent log
-  fetch('http://127.0.0.1:7591/ingest/ce72ccef-7017-451c-8968-3b282ff493ff',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c441fc'},body:JSON.stringify({sessionId:'c441fc',runId:'pre-fix',hypothesisId:'H1,H4',location:'src/lib/uploadMatchMedia.ts:106',message:'upload provider selected',data:{requestedProvider,kind,mime,fileSize:file.size,hasGoogleAccessToken:!!params.googleAccessToken,willCreateDeviceCache:true},timestamp:Date.now()})}).catch(()=>{});
-  // #endregion
+  let capturedDriveFileId: string | null = null;
 
   if (requestedProvider === 'drive') {
     const accessToken = params.googleAccessToken;
@@ -136,6 +150,7 @@ export async function uploadMatchMedia(params: {
 
     const { id: driveFileId } = await uploadRes.json() as { id?: string };
     if (!driveFileId) throw new Error('Google Drive no devolvió identificador de archivo.');
+    capturedDriveFileId = driveFileId;
 
     await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}/permissions`, {
       method: 'POST',
@@ -151,9 +166,6 @@ export async function uploadMatchMedia(params: {
     storagePath = `drive:${driveFileId}`;
     syncedAt = new Date().toISOString();
 
-    // #region agent log
-    fetch('http://127.0.0.1:7591/ingest/ce72ccef-7017-451c-8968-3b282ff493ff',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c441fc'},body:JSON.stringify({sessionId:'c441fc',runId:'pre-fix',hypothesisId:'H4,H5',location:'src/lib/uploadMatchMedia.ts:153',message:'drive upload completed before db insert',data:{hasDriveFileId:!!driveFileId,storagePathKind:'drive',hasDeviceUri:true,syncedAtSet:!!syncedAt},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
   }
 
   // 2) Insert en BD con el esquema real de match_media.
@@ -170,6 +182,7 @@ export async function uploadMatchMedia(params: {
       width, height, duration_ms,
       device_uri: deviceKey,
       storage_path: storagePath,
+      google_drive_file_id: capturedDriveFileId,
       synced_at: syncedAt,
       taken_at: new Date().toISOString()
     })
@@ -177,10 +190,6 @@ export async function uploadMatchMedia(params: {
     .single();
 
   if (insertRes.error) throw new Error(insertRes.error.message || 'No se pudo insertar en match_media');
-
-  // #region agent log
-  fetch('http://127.0.0.1:7591/ingest/ce72ccef-7017-451c-8968-3b282ff493ff',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c441fc'},body:JSON.stringify({sessionId:'c441fc',runId:'pre-fix',hypothesisId:'H1,H4',location:'src/lib/uploadMatchMedia.ts:179',message:'media row inserted',data:{requestedProvider,hasStoragePath:!!storagePath,storagePathKind:storagePath?.startsWith('drive:')?'drive':storagePath?.startsWith('r2:')?'r2':storagePath?'supabaseOrOther':'none',hasDeviceUri:true,hasSyncedAt:!!syncedAt},timestamp:Date.now()})}).catch(()=>{});
-  // #endregion
 
   // 3) Subida opcional a Supabase Storage (solo si activas el flag o se pide explícitamente)
   if (requestedProvider === 'supabase') {
