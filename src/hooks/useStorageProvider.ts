@@ -36,24 +36,37 @@ export function useStorageProvider(): StorageProviderStatus {
             };
             const prov = prefJson.provider ?? 'local';
 
-            // Estado suscripción R2. En el esquema actual la tabla activa es subscriptions.
+            // Estado suscripción R2 (tabla storage_subscriptions)
+            const nowIso = new Date().toISOString();
             const { data: r2Sub } = await supabase
-                .from('subscriptions')
-                .select('status, current_period_end')
+                .from('storage_subscriptions')
+                .select('gb_amount, status, current_period_end')
                 .eq('user_id', user.id)
                 .eq('status', 'active')
+                .gte('current_period_end', nowIso)
                 .order('current_period_end', { ascending: false })
+                .limit(1)
                 .maybeSingle();
 
             if (!mounted) return;
 
-            setProviderState(prov === 'drive' && prefJson.driveStatus !== 'connected' ? 'local' : prov);
+            const driveConnected = prefJson.driveStatus === 'connected';
+            if (prov === 'drive' && !driveConnected) {
+                // Sincronizar BD: el proveedor real es local porque Drive no está conectado
+                fetch('/api/storage/provider', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ provider: 'local' }),
+                }).catch(() => {});
+                setProviderState('local');
+            } else {
+                setProviderState(prov);
+            }
             setDriveStatus(prefJson.driveStatus ?? 'disconnected');
 
-            if (r2Sub?.status === 'active' && r2Sub.current_period_end) {
+            if (r2Sub?.current_period_end) {
                 const exp = new Date(r2Sub.current_period_end);
-                const active = exp > new Date();
-                setR2Active(active);
+                setR2Active(exp > new Date());
                 setR2ExpiresAt(exp);
             }
 

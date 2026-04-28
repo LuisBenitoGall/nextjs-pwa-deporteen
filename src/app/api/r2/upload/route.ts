@@ -90,22 +90,6 @@ export async function POST(req: NextRequest) {
         ContentType: file.type || 'application/octet-stream',
       }));
 
-      const usageAfterUpload = await getCloudUsage(supabase, user.id);
-      if (!hasQuotaForUpload(usageAfterUpload.bytes_used, usageAfterUpload.bytes_quota, file.size)) {
-        await r2.send(new DeleteObjectCommand({ Bucket: getR2Bucket(), Key: key }));
-        return NextResponse.json(
-          {
-            error: 'QUOTA_EXCEEDED',
-            code: 'QUOTA_EXCEEDED',
-            bytesUsed: usageAfterUpload.bytes_used,
-            bytesQuota: usageAfterUpload.bytes_quota,
-            bytesRemaining: usageAfterUpload.bytes_remaining,
-            fileSize: file.size,
-          },
-          { status: 409 }
-        );
-      }
-
       const kind = file.type.startsWith('video/') ? 'video' : 'image';
       const { data: inserted, error: insertError } = await supabase
         .from('match_media')

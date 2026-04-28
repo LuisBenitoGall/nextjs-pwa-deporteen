@@ -161,10 +161,11 @@ export function getMediaDisplayUrl(row: {
     google_drive_file_id?: string | null;
 }): string | null {
     switch (row.storage_provider) {
-        case 'drive':
-            return row.google_drive_file_id
-                ? `https://drive.google.com/uc?id=${row.google_drive_file_id}&export=view`
-                : null;
+        case 'drive': {
+            const fileId = row.google_drive_file_id
+                || (row.storage_path?.startsWith('drive:') ? row.storage_path.slice(6) : null);
+            return fileId ? `https://drive.google.com/uc?id=${fileId}&export=view` : null;
+        }
         case 'r2': {
             const base = process.env.NEXT_PUBLIC_R2_PUBLIC_URL?.replace(/\/$/, '');
             return base && row.storage_path ? `${base}/${row.storage_path}` : null;
