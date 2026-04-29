@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import {
     Home,
+    Images,
     Mail,
     LayoutDashboard,
     LogOut,
@@ -49,7 +50,7 @@ export default function Navbar({ serverUserId, serverIsAdmin = false }: { server
     const maybeLocale = pathParts[0];
     const hasLocalePrefix = locales?.some?.(l => l.code === maybeLocale) ?? false;
     const firstSeg = hasLocalePrefix ? (pathParts[1] || '') : (pathParts[0] || '');
-    const isProtectedPath = ['dashboard', 'account', 'players', 'settings'].includes(firstSeg);
+    const isProtectedPath = ['dashboard', 'account', 'gallery', 'players', 'settings'].includes(firstSeg);
     const hideAuthUI = pathname === '/logout';
 
     // Cierra menús al cambiar de ruta
@@ -281,6 +282,7 @@ export default function Navbar({ serverUserId, serverIsAdmin = false }: { server
 
     const userMenuItems: { href: string; label: string; Icon: LucideIcon }[] = [
         { href: '/dashboard', label: t('mi_panel') || 'Mi Panel', Icon: LayoutDashboard },
+        { href: '/gallery', label: t('mi_galeria') || 'Mi Galería', Icon: Images },
         { href: '/account', label: t('cuenta_mi') || 'Mi Cuenta', Icon: UserCog },
     ];
 

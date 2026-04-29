@@ -24,7 +24,9 @@
       "Read(//c/Users/lluis/AppData/Roaming/**)",
       "Bash(wc:*)",
       "Bash(grep -E \"\\\\.\\(tsx?|json\\)$\")",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(xargs grep *)",
+      "Bash(grep -E \"\\\\.\\(tsx?|jsx?\\)$\")"
     ]
   }
 }
