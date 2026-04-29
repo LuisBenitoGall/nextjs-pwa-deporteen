@@ -20,30 +20,6 @@ create table if not exists public.media_storage_preferences (
   updated_at timestamptz not null default now()
 );
 
-alter table public.match_media
-  add column if not exists storage_provider text
-    check (storage_provider in ('local', 'drive', 'r2', 'supabase')),
-  add column if not exists google_drive_file_id text;
-
--- Conservative migration for existing rows.
-update public.match_media
-set storage_provider = case
-  when storage_path like 'drive:%' then 'drive'
-  when storage_path like 'r2:%' then 'r2'
-  when storage_path is not null then 'supabase'
-  when device_uri is not null then 'local'
-  else coalesce(storage_provider, 'local')
-end
-where storage_provider is null;
-
-update public.match_media
-set google_drive_file_id = substring(storage_path from 7)
-where google_drive_file_id is null
-  and storage_path like 'drive:%';
-
-alter table public.match_media
-  alter column storage_provider set default 'local';
-
 alter table public.google_drive_connections enable row level security;
 alter table public.media_storage_preferences enable row level security;
 

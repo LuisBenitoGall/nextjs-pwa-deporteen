@@ -26,7 +26,8 @@
       "Bash(grep -E \"\\\\.\\(tsx?|json\\)$\")",
       "Bash(npx tsc *)",
       "Bash(xargs grep *)",
-      "Bash(grep -E \"\\\\.\\(tsx?|jsx?\\)$\")"
+      "Bash(grep -E \"\\\\.\\(tsx?|jsx?\\)$\")",
+      "Bash(npx supabase *)"
     ]
   }
 }
