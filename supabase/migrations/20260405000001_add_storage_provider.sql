@@ -8,12 +8,6 @@ ALTER TABLE match_media
         DEFAULT 'local',
     ADD COLUMN IF NOT EXISTS google_drive_file_id text;
 
--- profiles: proveedor por defecto del usuario
-ALTER TABLE profiles
-    ADD COLUMN IF NOT EXISTS media_provider text
-        CHECK (media_provider IN ('local','supabase','drive','r2'))
-        DEFAULT 'local';
-
 -- ============================================================
 -- R2 storage plans (tiers de almacenamiento)
 -- ============================================================

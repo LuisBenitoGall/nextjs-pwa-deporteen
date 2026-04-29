@@ -19,7 +19,6 @@ export interface Database {
           full_name: string
           avatar_url?: string
           website?: string
-          media_provider?: 'local' | 'supabase' | 'drive' | 'r2' | null
         }
         Insert: {
           id: string
@@ -28,7 +27,6 @@ export interface Database {
           full_name: string
           avatar_url?: string
           website?: string
-          media_provider?: 'local' | 'supabase' | 'drive' | 'r2' | null
         }
         Update: {
           id?: string
@@ -37,7 +35,6 @@ export interface Database {
           full_name?: string
           avatar_url?: string
           website?: string
-          media_provider?: 'local' | 'supabase' | 'drive' | 'r2' | null
         }
       }
       players: {
