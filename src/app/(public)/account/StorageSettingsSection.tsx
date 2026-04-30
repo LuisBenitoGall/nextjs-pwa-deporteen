@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { useStorageProvider, type StorageProvider } from '@/hooks/useStorageProvider';
 import { useT } from '@/i18n/I18nProvider';
 import Link from 'next/link';
+import { StorageIcon } from '@/components/StorageIcon';
 
 interface Props {
     locale?: string;
@@ -181,6 +182,7 @@ export default function StorageSettingsSection({ locale }: Props) {
                             <div className="flex items-start justify-between gap-3">
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 flex-wrap">
+                                        <StorageIcon kind={card.key} size={16} />
                                         <span className="text-sm font-semibold text-gray-900">{card.title}</span>
                                         <Badge active={card.available} label={card.badge} />
                                         {isSelected && (
