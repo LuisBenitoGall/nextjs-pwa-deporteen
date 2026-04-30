@@ -98,6 +98,7 @@ export async function POST(req: NextRequest) {
           match_id: matchId,
           player_id: playerId,
           kind,
+          storage_provider: 'r2',
           storage_path: `r2:${key}`,
           device_uri: null,
           mime_type: file.type || null,

@@ -15,6 +15,7 @@ import { resolveDriveMediaSource } from '@/lib/googleDrive/mediaResolution';
 //Componentes
 import ConfirmDeleteButton from '@/components/ConfirmDeleteButton';
 import TitleH1 from '@/components/TitleH1';
+import { StorageBadge } from '@/components/StorageIcon';
 
 type MatchRow = {
   id: string;
@@ -314,6 +315,9 @@ export default function MatchGalleryPage() {
                                 {renderThumb(item)}
                                 <span className="absolute left-2 top-2 rounded-md bg-black/60 px-2 py-1 text-xs text-white uppercase">
                                 {item.kind === 'video' ? (t('video') || 'Vídeo') : (t('foto') || 'Foto')}
+                                </span>
+                                <span className="absolute right-2 top-2">
+                                  <StorageBadge storagePath={item.storage_path} />
                                 </span>
                             </button>
 
