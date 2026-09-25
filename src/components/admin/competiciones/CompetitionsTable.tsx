@@ -21,7 +21,7 @@ export interface AdminCompetition {
   team_id: string | null;
   category_id: string | null;
   name: string | null;
-  player: { id: string; name: string; user_id: string } | null;
+  player: { id: string; full_name: string; user_id: string } | null;
 }
 
 export default function CompetitionsTable({
@@ -99,16 +99,16 @@ export default function CompetitionsTable({
       minWidth: 120,
       headerFilter: 'input' as const,
       headerFilterFunc: (filterVal: unknown, rowVal: unknown) => {
-        const name = (rowVal as AdminCompetition['player'])?.name ?? '';
+        const name = (rowVal as AdminCompetition['player'])?.full_name ?? '';
         return name.toLowerCase().includes((filterVal as string).toLowerCase());
       },
       sorter: (a: unknown, b: unknown) =>
-        ((a as AdminCompetition['player'])?.name ?? '').localeCompare(
-          (b as AdminCompetition['player'])?.name ?? ''
+        ((a as AdminCompetition['player'])?.full_name ?? '').localeCompare(
+          (b as AdminCompetition['player'])?.full_name ?? ''
         ),
       formatter: (cell) => {
         const p = cell.getValue() as AdminCompetition['player'];
-        return p?.name ?? '—';
+        return p?.full_name ?? '—';
       },
     },
     {

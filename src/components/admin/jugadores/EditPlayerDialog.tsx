@@ -25,7 +25,7 @@ export default function EditPlayerDialog({
 }) {
   const { showToast } = useToast();
   const [saving, setSaving] = useState(false);
-  const [name, setName] = useState(player.name);
+  const [name, setName] = useState(player.full_name);
 
   async function handleSave() {
     setSaving(true);
@@ -33,7 +33,7 @@ export default function EditPlayerDialog({
       const res = await fetch('/api/admin/jugadores', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: player.id, name }),
+        body: JSON.stringify({ id: player.id, full_name: name }),
       });
       if (!res.ok) throw new Error(await res.text());
       showToast({ title: 'Jugador actualizado', variant: 'success' });

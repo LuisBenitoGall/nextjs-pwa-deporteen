@@ -15,7 +15,8 @@ Restaurar un recorrido mínimo fiable: comprar/ampliar plazas, renovar, conceder
 3. **Concesión de acceso**: función compartida `fulfillCheckoutSession`; tabla `stripe_checkout_fulfillments` (UNIQUE `stripe_checkout_session_id`); **insert** por checkout (varias filas `subscriptions` por usuario); webhook prioriza `metadata.user_id`; `confirm-session` autenticado e idempotente.
 4. **Post-checkout**: éxito → CTA `/players/new`; eliminar `/players/bulk-new`.
 5. **Dashboard**: distinguir “sin suscripción” vs “sin asientos” (`hasAnySubscription` + `pendingPlayers`).
-6. **Auth**: `emailRedirectTo` en registro; `next` seguro en login; `/auth/check-email` con i18n; `makeT` devuelve cadena vacía si falta clave (fallbacks `||`).
+6. **Auth**: `emailRedirectTo` en registro; `next` seguro en login; `/auth/check-email` con i18n.
+7. **i18n (integración #44)**: `makeT` retorna `undefined` si falta clave; `useT` / `tServer` normalizan a `''` (ver change `c2026-09-25-platform-critical-fixes`). Locales: `es, en, ca, it, pt, eu, gl`.
 
 ## Migración
 

@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient, getServerUser } from '@/lib/supabase/server';
+import { userOwnsMatch } from '@/lib/matches/ownership';
+import { deleteMatchMediaForMatches } from '@/lib/matchMedia/cleanup';
 
 // PATCH para actualizar campos del match (marcador, notas, stats...)
 export async function PATCH(req: Request, context: { params: Promise<{ id: string }> }) {
@@ -12,9 +14,14 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
       return NextResponse.json({ error: 'matchId requerido' }, { status: 400 });
     }
 
+    const supabase = await createSupabaseServerClient();
+    const owns = await userOwnsMatch(supabase, user.id, matchId);
+    if (!owns) {
+      return NextResponse.json({ error: 'Partido no encontrado o sin permiso' }, { status: 404 });
+    }
+
     const payload = await req.json();
-    // Whitelist de campos permitidos para evitar updates accidentales
-    const update: Record<string, any> = {};
+    const update: Record<string, unknown> = {};
     if (typeof payload.my_score === 'number') update.my_score = payload.my_score;
     if (typeof payload.rival_score === 'number') update.rival_score = payload.rival_score;
     if (typeof payload.notes === 'string') update.notes = payload.notes;
@@ -46,7 +53,6 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
 
     update.updated_at = new Date().toISOString();
 
-    const supabase = await createSupabaseServerClient();
     const { data, error } = await supabase
       .from('matches')
       .update(update)
@@ -57,9 +63,13 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
+    if (!data) {
+      return NextResponse.json({ error: 'No se pudo actualizar el partido' }, { status: 404 });
+    }
     return NextResponse.json({ data }, { status: 200 });
-  } catch (e: any) {
-    return NextResponse.json({ error: e?.message || 'Error inesperado' }, { status: 500 });
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Error inesperado';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -75,18 +85,30 @@ export async function DELETE(_req: Request, context: { params: Promise<{ id: str
     }
 
     const supabase = await createSupabaseServerClient();
+    const owns = await userOwnsMatch(supabase, user.id, matchId);
+    if (!owns) {
+      return NextResponse.json({ error: 'Partido no encontrado o sin permiso' }, { status: 404 });
+    }
 
-    const { error } = await supabase
+    await deleteMatchMediaForMatches(supabase, user.id, [matchId]);
+
+    const { data: deleted, error } = await supabase
       .from('matches')
       .delete()
-      .eq('id', matchId);
+      .eq('id', matchId)
+      .select('id')
+      .maybeSingle();
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
+    if (!deleted?.id) {
+      return NextResponse.json({ error: 'No se pudo eliminar el partido' }, { status: 404 });
+    }
 
     return NextResponse.json({ ok: true }, { status: 200 });
-  } catch (e: any) {
-    return NextResponse.json({ error: e?.message || 'Error inesperado' }, { status: 500 });
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Error inesperado';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

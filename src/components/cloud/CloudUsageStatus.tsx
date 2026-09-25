@@ -115,7 +115,7 @@ export default function CloudUsageStatus({ enabled }: Props) {
                 <Link href="/subscription/storage" className="underline">
                   {t('cloud_usage_cta_upgrade')}
                 </Link>
-                <Link href="/matches" className="underline">
+                <Link href="/gallery" className="underline">
                   {t('cloud_usage_cta_manage_files')}
                 </Link>
               </div>

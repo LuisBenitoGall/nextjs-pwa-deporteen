@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState, ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
-import { getCurrentSeasonId } from '@/lib/seasons';
 import { useT } from '@/i18n/I18nProvider';
 
 import Input from '@/components/Input';
@@ -66,8 +65,10 @@ export default function CompetitionNewForm({ playerId, seasonIdFromQuery }: Prop
     if (seasonId) return;
     (async () => {
       try {
-        const sId = await getCurrentSeasonId(supabase);
-        setSeasonId(sId);
+        const res = await fetch('/api/seasons/current', { cache: 'no-store' });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json?.error || 'season');
+        setSeasonId(json.seasonId);
       } catch {
         setErr(t('temporada_no_definida') || 'No se pudo resolver la temporada actual.');
       }
@@ -101,58 +102,37 @@ export default function CompetitionNewForm({ playerId, seasonIdFromQuery }: Prop
 
     if (!seasonId) { setErr(t('temporada_no_definida') || 'Temporada no definida.'); return; }
     if (!sportId) { setErr(t('deporte_selec') || 'Selecciona un deporte.'); return; }
-    // nombre de competición opcional, club/equipo opcionales
+    if (!clubName.trim()) { setErr(t('club_nombre') || 'Indica el club.'); return; }
+    if (!teamName.trim()) {
+      setErr(t('equipo_nombre_info') || 'Indica el equipo para poder crear partidos en esta competición.');
+      return;
+    }
 
     setBusy(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('No autenticado.');
-
-      // club
-      let clubId: string | null = null;
-      if (clubName.trim()) {
-        const { data: club, error: clubErr } = await supabase
-          .from('clubs')
-          .upsert(
-            { name: clubName.trim(), player_id: playerId },
-            { onConflict: 'player_id,name' }
-          )
-          .select('id')
-          .single();
-        if (clubErr) throw clubErr;
-        clubId = club!.id;
+      const res = await fetch(`/api/players/${playerId}/competitions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          seasonId,
+          sportId,
+          categoryId,
+          competitionName,
+          clubName,
+          teamName,
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        if (json.error === 'no_subscription') {
+          throw new Error(t('suscripcion_necesaria_para_crear') || 'Necesitas una suscripción activa.');
+        }
+        if (json.error === 'limit_reached') {
+          throw new Error(t('limite_competiciones_alcanzado') || 'Límite de competiciones alcanzado.');
+        }
+        throw new Error(json.error || t('error_generico') || 'Error al guardar.');
       }
 
-      // team
-      let teamId: string | null = null;
-      if (teamName.trim()) {
-        if (!clubId) throw new Error(t('equipo_necesita_club_aviso') || 'El equipo requiere un club.');
-        const { data: teamUpsert, error: teamUpErr } = await supabase
-          .from('teams')
-          .upsert(
-            { name: teamName.trim(), club_id: clubId, sport_id: sportId, player_id: playerId },
-            { onConflict: 'player_id,club_id,sport_id,name' }
-          )
-          .select('id')
-          .single();
-        if (teamUpErr) throw teamUpErr;
-        teamId = teamUpsert!.id;
-      }
-
-      // competition
-      const payload = {
-        player_id: playerId,
-        season_id: seasonId,
-        sport_id: sportId,
-        club_id: clubId,
-        team_id: teamId,
-        category_id: categoryId ?? null,
-        name: competitionName.trim() || null,
-      };
-      const { error: cmpErr } = await supabase.from('competitions').insert(payload);
-      if (cmpErr) throw cmpErr;
-
-      // listo
       setInfo(t('guardado_ok') || 'Guardado correctamente.');
       router.replace(`/players/${playerId}`);
     } catch (e: any) {

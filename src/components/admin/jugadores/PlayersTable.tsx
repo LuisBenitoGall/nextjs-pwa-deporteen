@@ -16,7 +16,7 @@ import {
 
 export interface AdminPlayer {
   id: string;
-  name: string;
+  full_name: string;
   user_id: string;
   season_id: string;
   created_at: string;
@@ -80,14 +80,14 @@ export default function PlayersTable({ players }: { players: AdminPlayer[] }) {
   const columns: ColumnDefinition[] = [
     {
       title: 'Nombre',
-      field: 'name',
+      field: 'full_name',
       minWidth: 160,
       headerFilter: 'input' as const,
       formatter: (cell) => {
         const p = cell.getData() as AdminPlayer;
         const div = document.createElement('div');
         div.innerHTML =
-          `<div class="font-medium text-slate-100">${p.name}</div>` +
+          `<div class="font-medium text-slate-100">${p.full_name}</div>` +
           `<div class="text-xs text-slate-500 font-mono">${p.id.slice(0, 8)}…</div>`;
         return div;
       },
@@ -176,7 +176,7 @@ export default function PlayersTable({ players }: { players: AdminPlayer[] }) {
         open={!!confirmPlayer}
         onOpenChange={(open) => !open && setConfirmPlayer(null)}
         title="Eliminar jugador"
-        description={`¿Eliminar permanentemente a "${confirmPlayer?.name}"? Se perderán todos sus datos.`}
+        description={`¿Eliminar permanentemente a "${confirmPlayer?.full_name}"? Se perderán todos sus datos.`}
         loading={deletingId !== null}
         onConfirm={() => confirmPlayer && handleDelete(confirmPlayer.id)}
       />

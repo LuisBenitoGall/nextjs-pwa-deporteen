@@ -18,7 +18,7 @@ export default function manifest(): MetadataRoute.Manifest {
       { src: '/icons/icon-maskable-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
       { src: '/icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
     ],
-    // Atajos útiles con icono por deporte
+    // Atajos PWA: panel/galería (#44) + partidos/deportista (#45)
     shortcuts: [
       {
         name: 'Mi panel',
@@ -33,11 +33,27 @@ export default function manifest(): MetadataRoute.Manifest {
         icons: [{ src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' }],
       },
       {
+        name: 'Nuevo partido fútbol',
+        short_name: 'Partido fútbol',
+        url: '/matches/new',
+        icons: [{ src: '/icons/icon-futbol-192.png', sizes: '192x192', type: 'image/png' }],
+      },
+      {
+        name: 'Nuevo partido baloncesto',
+        short_name: 'Partido basket',
+        url: '/matches/new',
+        icons: [{ src: '/icons/icon-baloncesto-192.png', sizes: '192x192', type: 'image/png' }],
+      },
+      {
         name: 'Nuevo deportista',
         short_name: 'Deportista',
         url: '/players/new',
         icons: [{ src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' }],
       },
     ],
+    screenshots: [
+      { src: '/screenshots/screenshot-mobile-1080x1920.png', sizes: '1080x1920', type: 'image/png', form_factor: 'narrow' },
+      { src: '/screenshots/screenshot-tablet-2048x1536.png', sizes: '2048x1536', type: 'image/png', form_factor: 'wide' }
+    ]
   };
 }
