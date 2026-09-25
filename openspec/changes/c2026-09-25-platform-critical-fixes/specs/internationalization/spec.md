@@ -9,7 +9,7 @@
 
 ### ADDED
 
-- Los locales oficiales son exactamente: `es`, `en`, `ca`, `it`, `pt`, `eu`, `gl` (`SUPPORTED_LOCALES`). Portugués (`pt`) forma parte del producto; los tests de configuración deben reflejarlo.
+- **Decisión Luis 10-A (2026-09-25):** los locales oficiales son exactamente: `es`, `en`, `ca`, `it`, `pt`, `eu`, `gl` (`SUPPORTED_LOCALES`). Portugués (`pt`) forma parte del producto; los tests de configuración deben reflejarlo.
 
 ## Delta RF-4
 
