@@ -25,6 +25,11 @@ Restaurar flujos de jugadores, competiciones y partidos sin tocar suscripción/S
 
 Ver `decisions.md` — contradicciones spec/código no resueltas en este change.
 
+## Integración con change plataforma (#44)
+
+- `manifest.ts`: atajos unificados (panel, galería, partidos, deportista).
+- `matches/[id]/live`: conserva subida híbrida IndexedDB + `fetchWithTimeout` de #44 con errores `loadError`/`saveError` de este change.
+
 ## Riesgos
 
 - `ensureCurrentSeasonId` usa service role; requiere política de datos acordada.

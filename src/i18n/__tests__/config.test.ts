@@ -9,11 +9,11 @@ describe('isSupportedLocale', () => {
     expect(isSupportedLocale('it')).toBe(true)
     expect(isSupportedLocale('eu')).toBe(true)
     expect(isSupportedLocale('gl')).toBe(true)
+    expect(isSupportedLocale('pt')).toBe(true)
   })
 
   it('rejects unknown locales', () => {
     expect(isSupportedLocale('fr')).toBe(false)
-    expect(isSupportedLocale('pt')).toBe(false)
     expect(isSupportedLocale('')).toBe(false)
   })
 
@@ -24,8 +24,8 @@ describe('isSupportedLocale', () => {
 })
 
 describe('SUPPORTED_LOCALES', () => {
-  it('contains exactly es, en, ca, it, eu, gl', () => {
-    expect(SUPPORTED_LOCALES).toEqual(['es', 'en', 'ca', 'it', 'eu', 'gl'])
+  it('contains es, en, ca, it, pt, eu, gl', () => {
+    expect(SUPPORTED_LOCALES).toEqual(['es', 'en', 'ca', 'it', 'pt', 'eu', 'gl'])
   })
 })
 
