@@ -26,9 +26,9 @@ function interpolate(template: string, vars?: Record<string, any>): string {
 }
 
 export function makeT(dict: Dict) {
-  return (key: string, vars?: Record<string, any>): string => {
+  return (key: string, vars?: Record<string, any>): string | undefined => {
     const val = key.split('.').reduce<any>((acc, k) => (acc == null ? acc : acc[k]), dict);
     if (typeof val === 'string') return interpolate(val, vars);
-    return '';
+    return undefined;
   };
 }

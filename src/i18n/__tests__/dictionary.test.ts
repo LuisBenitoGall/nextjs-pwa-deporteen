@@ -15,9 +15,9 @@ describe('makeT — key lookup', () => {
     expect(t('nested.deep')).toBe('Profundo')
   })
 
-  it('returns empty string when not found', () => {
-    expect(t('missing_key')).toBe('')
-    expect(t('nested.missing')).toBe('')
+  it('returns undefined when not found', () => {
+    expect(t('missing_key')).toBeUndefined()
+    expect(t('nested.missing')).toBeUndefined()
   })
 })
 

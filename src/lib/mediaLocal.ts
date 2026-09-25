@@ -1,15 +1,25 @@
+import {
+  MEDIA_BLOB_STORE,
+  MEDIA_DB_NAME,
+  MEDIA_DB_VERSION,
+  MEDIA_LEGACY_STORE,
+} from '@/lib/mediaDb';
+
 // Simple wrapper sobre IndexedDB para blobs
-const DB_NAME = 'deporteens-media';
-const STORE = 'blobs';
+const STORE = MEDIA_BLOB_STORE;
 let dbPromise: Promise<IDBDatabase> | null = null;
 
 function openDB(): Promise<IDBDatabase> {
   if (dbPromise) return dbPromise;
   dbPromise = new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, 1);
+    const req = indexedDB.open(MEDIA_DB_NAME, MEDIA_DB_VERSION);
     req.onupgradeneeded = () => {
       const db = req.result;
       if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE);
+      if (!db.objectStoreNames.contains(MEDIA_LEGACY_STORE)) {
+        const legacy = db.createObjectStore(MEDIA_LEGACY_STORE, { keyPath: 'id' });
+        legacy.createIndex('createdAt', 'createdAt', { unique: false });
+      }
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);

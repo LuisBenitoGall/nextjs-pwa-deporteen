@@ -32,6 +32,8 @@ export async function POST(req: NextRequest) {
         durationRaw == null || durationRaw === ''
           ? null
           : Number(durationRaw);
+      const clientMediaId = (form.get('mediaId') as string | null)?.trim() || null;
+      const deviceUri = (form.get('device_uri') as string | null)?.trim() || null;
 
       if (!file) return NextResponse.json({ error: 'Falta el archivo.' }, { status: 400 });
       if (!matchId) return NextResponse.json({ error: 'Falta matchId.' }, { status: 400 });
@@ -77,7 +79,9 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const mediaId = crypto.randomUUID();
+      const mediaId = clientMediaId && /^[0-9a-f-]{36}$/i.test(clientMediaId)
+        ? clientMediaId
+        : crypto.randomUUID();
       const ext = guessExt(file.type) || '.bin';
       const key = `${user.id}/matches/${matchId}/${mediaId}${ext}`;
 
@@ -100,7 +104,7 @@ export async function POST(req: NextRequest) {
           kind,
           storage_provider: 'r2',
           storage_path: `r2:${key}`,
-          device_uri: null,
+          device_uri: deviceUri && deviceUri.length <= 256 ? deviceUri : `media:${mediaId}`,
           mime_type: file.type || null,
           size_bytes: file.size,
           duration_ms: durationSeconds ? Math.round(durationSeconds * 1000) : null,

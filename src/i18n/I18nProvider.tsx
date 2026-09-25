@@ -112,7 +112,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   const t = useMemo(() => {
     const base = makeT(dict);
-    return (key: string, vars?: Record<string, any>) => base(key, { ...I18N_DEFAULTS, ...vars });
+    return (key: string, vars?: Record<string, any>) =>
+      base(key, { ...I18N_DEFAULTS, ...vars }) ?? '';
   }, [dict]);
 
   const locales = useMemo(

@@ -1,60 +1,93 @@
 import { idbGet } from './mediaLocal';
 import { supabaseBrowser } from './supabase/client';
+import { guessExt } from './uploadMatchMedia';
 
 type PendingItem = {
-  id: string;        // media.id (uuid en BD)
-  key: string;       // clave local en IDB
+  id: string;
+  key: string;
   matchId: string;
-  ext: string;       // ".jpg" ".mp4" etc
+  ext: string;
   mime: string;
+  userId?: string;
 };
 
 const QUEUE_KEY = 'media_pending_queue_v1';
 
 function readQueue(): PendingItem[] {
-  try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); } catch { return []; }
+  try {
+    return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
+  } catch {
+    return [];
+  }
 }
+
 function writeQueue(items: PendingItem[]) {
-  try { localStorage.setItem(QUEUE_KEY, JSON.stringify(items)); } catch {}
+  try {
+    localStorage.setItem(QUEUE_KEY, JSON.stringify(items));
+  } catch {
+    /* ignore quota */
+  }
 }
+
 export function enqueue(item: PendingItem) {
   const q = readQueue();
   q.push(item);
   writeQueue(q);
 }
+
 export function dequeue(id: string) {
-  const q = readQueue().filter(x => x.id !== id);
+  const q = readQueue().filter((x) => x.id !== id);
   writeQueue(q);
 }
 
 export async function trySyncAll(): Promise<number> {
   const supabase = supabaseBrowser();
+  const { data: authData } = await supabase.auth.getUser();
+  const uid = authData?.user?.id;
+  if (!uid) return 0;
+
   const items = readQueue();
   let uploaded = 0;
 
   for (const it of items) {
     const blob = await idbGet(it.key);
-    if (!blob) { dequeue(it.id); continue; }
+    if (!blob) {
+      dequeue(it.id);
+      continue;
+    }
 
-    const path = `matches/${it.matchId}/${it.id}${it.ext}`;
+    const ext = it.ext || guessExt(it.mime) || '.bin';
+    const storagePath = `${uid}/matches/${it.matchId}/${it.id}${ext}`;
     const { error: upErr } = await supabase.storage
       .from('matches')
-      .upload(path, blob, { upsert: true, contentType: it.mime });
+      .upload(storagePath, blob, { upsert: true, contentType: it.mime });
 
     if (upErr) continue;
 
-    // Actualiza BD con storage_path + synced_at
     const { error: upDbErr } = await supabase
-      .from('media')
-      .update({ storage_path: path, synced_at: new Date().toISOString() })
+      .from('match_media')
+      .update({ storage_path: storagePath, synced_at: new Date().toISOString() })
       .eq('id', it.id);
 
     if (!upDbErr) {
       uploaded++;
-      // Podrías borrar el blob local si quieres ahorrar espacio:
-      // await idbDelete(it.key);
       dequeue(it.id);
     }
   }
   return uploaded;
+}
+
+let syncListenerBound = false;
+
+/** Registra reintentos al volver online (idempotente). */
+export function bindMediaSyncOnOnline(): void {
+  if (typeof window === 'undefined' || syncListenerBound) return;
+  syncListenerBound = true;
+
+  const run = () => {
+    void trySyncAll().catch(() => {});
+  };
+
+  window.addEventListener('online', run);
+  if (navigator.onLine) run();
 }

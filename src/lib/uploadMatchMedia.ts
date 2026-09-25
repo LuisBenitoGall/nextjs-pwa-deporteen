@@ -1,6 +1,8 @@
 // src/lib/uploadMatchMedia.ts
 import { supabaseBrowser } from '@/lib/supabase/client';
 import { idbPut } from '@/lib/mediaLocal';
+import { fetchWithTimeout } from '@/lib/fetchWithTimeout';
+import { enqueue } from '@/lib/mediaSync';
 
 // Nube OFF por defecto. Actívala poniendo NEXT_PUBLIC_CLOUD_MEDIA=1 en .env.local
 const CLOUD_ENABLED = process.env.NEXT_PUBLIC_CLOUD_MEDIA === '1';
@@ -107,9 +109,11 @@ export async function uploadMatchMedia(params: {
     const form = new FormData();
     form.append('file', file);
     form.append('matchId', matchId);
+    form.append('mediaId', mediaId);
+    form.append('device_uri', deviceKey);
     if (playerId) form.append('playerId', playerId);
     if (duration_ms != null) form.append('duration_seconds', String(duration_ms / 1000));
-    const res = await fetch('/api/r2/upload', { method: 'POST', body: form });
+    const res = await fetchWithTimeout('/api/r2/upload', { method: 'POST', body: form });
     if (!res.ok) {
       const { error } = await res.json().catch(() => ({ error: 'Error R2' }));
       throw new Error(error || 'No se pudo subir a R2.');
@@ -207,8 +211,17 @@ export async function uploadMatchMedia(params: {
         .update({ storage_path: storagePath, synced_at: new Date().toISOString() })
         .eq('id', mediaId);
     } else {
-      // Si quisieras cola de reintentos, aquí la meterías… pero NO mientras la nube esté desactivada.
       storagePath = null;
+      const ext = guessExt(mime) || (kind === 'image' ? '.jpg' : '.mp4');
+      enqueue({
+        id: mediaId,
+        key: deviceKey,
+        matchId,
+        ext,
+        mime,
+        userId: uid,
+      });
+      throw new Error(up.error.message || 'No se pudo subir el archivo a la nube.');
     }
   }
 
