@@ -76,7 +76,8 @@ export default function LiveMatchPage() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [loading, setLoading]     = useState(true);
-    const [error, setError]         = useState<string | null>(null);
+    const [loadError, setLoadError] = useState<string | null>(null);
+    const [saveError, setSaveError] = useState<string | null>(null);
 
     const [match, setMatch]             = useState<MatchRow | null>(null);
     const [competition, setCompetition] = useState<Competition | null>(null);
@@ -193,7 +194,7 @@ export default function LiveMatchPage() {
         if (!fileList || !fileList.length || !match) return;
 
         setBusyMedia(true);
-        setError(null);
+        setSaveError(null);
         try {
             for (const file of Array.from(fileList)) {
                 if (provider === 'r2') {
@@ -223,7 +224,7 @@ export default function LiveMatchPage() {
             }
             window.dispatchEvent(new CustomEvent('cloud-usage-refresh'));
         } catch (e: any) {
-            setError(e?.message || 'Error al procesar los ficheros');
+            setSaveError(e?.message || 'Error al procesar los ficheros');
         } finally {
             if (inputEl) inputEl.value = '';
             setBusyMedia(false);
@@ -257,10 +258,10 @@ export default function LiveMatchPage() {
             });
             if (!res.ok) {
             const { error: errMsg } = await res.json().catch(() => ({ error: 'Error' }));
-            setError(errMsg || 'No se pudo guardar');
+            setSaveError(errMsg || 'No se pudo guardar');
             }
         } catch (e: any) {
-            setError(e?.message || 'No se pudo guardar');
+            setSaveError(e?.message || 'No se pudo guardar');
         }
         }, 600);
     }, [matchId, myScore, rivalScore, notes, stats]);
@@ -283,7 +284,8 @@ export default function LiveMatchPage() {
         let mounted = true;
         (async () => {
       setLoading(true);
-      setError(null);
+      setLoadError(null);
+      setSaveError(null);
 
       const { data: m, error: mErr } = await supabase
         .from('matches')
@@ -292,7 +294,7 @@ export default function LiveMatchPage() {
         .single();
 
       if (!mounted) return;
-      if (mErr) { setError(mErr.message); setLoading(false); return; }
+      if (mErr) { setLoadError(mErr.message); setLoading(false); return; }
 
       const matchRow = m as MatchRow;
       setMatch(matchRow);
@@ -367,11 +369,11 @@ export default function LiveMatchPage() {
         if (!res.ok) {
             const { error: errMsg } = await res.json().catch(() => ({ error: 'Error' }));
             setMyScore(myScore); setRivalScore(rivalScore);
-            setError(errMsg || 'No se pudo actualizar el marcador');
+            setSaveError(errMsg || 'No se pudo actualizar el marcador');
         }
         } catch (e: any) {
         setMyScore(myScore); setRivalScore(rivalScore);
-        setError(e?.message || 'No se pudo actualizar el marcador');
+        setSaveError(e?.message || 'No se pudo actualizar el marcador');
         }
     }, [leftIsHome, myScore, rivalScore, matchId]);
 
@@ -389,19 +391,19 @@ export default function LiveMatchPage() {
         const res = await fetch(`/api/matches/${matchId}`, { method: 'DELETE' });
         if (!res.ok) {
             const { error: errMsg } = await res.json().catch(() => ({ error: 'Error' }));
-            setError(errMsg || 'No se pudo eliminar');
+            setSaveError(errMsg || 'No se pudo eliminar');
             setIsDeleting(false);
             return;
         }
         window.location.href = backToListUrl;
         } catch (e: any) {
-        setError(e?.message || 'No se pudo eliminar');
+        setSaveError(e?.message || 'No se pudo eliminar');
         setIsDeleting(false);
         }
     }
 
     if (loading) return <div className="p-6">{t('cargando') || 'Cargando…'}</div>;
-    if (error)   return <div className="p-6 text-red-600">{error}</div>;
+    if (loadError) return <div className="p-6 text-red-600">{loadError}</div>;
     if (!match)  return <div className="p-6">{t('no_encontrado') || 'No encontrado'}</div>;
 
     const myTeamName = myTeam?.name || (t('mi_equipo') || 'Mi equipo');
@@ -475,10 +477,10 @@ export default function LiveMatchPage() {
                 });
                 if (!res.ok) {
                     const { error: errMsg } = await res.json().catch(() => ({ error: 'Error' }));
-                    setError(errMsg || 'No se pudo guardar');
+                    setSaveError(errMsg || 'No se pudo guardar');
                 }
             } catch (e: any) {
-                setError(e?.message || 'No se pudo guardar');
+                setSaveError(e?.message || 'No se pudo guardar');
             }
         }, 600);
     }
@@ -498,10 +500,10 @@ export default function LiveMatchPage() {
             });
             if (!res.ok) {
                 const { error: errMsg } = await res.json().catch(() => ({ error: 'Error' }));
-                setError(errMsg || 'No se pudo guardar');
+                setSaveError(errMsg || 'No se pudo guardar');
             }
         } catch (e: any) {
-            setError(e?.message || 'No se pudo guardar');
+            setSaveError(e?.message || 'No se pudo guardar');
         } finally {
             setIsSaving(false);
         }
@@ -538,6 +540,19 @@ export default function LiveMatchPage() {
                         />
                     )}
                 </div>
+
+                {saveError && (
+                    <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
+                        {saveError}
+                        <button
+                            type="button"
+                            className="ml-3 underline"
+                            onClick={() => setSaveError(null)}
+                        >
+                            {t('cerrar') || 'Cerrar'}
+                        </button>
+                    </div>
+                )}
 
                 <div className="flex items-center gap-2 mb-4">
                     <a href={backToListUrl} className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-3 py-2 rounded-lg shadow transition">

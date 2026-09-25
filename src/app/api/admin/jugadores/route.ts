@@ -33,12 +33,13 @@ export async function PATCH(req: Request) {
   const guard = await requireAdmin();
   if (!guard.ok) return guard.response;
 
-  const { id, name } = await req.json();
+  const { id, name, full_name } = await req.json();
   if (!id) return NextResponse.json({ error: 'id requerido' }, { status: 400 });
 
   const supabase = getSupabaseAdmin();
   const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
-  if (name !== undefined) update.name = name;
+  const nextName = full_name ?? name;
+  if (nextName !== undefined) update.full_name = nextName;
 
   const { error } = await supabase.from('players').update(update).eq('id', id);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });

@@ -20,9 +20,9 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
     // Atajos útiles con icono por deporte
     shortcuts: [
-      { name: 'Nuevo partido fútbol', short_name: 'Partido fútbol', url: '/matches/new?sport=futbol',
+      { name: 'Nuevo partido fútbol', short_name: 'Partido fútbol', url: '/matches/new',
         icons: [{ src: '/icons/icon-futbol-192.png', sizes: '192x192', type: 'image/png' }] },
-      { name: 'Nuevo partido baloncesto', short_name: 'Partido basket', url: '/matches/new?sport=baloncesto',
+      { name: 'Nuevo partido baloncesto', short_name: 'Partido basket', url: '/matches/new',
         icons: [{ src: '/icons/icon-baloncesto-192.png', sizes: '192x192', type: 'image/png' }] },
       { name: 'Nuevo deportista', short_name: 'Deportista', url: '/players/new',
         icons: [{ src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' }] }

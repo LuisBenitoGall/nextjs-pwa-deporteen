@@ -16,7 +16,7 @@ export default async function AdminCompeticionesPage() {
 
   const playerIds = [...new Set(compsData?.map((c) => c.player_id) ?? [])];
   const { data: players } = playerIds.length
-    ? await supabase.from('players').select('id, name, user_id').in('id', playerIds)
+    ? await supabase.from('players').select('id, full_name, user_id').in('id', playerIds)
     : { data: [] };
 
   const playerMap = new Map(players?.map((p) => [p.id, p]) ?? []);

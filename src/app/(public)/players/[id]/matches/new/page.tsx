@@ -65,7 +65,11 @@ export default function NewMatchMetaPage({ params }: PageProps) {
       const [{ data: auth }, { data: playerRow }, { data: comps }] = await Promise.all([
         supabase.auth.getUser(),
         supabase.from('players').select('id, full_name').eq('id', playerId).maybeSingle(),
-        supabase.from('competitions').select('id, name, sport_id, season_id, team_id').order('name', { ascending: true }),
+        supabase
+          .from('competitions')
+          .select('id, name, sport_id, season_id, team_id')
+          .eq('player_id', playerId)
+          .order('name', { ascending: true }),
       ]);
 
       if (!mounted) return;
@@ -115,7 +119,16 @@ export default function NewMatchMetaPage({ params }: PageProps) {
     if (!competitionId) { setError(tr('competicion_selecciona', 'Selecciona competición.')); setSaving(false); return; }
     if (!sportId)       { setError(tr('deporte_selecciona', 'Selecciona deporte.')); setSaving(false); return; }
     if (!effectiveDateAt) { setError(tr('fecha_requerida', 'La fecha es obligatoria.')); setSaving(false); return; }
-    if (!teamId)        { setError(tr('equipo_asignado_requerido', 'Falta team_id en la competición.')); setSaving(false); return; }
+    if (!teamId) {
+      setError(
+        tr(
+          'equipo_asignado_requerido',
+          'Esta competición no tiene equipo asignado. Edítala y añade club y equipo antes de crear partidos.'
+        )
+      );
+      setSaving(false);
+      return;
+    }
 
     const payload: any = {
       competition_id: competitionId,

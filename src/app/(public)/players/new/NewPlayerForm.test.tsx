@@ -22,9 +22,6 @@ vi.mock('@/lib/supabase/client', () => ({
   },
 }));
 
-vi.mock('@/lib/seasons', () => ({
-  getCurrentSeasonId: vi.fn().mockResolvedValue('season-123'),
-}));
 
 vi.mock('next/navigation', () => ({
   useRouter: vi.fn(() => ({
@@ -81,7 +78,21 @@ describe('NewPlayerForm', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes('/api/seasons/current')) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ seasonId: 'season-123' }),
+          } as Response);
+        }
+        return Promise.reject(new Error(`fetch no mockeado: ${url}`));
+      })
+    );
+
     // Setup mocks
     (supabase.rpc as any) = mockRpc;
     (supabase.from as any) = mockFrom;

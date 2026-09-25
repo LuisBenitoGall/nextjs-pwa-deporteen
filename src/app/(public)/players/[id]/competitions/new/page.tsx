@@ -5,6 +5,9 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { tServer } from '@/i18n/server';
 import TitleH1 from '@/components/TitleH1';
 import CompetitionNewForm from './CompetitionNewForm';
+import { assertCanCreateCompetition } from '@/lib/competitions/limits';
+import { ensureCurrentSeasonId } from '@/lib/seasons.server';
+import { isSubscriptionActive } from '@/lib/subscriptions/shared';
 
 type PageParams = { id: string };
 type Search = { season?: string };
@@ -59,8 +62,23 @@ export default async function NewCompetitionPage({
     redirect('/dashboard');
   }
 
-  // seasonId opcional desde query
   const seasonIdFromQuery = sp?.season ? String(sp.season) : null;
+  const seasonId = seasonIdFromQuery || (await ensureCurrentSeasonId());
+
+  const { data: subs } = await supabase
+    .from('subscriptions')
+    .select('current_period_end, status')
+    .eq('user_id', user.id)
+    .order('current_period_end', { ascending: false });
+
+  if (!isSubscriptionActive(subs?.[0])) {
+    redirect(`/players/${player.id}?error=subscription_required`);
+  }
+
+  const gate = await assertCanCreateCompetition(supabase, user.id, player.id, seasonId);
+  if (!gate.ok && gate.reason === 'limit_reached') {
+    redirect(`/players/${player.id}?error=competition_limit`);
+  }
 
     return (
         <div className="max-w-2xl mx-auto">

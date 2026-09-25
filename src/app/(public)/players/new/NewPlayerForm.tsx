@@ -3,7 +3,6 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState, ChangeEvent } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { getCurrentSeasonId } from '@/lib/seasons';
 import { LIMITS } from '@/config/constants';
 import { useT } from '@/i18n/I18nProvider';
 import { uploadAvatar } from '@/lib/uploadAvatar';
@@ -202,6 +201,8 @@ export default function NewPlayerForm({
         setInfo(null);
         setBusy(true);
 
+        let playerId: string | null = null;
+
         try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('No autenticado.');
@@ -221,8 +222,12 @@ export default function NewPlayerForm({
             if (ensureErr) throw new Error(`No se pudo garantizar el perfil de usuario: ${ensureErr.message}`);
         }
 
-        // 2) Crear jugador + suscripción (con o sin código) en la misma operación
-        const seasonId = await getCurrentSeasonId(supabase);
+        const seasonRes = await fetch('/api/seasons/current', { cache: 'no-store' });
+        const seasonJson = await seasonRes.json().catch(() => ({}));
+        if (!seasonRes.ok) {
+            throw new Error(seasonJson?.error || t('temporada_no_definida') || 'Temporada no disponible.');
+        }
+        const seasonId: string = seasonJson.seasonId;
 
         let codeToUse = pendingCode?.trim() || null;
         let { data: rows, error: rpcErr } = await supabase.rpc('create_player_link_subscription', {
@@ -250,20 +255,22 @@ export default function NewPlayerForm({
         if (rpcErr || !rows) throw rpcErr || new Error('No se pudo crear el deportista');
 
         const row = Array.isArray(rows) ? rows[0] : rows;
-        const playerId: string = row.player_id;
+        playerId = row.player_id;
+        if (!playerId) throw new Error('No se pudo crear el deportista');
+        const createdPlayerId = playerId;
         //const subscriptionId: string = row.subscription_id; // por si lo quieres para algo posterior
 
         // Avatar + player_seasons
         const firstBlock = blocks[0];
         let avatarPath: string | null = null;
         if (firstBlock?.avatarFile) {
-            avatarPath = await saveAvatar(firstBlock.avatarFile, playerId, seasonId);
+            avatarPath = await saveAvatar(firstBlock.avatarFile, createdPlayerId, seasonId);
         }
         {
             const { error: psErr } = await supabase
             .from('player_seasons')
             .upsert(
-                { player_id: playerId, season_id: seasonId, avatar: avatarPath ?? null },
+                { player_id: createdPlayerId, season_id: seasonId, avatar: avatarPath ?? null },
                 { onConflict: 'player_id,season_id', ignoreDuplicates: false }
             );
             if (psErr) throw psErr;
@@ -277,7 +284,7 @@ export default function NewPlayerForm({
             const { data: club, error: clubErr } = await supabase
                 .from('clubs')
                 .upsert(
-                { name: b.clubName.trim(), player_id: playerId },
+                { name: b.clubName.trim(), player_id: createdPlayerId },
                 { onConflict: 'player_id,name' }
                 )
                 .select('id')
@@ -293,7 +300,7 @@ export default function NewPlayerForm({
             const { data: teamUpsert, error: teamUpErr } = await supabase
                 .from('teams')
                 .upsert(
-                { name: b.teamName.trim(), club_id: clubId, sport_id: b.sportId, player_id: playerId },
+                { name: b.teamName.trim(), club_id: clubId, sport_id: b.sportId, player_id: createdPlayerId },
                 { onConflict: 'player_id,club_id,sport_id,name' }
                 )
                 .select('id')
@@ -304,7 +311,7 @@ export default function NewPlayerForm({
 
             // competition (requerida ya validada)
             const payload = {
-            player_id: playerId,
+            player_id: createdPlayerId,
             season_id: seasonId,
             sport_id: b.sportId,
             club_id: clubId,
@@ -328,6 +335,13 @@ export default function NewPlayerForm({
         router.replace('/dashboard');
         return;
         } catch (e: any) {
+        if (playerId) {
+            try {
+            await supabase.from('players').update({ status: false }).eq('id', playerId);
+            } catch {
+            // mejor esfuerzo: evita deportista huérfano activo consumiendo plaza
+            }
+        }
         setErr(e?.message ?? t('deportista_crear_error'));
         scrollErrorToTop();
         } finally {
