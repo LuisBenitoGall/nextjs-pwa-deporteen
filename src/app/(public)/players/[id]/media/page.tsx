@@ -61,7 +61,8 @@ export default async function PlayerMediaPage({
         .eq('id', user.id)
         .maybeSingle();
     const { dict } = await getDictionary(me?.locale || undefined);
-    const t = makeT(dict);
+    const baseT = makeT(dict);
+    const t = (key: string, vars?: Record<string, unknown>) => baseT(key, vars) ?? '';
 
     const { data: player, error: pErr } = await supabase
         .from('players')

@@ -21,8 +21,8 @@ import {
   MAX_VIDEO_FILE_BYTES,
   readVideoDurationSeconds,
 } from '@/lib/cloud/guardrails';
-//import { enqueue, trySyncAll } from '@/lib/mediaSync';
-//import { idbPut } from '@/lib/mediaLocal';
+import { idbPut } from '@/lib/mediaLocal';
+import { fetchWithTimeout } from '@/lib/fetchWithTimeout';
 import { useT } from '@/i18n/I18nProvider';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -144,13 +144,19 @@ export default function LiveMatchPage() {
             }
         }
 
+        const mediaId = crypto.randomUUID();
+        const deviceKey = `media:${mediaId}`;
+        await idbPut(deviceKey, file);
+
         const form = new FormData();
         form.append('file', file);
         form.append('matchId', currentMatch.id);
+        form.append('mediaId', mediaId);
+        form.append('device_uri', deviceKey);
         form.append('playerId', currentMatch.player_id ?? '');
         if (durationSeconds) form.append('duration_seconds', String(durationSeconds));
 
-        const uploadRes = await fetch('/api/r2/upload', {
+        const uploadRes = await fetchWithTimeout('/api/r2/upload', {
             method: 'POST',
             body: form,
         });
@@ -223,7 +229,11 @@ export default function LiveMatchPage() {
             }
             window.dispatchEvent(new CustomEvent('cloud-usage-refresh'));
         } catch (e: any) {
-            setError(e?.message || 'Error al procesar los ficheros');
+            const msg =
+              e?.message === 'UPLOAD_TIMEOUT'
+                ? (t('upload_timeout') || 'La subida tardó demasiado. Comprueba la conexión e inténtalo de nuevo.')
+                : (e?.message || 'Error al procesar los ficheros');
+            setError(msg);
         } finally {
             if (inputEl) inputEl.value = '';
             setBusyMedia(false);

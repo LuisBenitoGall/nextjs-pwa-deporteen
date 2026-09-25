@@ -20,16 +20,24 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
     // Atajos útiles con icono por deporte
     shortcuts: [
-      { name: 'Nuevo partido fútbol', short_name: 'Partido fútbol', url: '/matches/new?sport=futbol',
-        icons: [{ src: '/icons/icon-futbol-192.png', sizes: '192x192', type: 'image/png' }] },
-      { name: 'Nuevo partido baloncesto', short_name: 'Partido basket', url: '/matches/new?sport=baloncesto',
-        icons: [{ src: '/icons/icon-baloncesto-192.png', sizes: '192x192', type: 'image/png' }] },
-      { name: 'Nuevo deportista', short_name: 'Deportista', url: '/players/new',
-        icons: [{ src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' }] }
+      {
+        name: 'Mi panel',
+        short_name: 'Panel',
+        url: '/dashboard',
+        icons: [{ src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' }],
+      },
+      {
+        name: 'Mi galería',
+        short_name: 'Galería',
+        url: '/gallery',
+        icons: [{ src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' }],
+      },
+      {
+        name: 'Nuevo deportista',
+        short_name: 'Deportista',
+        url: '/players/new',
+        icons: [{ src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' }],
+      },
     ],
-    screenshots: [
-      { src: '/screenshots/screenshot-mobile-1080x1920.png', sizes: '1080x1920', type: 'image/png', form_factor: 'narrow' },
-      { src: '/screenshots/screenshot-tablet-2048x1536.png', sizes: '2048x1536', type: 'image/png', form_factor: 'wide' }
-    ]
   };
 }
