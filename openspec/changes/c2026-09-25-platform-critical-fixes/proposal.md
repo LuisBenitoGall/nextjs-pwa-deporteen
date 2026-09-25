@@ -12,9 +12,14 @@ Informe consolidado `revision-completa-deporteen.md` (auditoría plataforma, IDs
 4. **i18n**: claves usadas en código presentes en `es.json`, `makeT` devuelve `undefined` si falta clave (patrón `||` útil), banner de instalación traducible, test CI de claves (ALTO-04, MED-22, MED-26, MED-27).
 5. **Locales**: **decisión cerrada** — los locales soportados son los de `SUPPORTED_LOCALES` en `src/i18n/config.ts`: `es`, `en`, `ca`, `it`, `pt`, `eu`, `gl` (alineado con `openspec/specs/internationalization/spec.md` RF-1). Los tests deben incluir `pt`; no se elimina portugués.
 
+## Integración con otros changes (2026-09-25)
+
+- **#45** añade atajos `/matches/new` y `screenshots` en manifest; al integrar, el manifest unificado combina panel/galería (#44) + partidos (#45). Actualizar delta PWA RF-1 en Architecture si se confirma `/matches/new` como atajo oficial.
+- **#46** adopta semántica `makeT` → `undefined` y normalización en `useT`/`tServer` (este change); no usar `makeT` → `''` a nivel diccionario.
+
 ## Fuera de alcance (otros agentes / fases)
 
-- CRIT-01–07, CRIT-16 (Stripe/suscripción), CRIT-08–11 (partidos/jugadores/datos), CRIT-12 (middleware sin env), ALTO-01 (login `next`), rutas `/matches/new`, bulk-new, live `loadError` vs `saveError`, etc.
+- CRIT-01–07, CRIT-16 (Stripe/suscripción), CRIT-08–11 (partidos/jugadores/datos), CRIT-12 (middleware sin env), ALTO-01 (login `next`), bulk-new, live `loadError` vs `saveError`, etc.
 
 ## Riesgos
 
