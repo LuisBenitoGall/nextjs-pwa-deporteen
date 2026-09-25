@@ -20,6 +20,7 @@ export async function tServer(rawLocale?: string) {
   const locale: Locale = fromCookie ?? fromProfile ?? DEFAULT_LOCALE;
   const { dict } = await getDictionary(locale);
   const base = makeT(dict);
-  const t = (key: string, vars?: Record<string, any>) => base(key, { ...I18N_DEFAULTS, ...vars });
+  const t = (key: string, vars?: Record<string, any>) =>
+    base(key, { ...I18N_DEFAULTS, ...vars }) ?? '';
   return { t, locale, dict };
 }

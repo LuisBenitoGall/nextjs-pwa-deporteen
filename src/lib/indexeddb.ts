@@ -8,15 +8,23 @@ export type StoredMedia = {
   name?: string;
 };
 
-const DB_NAME = 'pwa-esports-media';
-const DB_VERSION = 1;
-const STORE_NAME = 'media';
+import {
+  MEDIA_DB_NAME,
+  MEDIA_DB_VERSION,
+  MEDIA_BLOB_STORE,
+  MEDIA_LEGACY_STORE,
+} from '@/lib/mediaDb';
+
+const STORE_NAME = MEDIA_LEGACY_STORE;
 
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    const req = indexedDB.open(MEDIA_DB_NAME, MEDIA_DB_VERSION);
     req.onupgradeneeded = () => {
       const db = req.result;
+      if (!db.objectStoreNames.contains(MEDIA_BLOB_STORE)) {
+        db.createObjectStore(MEDIA_BLOB_STORE);
+      }
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
         store.createIndex('createdAt', 'createdAt', { unique: false });

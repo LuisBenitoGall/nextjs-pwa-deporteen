@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useT } from '@/i18n/I18nProvider';
 import { supabase } from '@/lib/supabase/client';
+import { safeNextPath } from '@/lib/auth/safeNextPath';
 
 //Components:
 import TitleH1 from '@/components/TitleH1';
@@ -70,7 +71,7 @@ export default function AuthCallbackPage() {
           /* no pasa nada si storage está bloqueado */
         }
 
-        const next = search.get('next') || '/dashboard';
+        const next = safeNextPath(search.get('next'));
         router.replace(next);
         router.refresh();
       } catch (e: any) {

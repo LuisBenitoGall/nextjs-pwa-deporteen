@@ -13,6 +13,23 @@ export default function ServiceWorkerRegistrar() {
         .register(swUrl, { scope: "/" })
         .then((reg) => {
           console.log("[SW] Registered:", reg.scope);
+
+          reg.addEventListener("updatefound", () => {
+            const installing = reg.installing;
+            if (!installing) return;
+            installing.addEventListener("statechange", () => {
+              if (
+                installing.state === "installed" &&
+                navigator.serviceWorker.controller
+              ) {
+                installing.postMessage({ type: "SKIP_WAITING" });
+              }
+            });
+          });
+
+          if (reg.waiting && navigator.serviceWorker.controller) {
+            reg.waiting.postMessage({ type: "SKIP_WAITING" });
+          }
         })
         .catch((err) => {
           console.error("[SW] Registration failed:", err);

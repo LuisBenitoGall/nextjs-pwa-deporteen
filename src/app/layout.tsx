@@ -3,6 +3,7 @@ import Script from 'next/script';
 import { I18nProvider } from '@/i18n/I18nProvider';
 import { ToastProvider } from '@/components/ui/toast';
 import ServiceWorkerRegistrar from '@/components/ServiceWorkerRegistrar';
+import MediaSyncBootstrap from '@/components/MediaSyncBootstrap';
 import type { Metadata, Viewport } from 'next';
 
 export const metadata: Metadata = {
@@ -27,6 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <I18nProvider>
                     <ToastProvider>
                         <ServiceWorkerRegistrar />
+                        <MediaSyncBootstrap />
                         {children}
                     </ToastProvider>
 
