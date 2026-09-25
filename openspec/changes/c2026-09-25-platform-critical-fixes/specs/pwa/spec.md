@@ -1,9 +1,11 @@
 ## Delta RF-1 (Instalación)
 
+**Alcance de distribución:** DeporTeen es una PWA instalable desde el navegador; **no** hay empaquetado ni publicación en tiendas de aplicaciones (Play Store, App Store u otras). Los criterios siguientes no asumen requisitos de ficha de tienda.
+
 ### MODIFIED Criterios de Aceptación
 
-- Los `shortcuts` del manifest MUST apuntar solo a rutas existentes en la app (p. ej. `/dashboard`, `/gallery`, `/players/new`). No deben referenciar rutas no implementadas como `/matches/new`.
-- Las entradas `screenshots` del manifest solo se publican cuando los archivos existen en `public/screenshots/`; hasta entonces el manifest no debe listar URLs rotas.
+- Los `shortcuts` del manifest MUST apuntar solo a rutas existentes en la app (p. ej. `/dashboard`, `/gallery`, `/players/new`, `/matches/new` tras integración #45).
+- **Decisión Luis 11-B (2026-09-25):** el manifest **no** incluye `screenshots` hasta disponer de capturas acordadas con producto. No listar URLs rotas. Cuando se añadan, será **mejora opcional de baja prioridad** para enriquecer el flujo de instalación en navegadores compatibles; no es obligatorio para el producto ni para ninguna tienda.
 
 ## Delta RF-2 (Service Worker)
 
