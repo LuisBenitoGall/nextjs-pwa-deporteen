@@ -1,32 +1,9 @@
-// /api/stripe/create-checkout-session.ts
-import Stripe from 'stripe';
 import { NextRequest, NextResponse } from 'next/server';
+import Stripe from 'stripe';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { LIMITS } from '@/config/constants';
 
 export const runtime = 'nodejs';
-
-async function parseCheckoutBody(req: NextRequest): Promise<{ planId?: string; units?: unknown }> {
-  const contentType = req.headers.get('content-type') || '';
-  if (contentType.includes('application/json')) {
-    return req.json();
-  }
-  if (
-    contentType.includes('application/x-www-form-urlencoded') ||
-    contentType.includes('multipart/form-data')
-  ) {
-    const form = await req.formData();
-    return {
-      planId: form.get('planId')?.toString(),
-      units: form.get('units')?.toString(),
-    };
-  }
-  try {
-    return await req.json();
-  } catch {
-    return {};
-  }
-}
 
 export async function POST(req: NextRequest) {
   const secret = process.env.STRIPE_SECRET_KEY;
@@ -36,36 +13,50 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Missing NEXT_PUBLIC_SITE_URL/NEXT_PUBLIC_APP_URL' }, { status: 500 });
   }
 
-  const stripe = new Stripe(secret, { apiVersion: '2025-08-27.basil' });
   const supabase = await createSupabaseServerClient();
-
-  const { planId, units: rawUnits } = await parseCheckoutBody(req);
-  const qty = Math.min(
-    Math.max(1, parseInt(String(rawUnits ?? 1), 10)),
-    LIMITS.CHECKOUT_MAX_UNITS,
-  );
-  if (!Number.isFinite(qty)) {
-    return NextResponse.json({ error: 'Cantidad inválida' }, { status: 400 });
-  }
-
-  if (!planId || typeof planId !== 'string') {
-    return NextResponse.json({ error: 'Plan inválido' }, { status: 400 });
-  }
-
-  const { data: { user }, error: userErr } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: userErr,
+  } = await supabase.auth.getUser();
   if (userErr || !user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+
+  let body: { planId?: string; playerIds?: string[] };
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
+
+  const planId = body.planId?.trim();
+  const playerIds = Array.isArray(body.playerIds) ? body.playerIds.filter(Boolean) : [];
+  if (!planId) return NextResponse.json({ error: 'Plan inválido' }, { status: 400 });
+  if (!playerIds.length) return NextResponse.json({ error: 'Selecciona al menos un deportista' }, { status: 400 });
+
+  const qty = Math.min(playerIds.length, LIMITS.CHECKOUT_MAX_UNITS);
+
+  const { data: ownedPlayers, error: playersErr } = await supabase
+    .from('players')
+    .select('id')
+    .eq('user_id', user.id)
+    .in('id', playerIds);
+
+  if (playersErr || !ownedPlayers || ownedPlayers.length !== playerIds.length) {
+    return NextResponse.json({ error: 'Deportistas no válidos' }, { status: 400 });
+  }
 
   const { data: plan, error: planErr } = await supabase
     .from('subscription_plans')
-    .select('id, name, stripe_price_id, amount_cents, currency')
+    .select('id, stripe_price_id')
     .eq('id', planId)
     .eq('active', true)
     .eq('free', false)
     .maybeSingle();
 
-  if (planErr || !plan || !plan.stripe_price_id) {
+  if (planErr || !plan?.stripe_price_id) {
     return NextResponse.json({ error: 'Plan inválido' }, { status: 400 });
   }
+
+  const stripe = new Stripe(secret, { apiVersion: '2025-08-27.basil' });
 
   let stripeCustomerId: string | undefined;
   const { data: existingCustomer } = await supabase
@@ -85,7 +76,6 @@ export async function POST(req: NextRequest) {
       customers.data.find(
         (c) => !('deleted' in c) && (c.metadata as Record<string, string>)?.supabase_user_id === user.id,
       ) ||
-      customers.data.find((c) => !('deleted' in c)) ||
       (await stripe.customers.create({
         email: user.email || undefined,
         metadata: { supabase_user_id: user.id },
@@ -97,25 +87,17 @@ export async function POST(req: NextRequest) {
     mode: 'payment',
     customer: stripeCustomerId,
     success_url: `${siteUrl}/subscription?status=success&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${siteUrl}/subscription?status=cancel`,
-    line_items: [
-      {
-        price: plan.stripe_price_id,
-        quantity: qty,
-      },
-    ],
+    cancel_url: `${siteUrl}/billing/renew?status=cancel`,
+    line_items: [{ price: plan.stripe_price_id, quantity: qty }],
     metadata: {
       user_id: user.id,
       plan_id: plan.id,
       units: String(qty),
+      intent: 'renewal',
+      player_ids: playerIds.slice(0, 20).join(','),
     },
     allow_promotion_codes: true,
   });
-
-  if (req.headers.get('accept')?.includes('text/html')) {
-    if (session.url) return NextResponse.redirect(session.url, 303);
-    return NextResponse.json({ error: 'No checkout URL' }, { status: 500 });
-  }
 
   return NextResponse.json({ url: session.url });
 }

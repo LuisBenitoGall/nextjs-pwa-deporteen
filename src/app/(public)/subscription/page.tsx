@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { createBrowserClient } from '@supabase/ssr';
 import { useRouter } from 'next/navigation';
 import {
@@ -89,19 +90,16 @@ export default function SubscriptionPage() {
             .order('days', { ascending: true });
 
         if (plansErr) {
-            console.warn('[subscription] fallback to LOCAL_PAID_PLANS:', plansErr);
-            const translated = applyI18nToPlans(LOCAL_PAID_PLANS, t);
-            setPaidPlans(translated);
-            if (translated.length === 1) setSelectedPlanId(translated[0].id);
+            console.warn('[subscription] could not load plans from DB:', plansErr);
+            setPaidPlans([]);
+            setError(t('no_planes_activos'));
         } else {
             const plans = (plansData || []) as Plan[];
             const visibles = plans.filter((p) => p.active && !p.free);
-            const translated = applyI18nToPlans(
-            visibles.length ? visibles : LOCAL_PAID_PLANS,
-            t
-            );
+            const translated = applyI18nToPlans(visibles, t);
             setPaidPlans(translated);
             if (translated.length === 1) setSelectedPlanId(translated[0].id);
+            if (!translated.length) setError(t('no_planes_activos'));
         }
 
         // Última suscripción del usuario
@@ -182,7 +180,7 @@ export default function SubscriptionPage() {
         }
 
         if (FAKE_MODE) {
-            router.replace('/players/bulk-new?units=' + units);
+            router.replace(`/players/new?units=${units}`);
             return;
         }
 
@@ -199,7 +197,7 @@ export default function SubscriptionPage() {
         if (url) {
             window.location.href = url;
         } else {
-            router.replace('/players/bulk-new?units=' + units);
+            router.replace(`/players/new?units=${units}`);
         }
         } catch (e: any) {
         setError(e?.message ?? 'No se pudo iniciar el checkout.');
@@ -405,9 +403,9 @@ export default function SubscriptionPage() {
                 <div>
                     <Submit
                         onClick={goStripe}
-                        text={t('suscripcion_stripe')}
+                        text={subActive ? (t('ampliar_suscripcion') || t('suscripcion_stripe')) : t('suscripcion_stripe')}
                         loadingText={t('enviando') ?? t('suscripcion_stripe')}
-                        disabled={subActive || (isMultiPlan && !selectedPlanId)}
+                        disabled={isMultiPlan && !selectedPlanId}
                     />
 
                     <div className="mt-4 px-4 py-6 rounded-lg bg-gray-200 text-gray-700">
@@ -422,8 +420,14 @@ export default function SubscriptionPage() {
                 </div>
 
                 {statusBanner === 'success' && (
-                    <div className="rounded border p-3 bg-green-50 text-green-800">
-                        {t('pago_completado')}
+                    <div className="rounded border p-3 bg-green-50 text-green-800 space-y-2">
+                        <p>{t('pago_completado')}</p>
+                        <Link
+                            href="/players/new"
+                            className="inline-block font-medium underline text-green-900"
+                        >
+                            {t('deportista_agregar') || 'Añadir deportista'}
+                        </Link>
                     </div>
                 )}
                 {statusBanner === 'cancel' && (

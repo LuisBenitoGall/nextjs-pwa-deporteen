@@ -29,6 +29,6 @@ export function makeT(dict: Dict) {
   return (key: string, vars?: Record<string, any>): string => {
     const val = key.split('.').reduce<any>((acc, k) => (acc == null ? acc : acc[k]), dict);
     if (typeof val === 'string') return interpolate(val, vars);
-    return key;
+    return '';
   };
 }

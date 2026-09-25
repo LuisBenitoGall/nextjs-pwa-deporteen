@@ -196,7 +196,7 @@ export default async function DashboardPage() {
                     </p>
                     )}
 
-                    {pendingPlayers === 0 && (
+                    {pendingPlayers === 0 && hasAnySubscription && (
                     <div className="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-yellow-900">
                         <p className="text-sm font-medium">
                             {t('limite_deportistas_alcanzado_dashboard') ?? 'Has alcanzado el límite de deportistas de tu suscripción. Amplía tu suscripción para agregar más'}
@@ -206,6 +206,18 @@ export default async function DashboardPage() {
                             className="mt-2 inline-block text-sm font-medium text-yellow-800 underline hover:text-yellow-900"
                         >
                             {t('ampliar_suscripcion') ?? 'Ampliar suscripción'}
+                        </Link>
+                    </div>
+                    )}
+
+                    {pendingPlayers === 0 && !hasAnySubscription && (
+                    <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-900">
+                        <p className="text-sm">{t('dashboard_suscribete_texto')}</p>
+                        <Link
+                            href="/subscription"
+                            className="mt-2 inline-block text-sm font-medium underline"
+                        >
+                            {t('suscribirme')}
                         </Link>
                     </div>
                     )}

@@ -791,5 +791,16 @@
   "storage_settings_r2_badge_inactive": "Inattivo",
   "storage_settings_r2_cta": "Vedi piani",
   "storage_settings_selected": "Selezionato",
-  "storage_settings_use_this": "Usa questo"
+  "storage_settings_use_this": "Usa questo",
+  "auth_check_email_title": "Revisa tu correo",
+  "auth_check_email_body": "Te hemos enviado un enlace para confirmar tu cuenta.",
+  "auth_check_email_login": "Ir a iniciar sesión",
+  "establecer_contrasena": "Establecer nueva contraseña",
+  "pwd_min_8": "La contraseña debe tener al menos 8 caracteres.",
+  "pwd_no_coinciden": "Las contraseñas no coinciden.",
+  "session_invalida": "Enlace caducado o inválido.",
+  "pwd_actualizada": "Contraseña actualizada.",
+  "contrasena_confirmar": "Confirmar contraseña",
+  "error_generico": "Ha ocurrido un error.",
+  "volver_inicio": "Volver al inicio"
 }

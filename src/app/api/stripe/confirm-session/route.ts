@@ -1,118 +1,56 @@
-// /api/stripe/confirm-session.ts
 import Stripe from 'stripe';
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { fulfillCheckoutSession } from '@/lib/stripe/fulfill-checkout-session';
+
+export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   const stripeSecret = process.env.STRIPE_SECRET_KEY;
   if (!stripeSecret) {
     return NextResponse.json({ ok: false, error: 'Missing STRIPE_SECRET_KEY' }, { status: 500 });
   }
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl || !serviceRoleKey) {
-    return NextResponse.json({ ok: false, error: 'Supabase admin env vars are missing' }, { status: 500 });
+
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+    error: userErr,
+  } = await supabase.auth.getUser();
+  if (userErr || !user) {
+    return NextResponse.json({ ok: false, error: 'Not authenticated' }, { status: 401 });
+  }
+
+  let body: { session_id?: string };
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ ok: false, error: 'Invalid JSON' }, { status: 400 });
+  }
+
+  const sessionId = body.session_id?.trim();
+  if (!sessionId) {
+    return NextResponse.json({ ok: false, error: 'Missing session_id' }, { status: 400 });
   }
 
   const stripe = new Stripe(stripeSecret, { apiVersion: '2025-08-27.basil' });
-  const { session_id } = await req.json();
-  if (!session_id) return NextResponse.json({ ok: false, error: 'Missing session_id' }, { status: 400 });
+  const session = await stripe.checkout.sessions.retrieve(sessionId);
+  const metaUserId = session.metadata?.user_id?.trim();
+  if (metaUserId && metaUserId !== user.id) {
+    return NextResponse.json({ ok: false, error: 'Session does not belong to user' }, { status: 403 });
+  }
 
-  const session = await stripe.checkout.sessions.retrieve(session_id, {
-    expand: ['line_items.data.price']
+  const admin = getSupabaseAdmin();
+  const result = await fulfillCheckoutSession(admin, stripe, sessionId);
+
+  if (!result.ok) {
+    return NextResponse.json({ ok: false, error: result.error }, { status: result.retryable ? 503 : 400 });
+  }
+
+  return NextResponse.json({
+    ok: true,
+    subscriptionId: result.subscriptionId,
+    already: result.alreadyFulfilled,
+    skipped: result.skipped,
   });
-  if (session.payment_status !== 'paid') {
-    return NextResponse.json({ ok: false, error: 'Unpaid session' }, { status: 400 });
-  }
-
-  const user_id = String(session.metadata?.user_id || '');
-  const plan_id = String(session.metadata?.plan_id || '');
-  const seats = parseInt(String(session.metadata?.units || '1'), 10) || 1;
-
-  const paymentIntentId = typeof session.payment_intent === 'string'
-    ? session.payment_intent
-    : session.payment_intent && 'id' in session.payment_intent
-      ? session.payment_intent.id
-      : null;
-
-  if (!user_id || !plan_id) {
-    return NextResponse.json({ ok: false, error: 'Missing metadata' }, { status: 400 });
-  }
-
-  const supabase = createClient(supabaseUrl, serviceRoleKey);
-
-  // Leemos el plan (días y divisa)
-  const { data: plan, error: planErr } = await supabase
-    .from('subscription_plans')
-    .select('id, days, currency, amount_cents, stripe_price_id')
-    .eq('id', plan_id)
-    .maybeSingle();
-
-  if (planErr || !plan) {
-    return NextResponse.json({ ok: false, error: 'Plan not found' }, { status: 400 });
-  }
-
-  // Para pagos únicos, calculamos el periodo de acceso basado en los días del plan
-  const now = new Date();
-  const addedMs = (plan.days ?? 365) * seats * 24 * 60 * 60 * 1000;
-  const periodEnd = new Date(now.getTime() + addedMs);
-
-  const identifiers = [paymentIntentId, session_id].filter(Boolean) as string[];
-  let existingId: string | null = null;
-  let existingStripeId: string | null = null;
-
-  if (identifiers.length) {
-    const { data: existingRows } = await supabase
-      .from('subscriptions')
-      .select('id, stripe_subscription_id')
-      .in('stripe_subscription_id', identifiers as string[])
-      .limit(1);
-    if (existingRows && existingRows.length) {
-      existingId = existingRows[0].id;
-      existingStripeId = existingRows[0].stripe_subscription_id;
-    }
-  }
-
-  const amount_total_cents = session.amount_total ?? (plan.amount_cents ?? 0) * seats;
-  const currency = (session.currency || plan.currency || 'EUR').toUpperCase();
-
-  const upsertPayload = {
-    user_id,
-    plan_id,
-    seats,
-    status: 'active' as const,
-    current_period_end: periodEnd.toISOString(),
-    stripe_customer_id: session.customer ? String(session.customer) : null,
-    stripe_subscription_id: paymentIntentId ?? existingStripeId ?? session_id,
-    amount: amount_total_cents,
-    currency,
-    cancel_at_period_end: false,
-  };
-
-  if (existingId) {
-    const { error: updateErr } = await supabase
-      .from('subscriptions')
-      .update(upsertPayload)
-      .eq('id', existingId);
-    if (updateErr) {
-      return NextResponse.json({ ok: false, error: updateErr.message }, { status: 500 });
-    }
-    return NextResponse.json({ ok: true, id: existingId, already: true });
-  }
-
-  const { data: inserted, error: insErr } = await supabase
-    .from('subscriptions')
-    .insert(upsertPayload)
-    .select('id')
-    .single();
-
-  if (insErr) {
-    // Si choca con unique, devolvemos ok idempotente
-    if ((insErr as any).code === '23505') {
-      return NextResponse.json({ ok: true, idempotent: true });
-    }
-    return NextResponse.json({ ok: false, error: insErr.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ ok: true, id: inserted?.id });
 }
