@@ -18,3 +18,4 @@
 
 - Una sola base IndexedDB (`deporteens-media`) para blobs de partidos y almacenamiento legacy.
 - La cola `mediaSync` reintenta subidas pendientes al evento `online` y actualiza `match_media`.
+- El componente de arranque en el layout raíz MUST usar import dinámico de `mediaSync` (no import estático) para que `next build` pueda prerender sin exigir `NEXT_PUBLIC_SUPABASE_*` en la fase de compilación.
