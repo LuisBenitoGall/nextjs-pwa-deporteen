@@ -1,28 +1,12 @@
-# Decisiones A/B para Architecture
+# Decisiones — registradas (Luis, 2026-09-25)
 
-## 1. Esquema `matches` (spec vs código)
+| # | Tema | Decisión | Implementación |
+|---|------|----------|----------------|
+| 1 | Esquema `matches` | **A** — spec alineado a `my_score` / `rival_score` / `rival_team_name` | `specs/matches/spec.md` |
+| 2 | `team_id` / equipo | **A** — obligatorio; PWA no admite deportes sin equipo | Validación formulario + RPC + `specs/players/spec.md` |
+| 3 | Alta atómica | **A** — RPC con memberships | Migración `20260925153000_*` + `NewPlayerForm`; **requiere aplicar migración en Supabase** |
+| 4 | Borrado jugador | **A** — soft delete + limpieza medios | `specs/players/spec.md` (política retención); código existente cleanup |
+| 5 | Cuota nube | **A** — solo `deleted_at IS NULL` | `getCloudBytesUsed`; columna asumida en BD (ver migración pendiente si falta) |
+| 11 | Screenshots manifest | **B** — sin screenshots | Manifest sin bloque; ver change plataforma |
 
-- **A:** Actualizar spec a `my_score` / `rival_score` / `rival_team_name` (implementación actual).
-- **B:** Migrar BD y código a `home_score` / `away_score` del spec legacy.
-
-**Implementación actual:** sin cambio de columnas; solo comportamiento API/UI.
-
-## 2. `team_id` obligatorio para partido
-
-- **A:** Equipo obligatorio al crear competición (elegido en este change).
-- **B:** Permitir partidos sin `team_id` y relajar validación en `matches/new`.
-
-## 3. Alta deportista atómica
-
-- **A:** Extender RPC `create_player_link_subscription` para incluir clubs/teams/competitions en una transacción.
-- **B:** Mantener pasos cliente + rollback best-effort (`status: false`) implementado ahora.
-
-## 4. Borrado jugador y cuota
-
-- **A:** Soft delete + borrar `match_media`/objetos R2 (parcialmente implementado).
-- **B:** Hard delete en cascada documentado en spec RF-4.
-
-## 5. Liberación de cuota con `deleted_at`
-
-- **A:** Filtrar `getCloudBytesUsed` por filas no borradas / `deleted_at`.
-- **B:** Solo borrado físico de filas (implementación actual en cleanup).
+Pendiente de despliegue BD: ejecutar migraciones en Supabase antes de usar alta atómica en producción.

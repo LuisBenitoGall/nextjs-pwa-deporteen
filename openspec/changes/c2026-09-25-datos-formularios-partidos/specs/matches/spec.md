@@ -1,5 +1,10 @@
 ## Delta — matches
 
+### DECISIÓN Luis 1-A (2026-09-25): esquema de marcador
+
+- El modelo oficial de partido en BD y API usa **`my_score`**, **`rival_score`** y **`rival_team_name`** (no `home_score` / `away_score` del spec legacy).
+- Los deltas de API/UI MUST documentar estos nombres hasta que un change futuro migre columnas (no previsto).
+
 ### MODIFICADO: Actualización de partido (API)
 
 - `PATCH /api/matches/[id]` debe comprobar pertenencia del usuario al partido.

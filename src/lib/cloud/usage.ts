@@ -33,7 +33,8 @@ export async function getCloudBytesUsed(supabase: AppSupabase, userId: string): 
     .from('match_media')
     .select('size_bytes,storage_path')
     .eq('user_id', userId)
-    .like('storage_path', 'r2:%');
+    .like('storage_path', 'r2:%')
+    .is('deleted_at', null);
 
   if (error || !data) return 0;
   return (data as Array<{ size_bytes?: number | null }>).reduce(
