@@ -33,3 +33,16 @@ Un usuario autenticado con suscripción activa MUST poder iniciar un nuevo Check
 
 - Renovación multi-deportista MUST usar `POST /api/billing/renew` (JSON) o checkout JSON equivalente.
 - Renovación mono-asiento MUST usar checkout JSON (`create-checkout-session`).
+- **Decisión Luis 7-B (2026-09-25):** checkout con `metadata.intent = renewal` MUST calcular `current_period_end` de la nueva fila como **`max(current_period_end vigente, now) + plan.days`**, para no perder días en renovaciones anticipadas.
+
+### RF-6: Suscripción activa
+
+- **Decisión Luis 8-A (2026-09-25):** una suscripción está activa si `status` indica activo **y** `current_period_end` es posterior a ahora (`isSubscriptionActive` en código). El spec MUST alinearse con esta regla (no solo fecha).
+
+### Cardinalidad (decisión Luis 6-A)
+
+- Un usuario MAY tener **varias filas** en `subscriptions` (una por checkout). Los asientos disponibles se calculan vía RPC/`seats_remaining`, no con una única fila por usuario.
+
+### Concesión tras pago (decisión Luis 9-A)
+
+- Webhook Stripe es fuente de verdad; `confirm-session` autenticado es refuerzo UX **idempotente** guardado por `stripe_checkout_fulfillments`.

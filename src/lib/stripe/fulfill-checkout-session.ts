@@ -127,7 +127,29 @@ export async function fulfillCheckoutSession(
   }
 
   const now = new Date();
-  const periodEnd = new Date(now.getTime() + plan.days * 24 * 60 * 60 * 1000);
+  const intent = full.metadata?.intent?.trim();
+  let periodBase = now;
+
+  // Decisión Luis 7-B: renovación apila desde el current_period_end vigente (renovación anticipada).
+  if (intent === 'renewal') {
+    const { data: latest } = await admin
+      .from('subscriptions')
+      .select('current_period_end')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .order('current_period_end', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (latest?.current_period_end) {
+      const currentEnd = new Date(latest.current_period_end);
+      if (!Number.isNaN(currentEnd.getTime()) && currentEnd > now) {
+        periodBase = currentEnd;
+      }
+    }
+  }
+
+  const periodEnd = new Date(periodBase.getTime() + plan.days * 24 * 60 * 60 * 1000);
 
   const customerId = typeof full.customer === 'string' ? full.customer : null;
   const paymentIntentId =

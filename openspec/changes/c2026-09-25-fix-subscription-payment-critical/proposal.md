@@ -22,14 +22,14 @@ Restaurar un recorrido mínimo fiable: comprar/ampliar plazas, renovar, conceder
 
 - `20260925140000_stripe_checkout_fulfillments.sql`
 
-## Decisiones pendientes (Architecture)
+## Decisiones de producto (Luis, 2026-09-25)
 
-| # | Tema | Opción A | Opción B |
-|---|------|----------|----------|
-| 1 | Cardinalidad `subscriptions` | **Implementado A**: una fila por checkout; asientos suman vía RPC/`seats_remaining` | Una fila por `user_id` con `upsert` (contradice spec actual RF-6 notas) |
-| 2 | Extensión al renovar | Nueva fila con `current_period_end = now + plan.days` | Apilar desde el `current_period_end` vigente del asiento/jugador renovado |
-| 3 | RF-6 “activa” solo por fecha vs `status`+fecha | Código usa `isSubscriptionActive` (`status` + fecha) | Spec RF-6 texto dice solo fecha — alinear spec o código |
-| 4 | `confirm-session` vs webhook | Refuerzo UX idempotente (implementado) | Solo webhook; cliente solo polling |
+| # doc | Tema | Decisión |
+|-------|------|----------|
+| 6 | Cardinalidad `subscriptions` | **A** — varias filas por usuario; ver delta RF-2/RF-6 |
+| 7 | Extensión al renovar | **B** — apilar desde `current_period_end` vigente si `intent=renewal` |
+| 8 | RF-6 activa | **A** — `status` + fecha (`isSubscriptionActive`) |
+| 9 | Webhook vs confirm-session | **A** — webhook + confirm idempotente con `stripe_checkout_fulfillments` |
 
 ## Fuera de alcance
 

@@ -12,6 +12,7 @@ function buildAdmin(state: {
   fulfillment?: { subscription_id: string | null } | null;
   plan?: { id: string; days: number; amount_cents: number; currency: string } | null;
   insertSubId?: string;
+  latestSubscriptionEnd?: string | null;
 }) {
   const fulfillmentRow = state.fulfillment ?? null;
   const insertPayloads: unknown[] = [];
@@ -37,7 +38,23 @@ function buildAdmin(state: {
       };
     }
     if (table === 'subscriptions') {
-      return {
+      const chain = {
+        select: () => ({
+          eq: () => ({
+            eq: () => ({
+              order: () => ({
+                limit: () => ({
+                  maybeSingle: vi.fn().mockResolvedValue({
+                    data: state.latestSubscriptionEnd
+                      ? { current_period_end: state.latestSubscriptionEnd }
+                      : null,
+                    error: null,
+                  }),
+                }),
+              }),
+            }),
+          }),
+        }),
         insert: vi.fn((payload: unknown) => {
           insertPayloads.push(payload);
           return {
@@ -50,6 +67,7 @@ function buildAdmin(state: {
           };
         }),
       };
+      return chain;
     }
     if (table === 'payments') {
       return {
@@ -112,5 +130,34 @@ describe('fulfillCheckoutSession', () => {
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.subscriptionId).toBe('new-sub');
     expect(admin.insertPayloads.length).toBeGreaterThan(0);
+  });
+
+  it('stacks renewal period from active current_period_end (Luis 7-B)', async () => {
+    const futureEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    mockRetrieve.mockResolvedValue({
+      id: 'cs_renew',
+      payment_status: 'paid',
+      metadata: { user_id: 'user-1', plan_id: 'plan-uuid', intent: 'renewal' },
+      customer: 'cus_1',
+      payment_intent: 'pi_renew',
+      amount_total: 300,
+      currency: 'eur',
+      line_items: { data: [{ quantity: 1, price: { id: 'price_x' } }] },
+    });
+
+    const admin = buildAdmin({
+      plan: { id: 'plan-uuid', days: 365, amount_cents: 150, currency: 'EUR' },
+      latestSubscriptionEnd: futureEnd,
+    });
+
+    const before = Date.now();
+    const result = await fulfillCheckoutSession(admin as any, stripe, 'cs_renew');
+    expect(result.ok).toBe(true);
+
+    const payload = admin.insertPayloads[0] as { current_period_end: string };
+    const insertedEnd = new Date(payload.current_period_end).getTime();
+    const expectedMin = new Date(futureEnd).getTime() + 365 * 24 * 60 * 60 * 1000 - 5000;
+    expect(insertedEnd).toBeGreaterThanOrEqual(expectedMin);
+    expect(insertedEnd).toBeGreaterThan(before + 365 * 24 * 60 * 60 * 1000);
   });
 });
