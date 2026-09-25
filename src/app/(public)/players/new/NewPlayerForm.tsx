@@ -195,6 +195,16 @@ export default function NewPlayerForm({
             scrollErrorToTop();
             return;
         }
+        if (!blocks[i].teamName || !blocks[i].teamName.trim()) {
+            setErr(`Introduce el nombre del equipo en el bloque ${i + 1}.`);
+            scrollErrorToTop();
+            return;
+        }
+        if (!blocks[i].clubName || !blocks[i].clubName.trim()) {
+            setErr(`Introduce el nombre del club en el bloque ${i + 1}.`);
+            scrollErrorToTop();
+            return;
+        }
         }
 
         setErr(null);
@@ -230,11 +240,21 @@ export default function NewPlayerForm({
         const seasonId: string = seasonJson.seasonId;
 
         let codeToUse = pendingCode?.trim() || null;
+        const membershipsPayload = blocks.map((b) => ({
+            sport_id: b.sportId,
+            competition_name: b.competitionName!.trim(),
+            club_name: b.clubName.trim(),
+            team_name: b.teamName.trim(),
+            category_id: b.categoryId,
+        }));
+
         let { data: rows, error: rpcErr } = await supabase.rpc('create_player_link_subscription', {
             p_full_name: name.trim(),
             p_birthday: null, // si no capturas fecha en el formulario
             p_status: true,
             p_code_text: codeToUse,
+            p_season_id: seasonId,
+            p_memberships: membershipsPayload,
         });
 
         // Si falla usando código pero ya hay plazas activas, reintenta sin código.
@@ -246,6 +266,8 @@ export default function NewPlayerForm({
                 p_birthday: null,
                 p_status: true,
                 p_code_text: null,
+                p_season_id: seasonId,
+                p_memberships: membershipsPayload,
             });
             rows = retry.data;
             rpcErr = retry.error;
@@ -274,53 +296,6 @@ export default function NewPlayerForm({
                 { onConflict: 'player_id,season_id', ignoreDuplicates: false }
             );
             if (psErr) throw psErr;
-        }
-
-        // clubs/teams/competitions
-        for (const b of blocks) {
-            // club
-            let clubId: string | null = null;
-            if (b.clubName.trim()) {
-            const { data: club, error: clubErr } = await supabase
-                .from('clubs')
-                .upsert(
-                { name: b.clubName.trim(), player_id: createdPlayerId },
-                { onConflict: 'player_id,name' }
-                )
-                .select('id')
-                .single();
-            if (clubErr) throw clubErr;
-            clubId = club!.id;
-            }
-
-            // team
-            let teamId: string | null = null;
-            if (b.teamName.trim()) {
-            if (!clubId) throw new Error(t('equipo_necesita_club_aviso'));
-            const { data: teamUpsert, error: teamUpErr } = await supabase
-                .from('teams')
-                .upsert(
-                { name: b.teamName.trim(), club_id: clubId, sport_id: b.sportId, player_id: createdPlayerId },
-                { onConflict: 'player_id,club_id,sport_id,name' }
-                )
-                .select('id')
-                .single();
-            if (teamUpErr) throw teamUpErr;
-            teamId = teamUpsert!.id;
-            }
-
-            // competition (requerida ya validada)
-            const payload = {
-            player_id: createdPlayerId,
-            season_id: seasonId,
-            sport_id: b.sportId,
-            club_id: clubId,
-            team_id: teamId,
-            category_id: b.categoryId ?? null,
-            name: b.competitionName!.trim(),
-            };
-            const { error: cmpErr } = await supabase.from('competitions').insert(payload);
-            if (cmpErr) throw cmpErr;
         }
 
         // Evita reuso accidental del mismo código en altas posteriores.

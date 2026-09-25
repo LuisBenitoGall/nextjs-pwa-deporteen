@@ -385,6 +385,8 @@ describe('NewPlayerForm', () => {
 
       const compInput = screen.getByPlaceholderText(/Nombre de la competición/i);
       fireEvent.change(compInput, { target: { value: 'Liga Test' } });
+      fireEvent.change(screen.getByPlaceholderText('Nombre del club'), { target: { value: 'Club Test' } });
+      fireEvent.change(screen.getByPlaceholderText('Nombre del equipo'), { target: { value: 'Equipo Test' } });
 
       fireEvent.click(screen.getByRole('button', { name: /guardar/i }));
 
@@ -395,6 +397,16 @@ describe('NewPlayerForm', () => {
           p_full_name: 'Test User',
           p_code_text: null,
           p_status: true,
+          p_season_id: 'season-123',
+          p_memberships: [
+            {
+              sport_id: 'sport-1',
+              competition_name: 'Liga Test',
+              club_name: 'Club Test',
+              team_name: 'Equipo Test',
+              category_id: null,
+            },
+          ],
         });
       });
       await waitFor(() => {
@@ -463,12 +475,14 @@ describe('NewPlayerForm', () => {
       if (sportSelect) fireEvent.change(sportSelect, { target: { value: 'sport-1' } });
       const compInput = screen.getByPlaceholderText(/Nombre de la competición/i);
       fireEvent.change(compInput, { target: { value: 'Liga Test' } });
+      fireEvent.change(screen.getByPlaceholderText('Nombre del club'), { target: { value: 'Club Test' } });
+      fireEvent.change(screen.getByPlaceholderText('Nombre del equipo'), { target: { value: 'Equipo Test' } });
       fireEvent.click(screen.getByRole('button', { name: /guardar/i }));
 
       await waitFor(() => {
         const createCalls = mockRpc.mock.calls.filter((c: any[]) => c[0] === 'create_player_link_subscription');
         expect(createCalls.length).toBeGreaterThan(0);
-        expect(createCalls[0][1]).toMatchObject({ p_code_text: 'PENDING-CODE' });
+        expect(createCalls[0][1]).toMatchObject({ p_code_text: 'PENDING-CODE', p_season_id: 'season-123' });
         expect(mockRouter.replace).toHaveBeenCalledWith('/dashboard');
       });
     });

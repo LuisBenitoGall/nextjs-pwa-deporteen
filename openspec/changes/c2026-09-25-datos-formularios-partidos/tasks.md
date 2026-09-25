@@ -16,4 +16,9 @@
 - [x] MED-16 Guard `can-create-match` en `app/api`
 - [x] MED-03 Redirección `bulk-new` → `/players/new`
 - [x] Tests rutas PATCH/DELETE partido y límites competición
+- [x] Luis 1-A / 2-A: specs `matches` y `players` alineados
+- [x] Luis 3-A: migración RPC memberships + `NewPlayerForm` (aplicar SQL en Supabase)
+- [x] Luis 5-A: `getCloudBytesUsed` + migración `deleted_at` (aplicar SQL en Supabase)
+- [x] Luis 11-B: manifest sin `screenshots`
+- [ ] Aplicar migraciones `20260925153000` y `20260925153100` en Supabase producción/staging
 - [ ] Verificación E2E con Supabase (sin credenciales en VM)

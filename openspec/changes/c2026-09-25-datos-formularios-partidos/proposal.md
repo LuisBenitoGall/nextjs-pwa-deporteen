@@ -27,7 +27,7 @@ Ver `decisions.md` — contradicciones spec/código no resueltas en este change.
 
 ## Integración con change plataforma (#44)
 
-- `manifest.ts`: atajos unificados (panel, galería, partidos, deportista).
+- `manifest.ts`: atajos unificados (panel, galería, partidos, deportista). **Decisión Luis 11-B:** sin entradas `screenshots` (PWA solo web; capturas pendientes de Luis como mejora opcional de instalación en navegador, no requisito de tienda).
 - `matches/[id]/live`: conserva subida híbrida IndexedDB + `fetchWithTimeout` de #44 con errores `loadError`/`saveError` de este change.
 
 ## Riesgos
