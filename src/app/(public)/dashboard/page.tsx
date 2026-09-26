@@ -6,9 +6,11 @@ import { intlLocaleTag } from '@/i18n/config';
 import { tServer } from '@/i18n/server';
 import { getSeatStatus } from '@/lib/seats';
 import { isSubscriptionActive } from '@/lib/subscriptions/shared';
+import { getSubscriptionExpiryNotice } from '@/lib/subscriptions/expiry-notices';
 
 //Components
 import TitleH1 from '@/components/TitleH1';
+import SubscriptionExpiryBanner from '@/components/SubscriptionExpiryBanner';
 
 type Player = {
     id: string;
@@ -48,9 +50,6 @@ export default async function DashboardPage() {
     const { t, locale: appLocale } = await tServer(me?.locale || undefined);
     const intlLocale = intlLocaleTag(appLocale);
 
-    // 1) Suscripciones: varias filas posibles
-    // Regla: existe suscripción si hay >= 1 fila; está "activa" si la última no ha vencido aún,
-    // independientemente del booleano status.
     const { data: subs } = await supabase
     .from('subscriptions')
     .select('current_period_end, status')
@@ -60,6 +59,7 @@ export default async function DashboardPage() {
     const hasAnySubscription = !!subs && subs.length > 0;
     const latest = subs?.[0];
     const subscribed = isSubscriptionActive(latest);
+    const expiryNotice = getSubscriptionExpiryNotice(subs ?? []);
 
     // 2) Seats restantes (para el botón Agregar)
     let seatsErrMsg: string | null = null;
@@ -143,6 +143,18 @@ export default async function DashboardPage() {
     return (
         <div>
             <TitleH1>{t('mi_panel')}</TitleH1>
+
+            {expiryNotice && subscribed && (
+                <SubscriptionExpiryBanner
+                    title={t('suscripcion_aviso_caducidad_titulo')}
+                    body={t('suscripcion_aviso_caducidad_cuerpo', {
+                        DAYS: String(expiryNotice.daysLeft),
+                        DATE: formatDate(expiryNotice.end.toISOString(), intlLocale),
+                    })}
+                    renewLabel={t('renovar_ahora')}
+                    urgency={expiryNotice.urgency}
+                />
+            )}
 
             {/*Banner nuevo jugador*/}
             {/*<CodeRedeemBanner />*/}

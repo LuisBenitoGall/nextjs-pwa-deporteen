@@ -848,6 +848,8 @@
   "suscripcion_renovar": "Renovar assinatura",
   "suscripcion_renovar_texto": "Selecione um de nossos planos para renovar sua assinatura.",
   "suscripcion_sin_recibos": "Sin recibos todavía.",
+  "suscripcion_aviso_caducidad_cuerpo": "O seu acesso por lugar termina em {DAYS} dias ({DATE}). Não há cobrança automática: renove manualmente para manter o acesso.",
+  "suscripcion_aviso_caducidad_titulo": "Seu acesso está perto do fim",
   "suscripcion_stripe": "Assine com Stripe",
   "suscripcion_texto1": "Primeiro indique o número de jogadores que deseja registrar.",
   "suscripcion_texto2": "Você pode registrar até um jogador com um código de acesso válido. Se precisar de mais vagas, assine um de nossos planos.",
