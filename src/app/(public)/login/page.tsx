@@ -30,6 +30,7 @@ function LoginPageInner() {
     const [password, setPassword] = useState('');
     const [busy, setBusy] = useState(false);
     const [err, setErr] = useState<string | null>(null);
+    const configError = searchParams.get('error');
 
     async function handleLogin(e: React.FormEvent) {
         e.preventDefault();
@@ -81,9 +82,11 @@ function LoginPageInner() {
         <div>
             <TitleH1>{t('login')}</TitleH1>
 
-            {err && (
+            {(err || configError === 'supabase_config') && (
                 <div className="mb-3 rounded border border-red-300 bg-red-50 p-2 text-sm text-red-700">
-                    {err}
+                    {err ||
+                      (t('error_supabase_config') ||
+                        'El servicio no está configurado. Inténtalo más tarde.')}
                 </div>
             )}
 

@@ -33,6 +33,7 @@ import Input from '@/components/Input';
 import Submit from '@/components/Submit';
 import Textarea from '@/components/Textarea';
 import TitleH1 from '@/components/TitleH1';
+import PageLoadError from '@/components/PageLoadError';
 import { MatchMediaCaptureInputs } from '@/components/MatchMediaCaptureInputs';
 
 type MatchRow = {
@@ -253,8 +254,6 @@ export default function LiveMatchPage() {
         if (savingRef.current) clearTimeout(savingRef.current);
 
         const payload = {
-        my_score: myScore,
-        rival_score: rivalScore,
         notes,
         stats: Object.keys(stats || {}).length ? stats : null,
         };
@@ -274,7 +273,7 @@ export default function LiveMatchPage() {
             setSaveError(e?.message || 'No se pudo guardar');
         }
         }, 600);
-    }, [matchId, myScore, rivalScore, notes, stats]);
+    }, [matchId, notes, stats]);
 
     useEffect(() => () => { if (savingRef.current) clearTimeout(savingRef.current); }, []);
 
@@ -366,6 +365,11 @@ export default function LiveMatchPage() {
             else                 nextMy = Math.max(0, myScore + deltaLeft);
         }
 
+        if (savingRef.current) {
+            clearTimeout(savingRef.current);
+            savingRef.current = null;
+        }
+
         // Optimistic UI
         setMyScore(nextMy);
         setRivalScore(nextRival);
@@ -413,8 +417,24 @@ export default function LiveMatchPage() {
     }
 
     if (loading) return <div className="p-6">{t('cargando') || 'Cargando…'}</div>;
-    if (loadError) return <div className="p-6 text-red-600">{loadError}</div>;
-    if (!match)  return <div className="p-6">{t('no_encontrado') || 'No encontrado'}</div>;
+    if (loadError) {
+        return (
+            <PageLoadError
+                message={loadError}
+                backHref="/dashboard"
+                backLabelKey="mi_panel_volver"
+            />
+        );
+    }
+    if (!match) {
+        return (
+            <PageLoadError
+                titleKey="no_encontrado"
+                backHref="/dashboard"
+                backLabelKey="mi_panel_volver"
+            />
+        );
+    }
 
     const myTeamName = myTeam?.name || (t('mi_equipo') || 'Mi equipo');
     const leftLabel  = leftIsHome ? myTeamName : (match.rival_team_name || t('equipo_rival') || 'Equipo rival');

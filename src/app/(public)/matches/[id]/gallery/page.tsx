@@ -115,7 +115,7 @@ export default function MatchGalleryPage() {
     };
   }, [supabase, matchId]);
 
-  const backToMatchUrl = matchId ? `/matches/${matchId}/live` : '/matches';
+  const backToMatchUrl = matchId ? `/matches/${matchId}/live` : '/gallery';
   const backToListUrl =
     match?.player_id && match?.competition_id
       ? `/players/${match.player_id}/competitions/${match.competition_id}/matches`

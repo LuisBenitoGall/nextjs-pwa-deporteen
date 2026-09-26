@@ -9,6 +9,7 @@ import { useT } from '@/i18n/I18nProvider';
 import Input from '@/components/Input';
 import Submit from '@/components/Submit';
 import TitleH1 from '@/components/TitleH1';
+import PageLoadError from '@/components/PageLoadError';
 
 type MatchRow = {
   id: string;
@@ -89,8 +90,24 @@ export default function EditMatchMetaPage() {
   }, [supabase, matchId]);
 
     if (loading) return <div className="p-6">{t('cargando') || 'Cargando…'}</div>;
-    if (error)   return <div className="p-6 text-red-600">{error}</div>;
-    if (!match)  return <div className="p-6">{t('no_encontrado') || 'No encontrado'}</div>;
+    if (error) {
+        return (
+            <PageLoadError
+                message={error}
+                backHref={matchId ? `/matches/${matchId}/live` : '/dashboard'}
+                backLabelKey={matchId ? 'partido_volver' : 'mi_panel_volver'}
+            />
+        );
+    }
+    if (!match) {
+        return (
+            <PageLoadError
+                titleKey="no_encontrado"
+                backHref="/dashboard"
+                backLabelKey="mi_panel_volver"
+            />
+        );
+    }
 
     // URLs navegación superior
     const backToMatchUrl = `/matches/${matchId}/live`;

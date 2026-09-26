@@ -10,6 +10,7 @@ import { ResponsiveContainer, CartesianGrid, Tooltip, Legend, BarChart, Bar, XAx
 
 //Components
 import TitleH1 from '@/components/TitleH1';
+import PageLoadError from '@/components/PageLoadError';
 
 type TabKey = 'matches' | 'charts';
 
@@ -166,8 +167,16 @@ export default function MatchesByCompetitionPage() {
         return () => { mounted = false; };
     }, [supabase, playerId, competitionId]);
 
-    if (loading) return <div className="p-6">{t('cargando') || 'Cargandoâ€¦'}</div>;
-    if (error) return <div className="p-6 text-red-600">{error}</div>;
+    if (loading) return <div className="p-6">{t('cargando') || 'Cargando…'}</div>;
+    if (error) {
+        return (
+            <PageLoadError
+                message={error}
+                backHref={playerId ? `/players/${playerId}` : '/dashboard'}
+                backLabelKey={playerId ? 'volver_panel' : 'mi_panel_volver'}
+            />
+        );
+    }
 
     const seasonLabel =
     season?.year_start && season?.year_end

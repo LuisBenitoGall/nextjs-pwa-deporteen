@@ -15,6 +15,7 @@ import { fetchUserPayments } from '@/lib/stripe-payments';
 // Components
 import ConfirmDeleteButton from '@/components/ConfirmDeleteButton';
 import TitleH1 from '@/components/TitleH1';
+import ActionResultBanner from '@/components/ActionResultBanner';
 import StorageSettingsSection from './StorageSettingsSection';
 
 export const runtime = 'nodejs';
@@ -359,18 +360,23 @@ export default async function AccountPage() {
             await deleteMatchMediaForMatches(admin, user.id, matchIds);
         }
 
-        // tu esquema: players.status (boolean)
-        await admin
+        const { error: playerErr } = await admin
             .from('players')
-            .update({ status: false })      // <- esto libera asiento porque el RPC ya no contará al jugador
+            .update({ status: false })
             .eq('id', playerId)
             .eq('user_id', user.id);
 
-        redirect('/account');
+        if (playerErr) {
+            console.error('deletePlayer:', playerErr);
+            redirect('/account?actionError=delete_player');
+        }
+
+        redirect('/account?actionOk=delete_player');
     }
 
     return (
         <div>
+            <ActionResultBanner />
             <TitleH1>{t('cuenta_mi')}</TitleH1>
 
             {/* Aviso de renovación si alguna suscripción vence en ≤ ventana de días */}

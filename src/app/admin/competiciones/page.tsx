@@ -9,10 +9,21 @@ export const metadata = { title: 'Competiciones — Admin' };
 export default async function AdminCompeticionesPage() {
   const supabase = getSupabaseAdmin();
 
-  const { data: compsData } = await supabase
+  const { data: compsData, error: compsErr } = await supabase
     .from('competitions')
     .select('*')
     .order('id', { ascending: false });
+
+  if (compsErr) {
+    return (
+      <div className="space-y-4 rounded-xl border border-red-800/40 bg-red-950/30 p-6">
+        <h1 className="text-xl font-bold text-red-100">Competiciones</h1>
+        <p className="text-sm text-red-200">
+          No se pudieron cargar las competiciones. {compsErr.message}
+        </p>
+      </div>
+    );
+  }
 
   const playerIds = [...new Set(compsData?.map((c) => c.player_id) ?? [])];
   const { data: players } = playerIds.length
