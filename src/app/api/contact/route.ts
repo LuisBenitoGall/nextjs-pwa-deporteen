@@ -1,6 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import { buildEmailOptions, normalizeLoggedIn, validateContactPayload } from '@/lib/contact/send';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
+
+const CONTACT_LIMIT = 8;
+const CONTACT_WINDOW_MS = 60 * 60 * 1000;
 
 export const runtime = 'nodejs';
 
@@ -12,6 +16,18 @@ function getEnv(name: string, fallback?: string) {
 
 export async function POST(req: Request) {
     try {
+        const ip = getClientIp(req.headers);
+        const { allowed, resetAt } = rateLimit(`contact:${ip}`, CONTACT_LIMIT, CONTACT_WINDOW_MS);
+        if (!allowed) {
+            return NextResponse.json(
+                { message: 'Demasiados envíos. Inténtalo más tarde.' },
+                {
+                    status: 429,
+                    headers: { 'Retry-After': String(Math.ceil((resetAt - Date.now()) / 1000)) },
+                }
+            );
+        }
+
         const contentType = req.headers.get('content-type') || '';
         let payload: Record<string, string> = {};
         if (contentType.includes('multipart/form-data')) {

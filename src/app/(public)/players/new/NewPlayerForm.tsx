@@ -150,7 +150,7 @@ export default function NewPlayerForm({
         setInfo(null);
         setBlocks((b) => {
         if (b.length >= MAX_BLOCKS) {
-            setErr(`Máximo ${MAX_BLOCKS} participaciones por deportista.`);
+            setErr(t('player_form_max_blocks', { n: String(MAX_BLOCKS) }) || `Máximo ${MAX_BLOCKS} participaciones por deportista.`);
             return b;
         }
         return [...b, { sportId: '', competitionName: '', clubName: '', teamName: '', categoryId: null, avatarFile: null, avatarPath: null }];
@@ -175,33 +175,33 @@ export default function NewPlayerForm({
 
         // Validación
         if (!name.trim()) {
-        setErr('Introduce un nombre.');
+        setErr(t('player_form_name_required') || 'Introduce un nombre.');
         scrollErrorToTop();
         return;
         }
         if (blocks.length > MAX_BLOCKS) {
-        setErr(`Máximo ${MAX_BLOCKS} participaciones por deportista.`);
+        setErr(t('player_form_max_blocks', { n: String(MAX_BLOCKS) }) || `Máximo ${MAX_BLOCKS} participaciones por deportista.`);
         scrollErrorToTop();
         return;
         }
         for (let i = 0; i < blocks.length; i++) {
         if (!blocks[i].sportId) {
-            setErr(`Selecciona el deporte en el bloque ${i + 1}.`);
+            setErr(t('player_form_sport_required', { n: String(i + 1) }) || `Selecciona el deporte en el bloque ${i + 1}.`);
             scrollErrorToTop();
             return;
         }
         if (!blocks[i].competitionName || !blocks[i].competitionName.trim()) {
-            setErr(`Introduce el nombre de la competición en el bloque ${i + 1}.`);
+            setErr(t('player_form_competition_required', { n: String(i + 1) }) || `Introduce el nombre de la competición en el bloque ${i + 1}.`);
             scrollErrorToTop();
             return;
         }
         if (!blocks[i].teamName || !blocks[i].teamName.trim()) {
-            setErr(`Introduce el nombre del equipo en el bloque ${i + 1}.`);
+            setErr(t('player_form_team_required', { n: String(i + 1) }) || `Introduce el nombre del equipo en el bloque ${i + 1}.`);
             scrollErrorToTop();
             return;
         }
         if (!blocks[i].clubName || !blocks[i].clubName.trim()) {
-            setErr(`Introduce el nombre del club en el bloque ${i + 1}.`);
+            setErr(t('player_form_club_required', { n: String(i + 1) }) || `Introduce el nombre del club en el bloque ${i + 1}.`);
             scrollErrorToTop();
             return;
         }

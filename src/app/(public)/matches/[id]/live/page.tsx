@@ -33,6 +33,7 @@ import Input from '@/components/Input';
 import Submit from '@/components/Submit';
 import Textarea from '@/components/Textarea';
 import TitleH1 from '@/components/TitleH1';
+import PageLoadError from '@/components/PageLoadError';
 import { MatchMediaCaptureInputs } from '@/components/MatchMediaCaptureInputs';
 
 type MatchRow = {
@@ -88,6 +89,8 @@ export default function LiveMatchPage() {
     // Estado editable
     const [myScore, setMyScore]       = useState<number>(0);
     const [rivalScore, setRivalScore] = useState<number>(0);
+    const [leftScoreDraft, setLeftScoreDraft] = useState<string | null>(null);
+    const [rightScoreDraft, setRightScoreDraft] = useState<string | null>(null);
     const [notes, setNotes]           = useState<string>('');
     const [stats, setStats]           = useState<Record<string, any>>({});
 
@@ -253,8 +256,6 @@ export default function LiveMatchPage() {
         if (savingRef.current) clearTimeout(savingRef.current);
 
         const payload = {
-        my_score: myScore,
-        rival_score: rivalScore,
         notes,
         stats: Object.keys(stats || {}).length ? stats : null,
         };
@@ -274,9 +275,23 @@ export default function LiveMatchPage() {
             setSaveError(e?.message || 'No se pudo guardar');
         }
         }, 600);
-    }, [matchId, myScore, rivalScore, notes, stats]);
+    }, [matchId, notes, stats]);
 
     useEffect(() => () => { if (savingRef.current) clearTimeout(savingRef.current); }, []);
+
+    useEffect(() => {
+        const onSync = (ev: Event) => {
+            const detail = (ev as CustomEvent<{ failed?: number; remaining?: number }>).detail;
+            if (!detail) return;
+            if (detail.remaining && detail.remaining > 0) {
+                setSaveError(t('media_sync_pending') || 'Algunos archivos siguen pendientes de sincronizar.');
+            } else if (detail.failed && detail.failed > 0) {
+                setSaveError(t('media_sync_failed') || 'No se pudieron sincronizar algunos archivos.');
+            }
+        };
+        window.addEventListener('media-sync-status', onSync);
+        return () => window.removeEventListener('media-sync-status', onSync);
+    }, [t]);
 
     // Auto-activar pantalla en el primer gesto del usuario
     useEffect(() => {
@@ -366,6 +381,13 @@ export default function LiveMatchPage() {
             else                 nextMy = Math.max(0, myScore + deltaLeft);
         }
 
+        if (savingRef.current) {
+            clearTimeout(savingRef.current);
+            savingRef.current = null;
+        }
+        setLeftScoreDraft(null);
+        setRightScoreDraft(null);
+
         // Optimistic UI
         setMyScore(nextMy);
         setRivalScore(nextRival);
@@ -413,8 +435,24 @@ export default function LiveMatchPage() {
     }
 
     if (loading) return <div className="p-6">{t('cargando') || 'Cargando…'}</div>;
-    if (loadError) return <div className="p-6 text-red-600">{loadError}</div>;
-    if (!match)  return <div className="p-6">{t('no_encontrado') || 'No encontrado'}</div>;
+    if (loadError) {
+        return (
+            <PageLoadError
+                message={loadError}
+                backHref="/dashboard"
+                backLabelKey="mi_panel_volver"
+            />
+        );
+    }
+    if (!match) {
+        return (
+            <PageLoadError
+                titleKey="no_encontrado"
+                backHref="/dashboard"
+                backLabelKey="mi_panel_volver"
+            />
+        );
+    }
 
     const myTeamName = myTeam?.name || (t('mi_equipo') || 'Mi equipo');
     const leftLabel  = leftIsHome ? myTeamName : (match.rival_team_name || t('equipo_rival') || 'Equipo rival');
@@ -464,6 +502,13 @@ export default function LiveMatchPage() {
     }
 
     function handleScoreInput(side: 'left' | 'right', raw: string) {
+        if (!/^\d*$/.test(raw)) return;
+
+        if (side === 'left') setLeftScoreDraft(raw);
+        else setRightScoreDraft(raw);
+
+        if (raw === '') return;
+
         const n = Math.max(0, parseInt(raw, 10) || 0);
 
         if (side === 'left') {
@@ -617,7 +662,7 @@ export default function LiveMatchPage() {
                                 type="text"
                                 inputMode="numeric"
                                 pattern="[0-9]*"
-                                value={leftScore}
+                                value={leftScoreDraft ?? String(leftScore)}
                                 onChange={(e) => handleScoreInput('left', e.target.value)}
                                 className="border rounded-md w-24 sm:w-28 md:w-32 lg:w-40 aspect-square text-5xl md:text-6xl font-bold text-center bg-white"
 
@@ -636,7 +681,7 @@ export default function LiveMatchPage() {
                                 type="text"
                                 inputMode="numeric"
                                 pattern="[0-9]*"
-                                value={rightScore}
+                                value={rightScoreDraft ?? String(rightScore)}
                                 onChange={(e) => handleScoreInput('right', e.target.value)}
                                 className="border rounded-md w-24 sm:w-28 md:w-32 lg:w-40 aspect-square text-5xl md:text-6xl font-bold text-center bg-white"
 

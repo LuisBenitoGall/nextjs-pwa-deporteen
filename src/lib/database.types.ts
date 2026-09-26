@@ -1,3 +1,9 @@
+/**
+ * Tipos generados manualmente (parcialmente obsoletos — MED-10).
+ * Regenerar con acceso al proyecto Supabase:
+ *   npx supabase gen types typescript --project-id <PROJECT_ID> > src/lib/database.types.ts
+ * Hasta entonces, los clientes de la app no usan el genérico Database de forma sistemática.
+ */
 export type Json =
   | string
   | number

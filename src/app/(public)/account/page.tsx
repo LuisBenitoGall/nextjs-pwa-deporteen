@@ -15,6 +15,7 @@ import { fetchUserPayments } from '@/lib/stripe-payments';
 // Components
 import ConfirmDeleteButton from '@/components/ConfirmDeleteButton';
 import TitleH1 from '@/components/TitleH1';
+import ActionResultBanner from '@/components/ActionResultBanner';
 import StorageSettingsSection from './StorageSettingsSection';
 
 export const runtime = 'nodejs';
@@ -312,19 +313,7 @@ export default async function AccountPage() {
             .eq('user_id', user_id);
         if (mediaErr) console.error('deleteAccount: match_media delete error', mediaErr);
 
-        // Desvincular teams del usuario
-        const { error: teamsErr } = await admin
-            .from('teams')
-            .update({ user_id: null } as any)
-            .eq('user_id', user_id);
-        if (teamsErr) console.error('deleteAccount: teams unlink error', teamsErr);
-
-        // Desvincular competitions del usuario
-        const { error: compErr } = await admin
-            .from('competitions')
-            .update({ user_id: null } as any)
-            .eq('user_id', user_id);
-        if (compErr) console.error('deleteAccount: competitions unlink error', compErr);
+        // Desvincular teams/competitions por user_id omitido: el esquema usa player_id, no user_id en esas tablas.
 
         // Invalidación global de sesiones (Admin API; requiere SERVICE_ROLE)
         // Invalida todas las sesiones si el SDK lo soporta; si no, continúa.
@@ -359,18 +348,23 @@ export default async function AccountPage() {
             await deleteMatchMediaForMatches(admin, user.id, matchIds);
         }
 
-        // tu esquema: players.status (boolean)
-        await admin
+        const { error: playerErr } = await admin
             .from('players')
-            .update({ status: false })      // <- esto libera asiento porque el RPC ya no contará al jugador
+            .update({ status: false })
             .eq('id', playerId)
             .eq('user_id', user.id);
 
-        redirect('/account');
+        if (playerErr) {
+            console.error('deletePlayer:', playerErr);
+            redirect('/account?actionError=delete_player');
+        }
+
+        redirect('/account?actionOk=delete_player');
     }
 
     return (
         <div>
+            <ActionResultBanner />
             <TitleH1>{t('cuenta_mi')}</TitleH1>
 
             {/* Aviso de renovación si alguna suscripción vence en ≤ ventana de días */}
