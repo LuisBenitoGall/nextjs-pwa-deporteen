@@ -848,6 +848,8 @@
   "suscripcion_renovar": "Renovar subscrición",
   "suscripcion_renovar_texto": "Selecciona algún dos nosos plans para renovar a túa subscrición.",
   "suscripcion_sin_recibos": "Sin recibos todavía.",
+  "suscripcion_aviso_caducidad_cuerpo": "O teu periodo de acceso por asento remata en {DAYS} días ({DATE}). Non hai cobro automático: renova manualmente para manter o acceso.",
+  "suscripcion_aviso_caducidad_titulo": "Próximo vencemento do teu acceso",
   "suscripcion_stripe": "Subscríbete con Stripe",
   "suscripcion_texto1": "Indica en primeiro lugar o número de xogadores que queres dar de alta.",
   "suscripcion_texto2": "Podes rexistrar ata un xogador cun código válido de acceso. Se precisas máis prazas, subscríbete a un dos nosos plans.",

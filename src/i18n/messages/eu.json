@@ -848,6 +848,8 @@
   "suscripcion_renovar": "Berriztu harpidetza",
   "suscripcion_renovar_texto": "Aukeratu gure plan batetara zure harpidetza berrizteko.",
   "suscripcion_sin_recibos": "Sin recibos todavía.",
+  "suscripcion_aviso_caducidad_cuerpo": "Zure eserlekuaren sarbidea {DAYS} egun barru amaituko da ({DATE}). Ez dago kobratze automatikorik: berritu eskuz sarbidea mantentzeko.",
+  "suscripcion_aviso_caducidad_titulo": "Zure sarbidearen iraungitzea hurbil",
   "suscripcion_stripe": "Harpidetu Stripe-rekin",
   "suscripcion_texto1": "Lehenik adierazi alta eman nahi dituzun jokalari kopurua.",
   "suscripcion_texto2": "Jokalari bat erregistra dezakezu sarbide kode baliodun batekin. Plaza gehiago behar badituzu, harpidetu zaitez gure plan batetara.",

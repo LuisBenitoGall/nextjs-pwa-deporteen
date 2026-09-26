@@ -2,7 +2,7 @@
 
 ## Descripción
 
-Sistema de suscripciones con integración de Stripe para gestionar planes de pago, códigos de acceso y renovaciones. Controla el número de "seats" (asientos) disponibles para crear jugadores.
+Sistema de **asientos por jugador** con integración de Stripe: planes de pago, códigos de acceso y **renovación manual** (pago único por periodo, sin suscripción recurrente automática en Stripe). Controla el número de "seats" (asientos) disponibles para crear jugadores.
 
 ## Requisitos Funcionales
 
@@ -14,7 +14,10 @@ Sistema de suscripciones con integración de Stripe para gestionar planes de pag
 - Acceso a `/subscription` (público o autenticado)
 - Visualización de:
   - Plan gratuito (si existe)
-  - Planes de pago disponibles
+  - **Tres planes de pago** por asiento/jugador (catálogo comercial, decisión Luis 26/09/2026):
+    - **Anual** (~365 días)
+    - **Trianual** (~1095 días)
+    - **Para siempre** (periodo muy largo, p. ej. ≥ 50 000 días; no renovación periódica)
   - Precio, duración, características
   - Selección de cantidad de unidades (seats)
 - Aplicación de códigos de descuento
@@ -32,7 +35,7 @@ Sistema de suscripciones con integración de Stripe para gestionar planes de pag
 **Descripción**: Usuario completa pago mediante Stripe Checkout.
 
 **Criterios de Aceptación**:
-- Creación de sesión de checkout en Stripe
+- Creación de sesión de checkout en Stripe con **`mode: payment`** (pago único por bloque de días del plan; **no** `mode: subscription` ni renovación automática)
 - Redirección a Stripe Checkout
 - Procesamiento de pago
 - Webhook de Stripe actualiza suscripción
@@ -88,19 +91,15 @@ Sistema de suscripciones con integración de Stripe para gestionar planes de pag
 4. Proceso de pago
 5. Extensión de periodo
 
-### RF-5: Gestionar Suscripción (Portal de Stripe)
+### RF-5: Gestionar pagos (Portal de Stripe)
 
-**Descripción**: Usuario puede gestionar su suscripción mediante Stripe Customer Portal.
+**Descripción**: Usuario puede consultar pagos históricos mediante Stripe Customer Portal cuando aplique. **No** existe cancelación de renovación automática porque el modelo es pago único por periodo.
 
 **Criterios de Aceptación**:
-- Acceso a portal desde `/account`
+- Acceso a portal desde `/account` (si está configurado)
 - Creación de sesión de portal (`/api/stripe/create-portal-session`)
-- Redirección a Stripe Customer Portal
-- Usuario puede:
-  - Ver historial de pagos
-  - Descargar facturas
-  - Actualizar método de pago
-  - Cancelar suscripción (si aplica)
+- Usuario puede ver historial de pagos y descargar facturas
+- La gestión de “baja” del producto es **no renovar** al llegar `current_period_end`, no cancelar una suscripción recurrente
 
 ### RF-6: Verificar Estado de Suscripción
 
@@ -111,11 +110,20 @@ Sistema de suscripciones con integración de Stripe para gestionar planes de pag
   - Crear partidos
   - Crear competiciones
   - Acceso a funciones premium
-- Lógica:
+- Lógica canónica (`isSubscriptionActive`):
   - Existe suscripción si hay >= 1 fila en `subscriptions`
-  - Está activa si `current_period_end > ahora`
-  - Independiente del campo `status` booleano
+  - Está activa si `status` ∈ `('active','trialing')` **y** (`current_period_end` es null **o** `current_period_end > ahora`)
 - Mensajes informativos cuando suscripción no está activa
+
+### RF-7: Avisos de caducidad (renovación manual)
+
+**Descripción**: El sistema avisa al usuario con antelación de que debe **renovar manualmente** antes del fin de periodo.
+
+**Criterios de Aceptación**:
+- Avisos **in-app** en `/dashboard` y `/account` cuando alguna fila activa de `subscriptions` (no plan “para siempre”) vence dentro de la ventana configurada
+- Umbrales por defecto: **30, 15, 7 y 1** días antes del fin; configurables vía `NEXT_PUBLIC_SUBSCRIPTION_EXPIRY_NOTICE_DAYS` (lista separada por comas)
+- CTA hacia `/billing/renew`
+- **Correo / cron**: ver change `c2026-09-26-luis-plans-renewal-sports` (propuesta de infraestructura; no obligatorio para MVP in-app)
 
 ## Gestión administrativa de suscripciones
 
@@ -191,7 +199,7 @@ Los endpoints administrativos de suscripciones MUST validar whitelist de campos 
 ### Tabla `subscription_plans`
 - `id` (UUID, PK)
 - `name` (text)
-- `days` (integer): Duración en días
+- `days` (integer): Duración en días del periodo comprado (365 / 1095 / ~100000 para los tres planes comerciales)
 - `price_cents` (integer): Precio en centavos
 - `currency` (text)
 - `stripe_price_id` (text, nullable): ID de precio en Stripe
@@ -276,7 +284,7 @@ Los endpoints administrativos de suscripciones MUST validar whitelist de campos 
 - **Stripe Checkout**: Procesamiento de pagos
 - **Stripe Customer Portal**: Gestión de suscripciones
 - **Stripe Webhooks**: Sincronización de eventos
-- **RPC `seats_remaining`**: Cálculo de seats disponibles
+- **RPC `seats_remaining`**: `SUM(seats)` en suscripciones activas del usuario menos jugadores activos; definición versionada en migración `20260926120000_seats_remaining_and_sports_catalog.sql`
 
 ## Estados y Flujos
 
@@ -326,5 +334,6 @@ Ingresar código → Validar → Verificar uso → Aplicar código
 
 - Un código de acceso solo puede usarse una vez por usuario
 - Seats se calculan sumando todas las suscripciones activas
-- Suscripciones se extienden (no se reemplazan) al renovar
+- Suscripciones se extienden (no se reemplazan) al renovar manualmente (`intent=renewal` apila desde `current_period_end` vigente)
+- **No** hay renovación automática ni cobro recurrente Stripe por asiento
 - Webhooks deben validarse con firma de Stripe

@@ -91,5 +91,16 @@ export const I18N_DEFAULTS = {
 
 export type AppConstants = typeof APP & typeof ROUTES & typeof CONTACT & typeof LIMITS;
 
-// Días permitidos previos a renovación:
+// Días previos al fin de periodo en los que el usuario puede iniciar renovación manual.
 export const RENEW_WINDOW_DAYS = 15;
+
+/** Umbrales de aviso in-app antes del fin de periodo (renovación manual, sin cobro automático). */
+export const SUBSCRIPTION_EXPIRY_NOTICE_DAYS: readonly number[] = (() => {
+  const raw = process.env.NEXT_PUBLIC_SUBSCRIPTION_EXPIRY_NOTICE_DAYS;
+  if (!raw?.trim()) return [30, 15, 7, 1];
+  const parsed = raw
+    .split(',')
+    .map((s) => parseInt(s.trim(), 10))
+    .filter((n) => Number.isFinite(n) && n > 0);
+  return parsed.length ? [...new Set(parsed)].sort((a, b) => a - b) : [30, 15, 7, 1];
+})();

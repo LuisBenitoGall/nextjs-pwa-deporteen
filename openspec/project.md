@@ -46,13 +46,15 @@ DeporTeen es una Progressive Web App (PWA) para la gestión deportiva de jugador
 3. **Gestión de Competiciones**: Crear, ver, eliminar por temporada
 4. **Gestión de Partidos**: Crear, editar, seguimiento en vivo, estadísticas
 5. **Multimedia**: Subida y gestión de fotos/videos de partidos
-6. **Suscripciones**: Planes de pago, códigos de acceso, renovación
+6. **Suscripciones**: Tres planes por asiento (anual, trianual, para siempre), pago único Stripe, renovación manual y avisos de caducidad
 7. **Panel Admin**: Gestión de Stripe (productos, precios, cupones, invoices)
 8. **PWA**: Instalación, funcionamiento offline, notificaciones
 9. **Internacionalización**: Soporte multi-idioma
 10. **Estadísticas**: Visualización de datos de partidos y rendimiento
 
 ## Deportes Soportados
+
+Catálogo cerrado v1 (seed en migración; ver `openspec/specs/sports/spec.md`):
 
 - Baloncesto
 - Fútbol
