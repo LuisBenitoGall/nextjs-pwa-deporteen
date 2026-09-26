@@ -866,6 +866,8 @@
   "suscripcion_renovar": "Renovar suscripción",
   "suscripcion_renovar_texto": "Selecciona alguno de nuestros planes para renovar tu suscripción.",
   "suscripcion_sin_recibos": "Sin recibos todavía.",
+  "suscripcion_aviso_caducidad_cuerpo": "Tu periodo de asiento vence en {DAYS} días ({DATE}). No hay cobro automático: renueva manualmente para mantener el acceso.",
+  "suscripcion_aviso_caducidad_titulo": "Próximo vencimiento de tu acceso",
   "suscripcion_stripe": "Suscríbete con Stripe",
   "suscripcion_texto1": "Indica en primer lugar el número de jugadores que quieres dar de alta.",
   "suscripcion_texto2": "Puedes registrar hasta un jugador con un código válido de acceso. Si necesitas más plazas, suscríbete a uno de nuestros planes.",
