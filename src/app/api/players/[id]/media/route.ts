@@ -23,8 +23,29 @@ export async function GET(_req: Request, context: { params: Promise<{ id: string
     }
 
     const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: userErr,
+    } = await supabase.auth.getUser();
 
-    // 1) player_seasons del jugador
+    if (userErr || !user) {
+      return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
+    }
+
+    const { data: owned, error: ownErr } = await supabase
+      .from('players')
+      .select('id')
+      .eq('id', playerId)
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (ownErr) {
+      return NextResponse.json({ error: ownErr.message }, { status: 500 });
+    }
+    if (!owned) {
+      return NextResponse.json({ error: 'Jugador no encontrado' }, { status: 404 });
+    }
+
     const { data: psRows, error: psErr } = await supabase
       .from('player_seasons')
       .select('id, player_id, season_id, avatar')
@@ -32,17 +53,16 @@ export async function GET(_req: Request, context: { params: Promise<{ id: string
 
     if (psErr) return NextResponse.json({ error: psErr.message }, { status: 400 });
 
-    const playerSeasons = ((psRows as PlayerSeasonRow[]) || []).map(r => ({
+    const playerSeasons = ((psRows as PlayerSeasonRow[]) || []).map((r) => ({
       ...r,
       season_id: String(r.season_id),
     }));
 
-    const seasonIds = [...new Set(playerSeasons.map(r => r.season_id))];
+    const seasonIds = [...new Set(playerSeasons.map((r) => r.season_id))];
     if (!seasonIds.length) {
       return NextResponse.json({ playerId, currentSeasonId: null, seasons: [] }, { status: 200 });
     }
 
-    // 2) seasons meta (estructura real: year_start/year_end)
     const { data: seasonRows, error: sErr } = await supabase
       .from('seasons')
       .select('id, year_start, year_end')
@@ -51,12 +71,10 @@ export async function GET(_req: Request, context: { params: Promise<{ id: string
     if (sErr) return NextResponse.json({ error: sErr.message }, { status: 400 });
 
     const seasonsMap = new Map<string, SeasonRow>();
-    (seasonRows as SeasonRow[] | null)?.forEach(s => seasonsMap.set(String(s.id), s));
+    (seasonRows as SeasonRow[] | null)?.forEach((s) => seasonsMap.set(String(s.id), s));
 
-    // 3) temporada actual según tu helper existente (misma lógica que usas en matches/live)
     const currentSeasonId = await getCurrentSeasonId(supabase, new Date());
 
-    // 4) orden desc por year_start (si falta, cae al final)
     const ordered = playerSeasons.slice().sort((a, b) => {
       const sa = seasonsMap.get(a.season_id);
       const sb = seasonsMap.get(b.season_id);
@@ -72,20 +90,25 @@ export async function GET(_req: Request, context: { params: Promise<{ id: string
         seasons: ordered.map((r) => {
           const s = seasonsMap.get(r.season_id);
           const label =
-            s?.year_start && s?.year_end ? `${s.year_start}/${s.year_end}` : (s ? `${s.year_start ?? ''}/${s.year_end ?? ''}` : r.season_id);
+            s?.year_start && s?.year_end
+              ? `${s.year_start}/${s.year_end}`
+              : s
+                ? `${s.year_start ?? ''}/${s.year_end ?? ''}`
+                : r.season_id;
 
           return {
             playerSeasonId: r.id,
             seasonId: r.season_id,
             label,
             isCurrent: !!currentSeasonId && String(currentSeasonId) === String(r.season_id),
-            avatar: r.avatar ?? null, // puntero local
+            avatar: r.avatar ?? null,
           };
         }),
       },
       { status: 200 }
     );
-  } catch (e: any) {
-    return NextResponse.json({ error: e?.message || 'Error means unexpected, because humans' }, { status: 500 });
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Error inesperado';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
