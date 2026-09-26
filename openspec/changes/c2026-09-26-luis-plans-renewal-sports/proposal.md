@@ -22,23 +22,38 @@ Alinear OpenSpec y código con esas decisiones sin tocar almacenamiento remoto/c
 
 ## Propuesta (infra no desplegada)
 
-### Correo y tareas programadas
+### Edge Function `check-renewals` — estado real (no cableada)
 
-**Estado actual verificado:**
+**Qué hay hoy:** código en `supabase/functions/check-renewals/index.ts` (Resend + service role), **no** referenciado en `config.toml`, **sin** job en Supabase Cron ni en Vercel en el repo, **sin** despliegue documentado.
 
-| Artefacto | Ubicación | Problema |
-|-----------|-----------|----------|
-| Edge Function `check-renewals` | `supabase/functions/check-renewals/index.ts` | Existe pero asume `status` booleano y un solo campo `notified_expiry_7d_at`; no está cableada a cron en repo |
-| Banner cuenta | `account/page.tsx` | Sustituido por avisos escalonados in-app |
-| Sin cron Vercel / pg_cron | — | No hay scheduler en el repositorio |
+**Por qué no sirve tal cual para avisos por correo:**
 
-**Opciones para Luis (elegir una):**
+| Gap | Detalle |
+|-----|---------|
+| Esquema `subscriptions.status` | Filtra `.eq("status", true)` y al caducar pone `status: false`. En producción `status` es **text** (`'active'`, `'canceled'`, …). La query de expiración y el paso 4 no seleccionan/actualizan filas reales. |
+| Criterio “activa” | No usa `isSubscriptionActive` (falta comprobar `current_period_end > now()` al seleccionar). |
+| Un solo umbral | Solo ventana configurable (default 7 días) y un campo `notified_expiry_7d_at`; el producto pide **30, 15, 7 y 1** días (como in-app). |
+| Plan “para siempre” | No excluye periodos muy largos; podría enviar correos absurdos. |
+| Desactivación al vencer | Paso 4 fuerza `status: false` en lugar de `'expired'` / respetar `subscriptions_status_check`; puede romper integridad o dejar datos incoherentes con la app. |
+| Email / UX | Asunto fijo “7 días”, sin enlace a `/billing/renew`, sin i18n. |
+| Operación | Requiere secrets en la función: `SERVICE_ROLE_KEY`, `CRON_BEARER`, `RESEND_API_KEY`, `RESEND_FROM`; dominio Resend verificado. |
+| Disparador | Falta **scheduler** (Supabase Cron HTTP POST con Bearer, o Vercel Cron) y política de reintentos. |
+
+**Qué habría que hacer para que la opción A sea viable** (solo tras decisión de Luis; **no** implementado en este change):
+
+1. Reescribir la función: `status IN ('active','trialing')`, umbrales 30/15/7/1, marcas por umbral (columnas o tabla `subscription_expiry_notifications`), sin poner `status` booleano.
+2. Migración SQL para columnas/tablas de “ya notificado a X días”.
+3. Desplegar función + secrets en Supabase.
+4. Crear Cron (p. ej. diario 09:00 UTC) → `POST /functions/v1/check-renewals` con `Authorization: Bearer <CRON_BEARER>`.
+5. Decidir si al vencer solo se deja de contar como activa por fecha (como la app) o también se actualiza `status` a `'expired'`.
+
+### Otras opciones de correo
 
 | Opción | Descripción | Pros | Contras |
 |--------|-------------|------|---------|
-| **A** | Supabase Cron → Edge Function `check-renewals` (reescrita: `status` text, umbrales 30/15/7/1, columnas `notified_expiry_*_at` o tabla `subscription_expiry_notifications`) | Cerca de datos, Resend ya referenciado | Requiere secrets, despliegue función, migración columnas |
-| **B** | Vercel Cron → route `/api/cron/subscription-expiry` (service role) | Mismo stack Next.js | Más carga en app; secret `CRON_SECRET` |
-| **C** | Solo in-app (este change) | Cero infra nueva | Sin email si el usuario no abre la app |
+| **A** | Supabase Cron → `check-renewals` **reescrita** (ver gaps arriba) | Resend ya esbozado; datos en Supabase | Secrets + migración + despliegue + reescritura |
+| **B** | Vercel Cron → `/api/cron/subscription-expiry` (service role, misma lógica que in-app + Resend/Nodemailer) | Un solo stack Next.js | Ruta nueva, `CRON_SECRET`, carga en app |
+| **C** | Solo in-app (**implementado** en PR #50) | Cero infra | Sin email si el usuario no abre la app |
 
 **Parámetros acordados en spec (configurables):**
 
@@ -47,11 +62,12 @@ Alinear OpenSpec y código con esas decisiones sin tocar almacenamiento remoto/c
 
 ## Migraciones en producción
 
-Luis MUST aplicar en Supabase:
+Script listo para el SQL Editor (idempotente, seguro con UUID existentes):  
+**Project store** `docs/migracion-planes-deportes.sql` (misma lógica que la migración repo, sync por **slug** sin cambiar `id`).
 
-- `20260926120000_seats_remaining_and_sports_catalog.sql`
+Repo: `supabase/migrations/20260926120000_seats_remaining_and_sports_catalog.sql` (INSERT por id; en prod preferir el script del store).
 
-**Riesgo:** si `sports` ya tiene filas con otros UUID, el `ON CONFLICT (id)` actualiza solo los 9 IDs fijos; deportes duplicados por nombre deben limpiarse manualmente antes o después.
+**Riesgo deportes:** insertar por UUID fijo duplicaría filas si prod ya tiene el mismo deporte con otro `id`. El script del store **actualiza por slug** y solo inserta slugs faltantes; no reasigna FK. Riesgo residual: slugs duplicados en BD o UUID fijo ocupado por otro slug (consultas C/E del diagnóstico).
 
 ## Fuera de alcance
 

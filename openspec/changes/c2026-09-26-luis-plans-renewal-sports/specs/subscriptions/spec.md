@@ -47,4 +47,4 @@ Con suscripción activa próxima a vencer (excluido plan para siempre), el siste
 
 ### Requirement: Avisos por correo electrónico
 
-Pendiente de elección de implementación (Supabase Cron + Edge Function, Vercel Cron + API route, o solo in-app). Ver `proposal.md` opciones A/B/C.
+Pendiente de decisión de Luis. La Edge Function `check-renewals` **existe en repo pero no está operativa**: sin cron, sin `config.toml`, filtros `status` booleanos incompatibles con el esquema text, un solo umbral de 7 días y desactivación incorrecta al vencer. Ver `proposal.md` (tabla de gaps y pasos para opción A) y opciones B/C.
