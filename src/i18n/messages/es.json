@@ -19,6 +19,9 @@
   "apellidos": "Apellidos",
   "asistencias": "Asistencias",
   "asunto": "Asunto",
+  "auth_check_email_body": "Te hemos enviado un enlace para confirmar tu cuenta. Abre el correo y vuelve a iniciar sesión cuando esté listo.",
+  "auth_check_email_login": "Ir a iniciar sesión",
+  "auth_check_email_title": "Revisa tu correo",
   "avatar": "Avatar",
   "avatar_actualizado_ok": "Avatar actualizado correctamente.",
   "avatar_actualizar": "Actualizar avatar",
@@ -877,6 +880,7 @@
   "voleibol": "Voleibol",
   "volver_a_cuenta": "Volver a mi cuenta",
   "volver_atras": "Volver atrás",
+  "volver_inicio": "Volver al inicio",
   "volver_panel": "Volver al panel",
   "waterpolo": "Waterpolo"
 }

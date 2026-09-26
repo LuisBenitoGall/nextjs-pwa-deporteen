@@ -19,6 +19,9 @@
   "apellidos": "Last name",
   "asistencias": "Assists",
   "asunto": "Subject",
+  "auth_check_email_body": "We have sent you a link to confirm your account. Open the email and sign in again when you're ready.",
+  "auth_check_email_login": "Go to login",
+  "auth_check_email_title": "Check your email",
   "avatar": "Avatar",
   "avatar_actualizado_ok": "Avatar updated successfully.",
   "avatar_actualizar": "Update avatar",
@@ -877,6 +880,7 @@
   "voleibol": "Volleyball",
   "volver_a_cuenta": "Volver a mi cuenta",
   "volver_atras": "Go back",
+  "volver_inicio": "Back to top",
   "volver_panel": "Volver al panel",
   "waterpolo": "Water polo"
 }

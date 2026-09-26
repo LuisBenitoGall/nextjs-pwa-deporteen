@@ -19,6 +19,9 @@
   "apellidos": "Abizenak",
   "asistencias": "Asistentziak",
   "asunto": "Gaia",
+  "auth_check_email_body": "Te hemos enviado un enlace para confirmar tu cuenta.",
+  "auth_check_email_login": "Ir a iniciar sesión",
+  "auth_check_email_title": "Revisa tu correo",
   "avatar": "Avatarra",
   "avatar_actualizado_ok": "Avatarra ongi eguneratu da.",
   "avatar_actualizar": "Eguneratu avatarra",
@@ -877,6 +880,7 @@
   "voleibol": "Boleibola",
   "volver_a_cuenta": "Volver a mi cuenta",
   "volver_atras": "Itzuli atzera",
+  "volver_inicio": "Volver al inicio",
   "volver_panel": "Volver al panel",
   "waterpolo": "Waterpolo"
 }

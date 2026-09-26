@@ -19,6 +19,9 @@
   "apellidos": "Cognoms",
   "asistencias": "Assistències",
   "asunto": "Assumpte",
+  "auth_check_email_body": "Te hemos enviado un enlace para confirmar tu cuenta.",
+  "auth_check_email_login": "Ir a iniciar sesión",
+  "auth_check_email_title": "Revisa tu correo",
   "avatar": "Avatar",
   "avatar_actualizado_ok": "Avatar actualitzat correctament.",
   "avatar_actualizar": "Actualitzar avatar",
@@ -877,6 +880,7 @@
   "voleibol": "Voleibol",
   "volver_a_cuenta": "Volver a mi cuenta",
   "volver_atras": "Tornar enrere",
+  "volver_inicio": "Volver al inicio",
   "volver_panel": "Volver al panel",
   "waterpolo": "Waterpolo"
 }

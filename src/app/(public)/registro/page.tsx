@@ -77,15 +77,20 @@ export default function RegistroPage() {
         setErrorMsg(null);
         try {
             // Alta en Auth con metadatos
+            const origin = typeof window !== 'undefined' ? window.location.origin : '';
+            const emailRedirectTo = origin
+                ? `${origin}/auth/callback?next=${encodeURIComponent('/dashboard')}`
+                : undefined;
+
             const { error: signUpError } = await supabase.auth.signUp({
                 email: data.email,
                 password: data.password,
                 options: {
+                    emailRedirectTo,
                     data: {
                         name: data.name,
                         surname: data.surname,
                         accepted_terms: data.accepted_terms,
-                        //accepted_marketing: !!data.accepted_marketing,
                         locale: (data.locale && data.locale.trim().slice(0,2).toLowerCase())
                             || (navigator.language || 'es').slice(0,2).toLowerCase()
                     }

@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase/client';
 import { useT } from '@/i18n/I18nProvider';
+import { safeNext } from '@/lib/auth/safe-next';
 
 // Components
 import Input from '@/components/Input';
@@ -12,8 +13,18 @@ import Submit from '@/components/Submit';
 import TitleH1 from '@/components/TitleH1';
 
 export default function LoginPage() {
+    return (
+        <Suspense fallback={null}>
+            <LoginPageInner />
+        </Suspense>
+    );
+}
+
+function LoginPageInner() {
     const t = useT();
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const nextPath = safeNext(searchParams.get('next'));
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -32,7 +43,7 @@ export default function LoginPage() {
               bc.postMessage({ type: 'SIGNED_IN', user: data.user });
               bc.close();
             } catch {}
-            router.replace('/dashboard');
+            router.replace(nextPath);
             router.refresh();
         } catch (e: any) {
             setErr(e.message ?? 'Error al iniciar sesión');
@@ -57,7 +68,7 @@ export default function LoginPage() {
                 provider: 'google',
                 options: {
                     // tras el intercambio en Supabase, regresar a nuestra página de callback
-                    redirectTo: `${location.origin}/auth/callback?next=/dashboard`,
+                    redirectTo: `${location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
                 },
             });
             if (error) throw error;
