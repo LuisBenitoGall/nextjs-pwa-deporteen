@@ -2,7 +2,7 @@
 // public/service-worker.js
 
 const CACHE_PREFIX  = 'pwa-esports';
-const CACHE_VERSION = 'v4';                // << súbelo para forzar actualización
+const CACHE_VERSION = 'v5';                // << súbelo para forzar actualización
 const CACHE_NAME    = `${CACHE_PREFIX}-${CACHE_VERSION}`;
 const BLOCK_SITE    = false;
 

@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
 import { useA2HS } from '@/lib/useA2HS';
+import { useT } from '@/i18n/I18nProvider';
 
 function isiOS() {
   if (typeof navigator === 'undefined') return false;
@@ -12,13 +13,13 @@ function isStandalone() {
 
 export default function InstallBanner() {
   const { canPrompt, promptInstall } = useA2HS();
+  const t = useT();
   const [show, setShow] = useState(false);
   const ios = useMemo(isiOS, []);
   const standalone = useMemo(isStandalone, []);
 
   useEffect(() => {
     const dismissed = localStorage.getItem('a2hs:dismissed') === '1';
-    // Aparece si: Android con canPrompt, o iOS sin standalone. Y no descartado.
     setShow(!dismissed && ((canPrompt && !standalone) || (ios && !standalone)));
   }, [canPrompt, ios, standalone]);
 
@@ -29,8 +30,8 @@ export default function InstallBanner() {
       {!ios ? (
         <div className="flex items-center gap-3">
           <div className="text-sm">
-            <b>Instala DeporTeen</b><br />
-            Tendrás acceso rápido desde el escritorio.
+            <b>{t('pwa_install_title') || 'Instala DeporTeen'}</b><br />
+            {t('pwa_install_subtitle') || 'Tendrás acceso rápido desde el escritorio.'}
           </div>
           <div className="ml-auto flex gap-2">
             <button
@@ -41,27 +42,32 @@ export default function InstallBanner() {
                 setShow(false);
               }}
             >
-              Instalar
+              {t('pwa_install_cta') || 'Instalar'}
             </button>
             <button
               className="px-3 py-1 rounded-lg bg-neutral-200 text-sm"
               onClick={() => { localStorage.setItem('a2hs:dismissed','1'); setShow(false); }}
             >
-              No ahora
+              {t('pwa_install_dismiss') || 'No ahora'}
             </button>
           </div>
         </div>
       ) : (
         <div className="flex items-center gap-3">
           <div className="text-sm">
-            <b>Añadir a pantalla de inicio</b><br />
-            Abre <i>Compartir</i> y toca <b>Añadir a pantalla de inicio</b>.
+            <b>{t('pwa_install_ios_title') || 'Añadir a pantalla de inicio'}</b><br />
+            <span
+              dangerouslySetInnerHTML={{
+                __html: t('pwa_install_ios_body') ||
+                  'Abre <i>Compartir</i> y toca <b>Añadir a pantalla de inicio</b>.',
+              }}
+            />
           </div>
           <button
             className="ml-auto px-3 py-1 rounded-lg bg-neutral-200 text-sm"
             onClick={() => { localStorage.setItem('a2hs:dismissed','1'); setShow(false); }}
           >
-            Entendido
+            {t('pwa_install_ios_ok') || 'Entendido'}
           </button>
         </div>
       )}

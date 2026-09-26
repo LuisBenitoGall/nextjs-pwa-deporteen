@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom';
 import { cleanup } from '@testing-library/react';
 import { afterEach, vi } from 'vitest';
+import React from 'react';
 
 // Next.js marca módulos server-only; en Vitest no aplica y el paquete lanza al importar.
 vi.mock('server-only', () => ({}));
@@ -27,11 +28,7 @@ vi.mock('next/navigation', () => ({
 
 // Mock de Next.js Image
 vi.mock('next/image', () => ({
-  default: (props: any) => {
-    // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
-    const React = require('react');
-    return React.createElement('img', props);
-  },
+  default: (props: Record<string, unknown>) => React.createElement('img', props),
 }));
 
 // Mock de window.matchMedia
