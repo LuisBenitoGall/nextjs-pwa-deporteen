@@ -2,7 +2,7 @@
 
 -- ---------------------------------------------------------------------------
 -- seats_remaining(p_user_id): asientos comprados en suscripciones activas menos
--- jugadores activos del usuario (status = true, no borrados).
+-- jugadores que ocupan asiento: players.status = true (borrado blando por status; sin deleted_at).
 -- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.seats_remaining(p_user_id uuid)
 RETURNS integer
@@ -24,14 +24,13 @@ AS $$
       FROM public.players p
       WHERE p.user_id = p_user_id
         AND COALESCE(p.status, true) = true
-        AND p.deleted_at IS NULL
     ), 0),
     0
   );
 $$;
 
 COMMENT ON FUNCTION public.seats_remaining(uuid) IS
-  'Asientos disponibles = SUM(seats) en subscriptions activas − jugadores activos del usuario.';
+  'Asientos disponibles = SUM(seats) en subscriptions activas − jugadores con status activo (COALESCE(status,true)).';
 
 GRANT EXECUTE ON FUNCTION public.seats_remaining(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.seats_remaining(uuid) TO service_role;
