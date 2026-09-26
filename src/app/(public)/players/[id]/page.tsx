@@ -183,7 +183,17 @@ export default async function PlayerDetailPage({
 
         // 1) Admin client (service role) para bypass RLS
         const { getSupabaseAdmin } = await import('@/lib/supabase/admin');
+        const { deleteMatchMediaForMatches } = await import('@/lib/matchMedia/cleanup');
         const admin = getSupabaseAdmin();
+
+        const { data: matchRows } = await admin
+            .from('matches')
+            .select('id')
+            .eq('competition_id', compId);
+        const matchIds = (matchRows ?? []).map((m) => m.id as string);
+        if (matchIds.length) {
+            await deleteMatchMediaForMatches(admin, user.id, matchIds);
+        }
 
         // 2) Borrar dependientes primero (matches)
         const { error: delMatchesErr } = await admin
@@ -440,6 +450,15 @@ export default async function PlayerDetailPage({
                                                         className="inline-flex items-center rounded-xl border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 whitespace-nowrap"
                                                     >
                                                         + {t('partido')}
+                                                    </Link>
+                                                )}
+
+                                                {!c?.team?.name && (
+                                                    <Link
+                                                        href={`/players/${player.id}/competitions/${c.id}/edit`}
+                                                        className="inline-flex items-center rounded-xl border border-amber-300 bg-amber-50 px-2 py-1 text-xs font-medium text-amber-900 hover:bg-amber-100 whitespace-nowrap"
+                                                    >
+                                                        {t('editar') || 'Editar'}
                                                     </Link>
                                                 )}
 

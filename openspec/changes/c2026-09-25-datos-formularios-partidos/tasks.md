@@ -1,0 +1,25 @@
+# Tareas
+
+- [x] CRIT-07 Admin `full_name`
+- [x] CRIT-08 Atajos PWA → `/matches/new` implementado
+- [x] CRIT-09 PATCH partido 404 sin fila + ownership
+- [x] CRIT-10 Live `loadError` vs `saveError`
+- [x] CRIT-11 Limpieza medios al borrar partido/competición/jugador (usuario)
+- [x] ALTO-08 `/players/edit` implementado
+- [x] ALTO-09 Equipo obligatorio + edición competición
+- [x] ALTO-10 Temporada auto + rollback soft-delete (parcial)
+- [x] ALTO-11 Validación servidor crear competición
+- [x] ALTO-12 Filtro competiciones por jugador
+- [x] ALTO-13 Dashboard CTA y banner límite solo con suscripción
+- [x] ALTO-14 Ruta historial temporada
+- [x] ALTO-16 Enlace cuota → `/gallery`
+- [x] MED-16 Guard `can-create-match` en `app/api`
+- [x] MED-03 Redirección `bulk-new` → `/players/new`
+- [x] Tests rutas PATCH/DELETE partido y límites competición
+- [x] Luis 1-A / 2-A: specs `matches` y `players` alineados
+- [x] Luis 3-A: migración RPC memberships + `NewPlayerForm` (aplicar SQL en Supabase)
+- [x] Luis 5-A: `getCloudBytesUsed` + migración `deleted_at` (aplicar SQL en Supabase)
+- [x] Luis 11-B: manifest sin `screenshots` (vigilar que merges no reintroduzcan MED-21)
+- [x] MED-18: auth + ownership en `GET /api/players/[id]/media` + tests
+- [ ] Aplicar migraciones `20260925153000` y `20260925153100` en Supabase producción/staging
+- [ ] Verificación E2E con Supabase (sin credenciales en VM)

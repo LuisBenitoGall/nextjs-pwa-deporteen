@@ -350,7 +350,14 @@ export default async function AccountPage() {
         if (!user) redirect('/login');
 
         const { getSupabaseAdmin } = await import('@/lib/supabase/admin');
+        const { deleteMatchMediaForMatches } = await import('@/lib/matchMedia/cleanup');
         const admin = getSupabaseAdmin();
+
+        const { data: matchRows } = await admin.from('matches').select('id').eq('player_id', playerId);
+        const matchIds = (matchRows ?? []).map((m) => m.id as string);
+        if (matchIds.length) {
+            await deleteMatchMediaForMatches(admin, user.id, matchIds);
+        }
 
         // tu esquema: players.status (boolean)
         await admin

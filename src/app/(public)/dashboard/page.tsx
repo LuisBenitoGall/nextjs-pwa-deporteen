@@ -189,6 +189,17 @@ export default async function DashboardPage() {
                     <p className="text-sm text-gray-500">{t('sin_deportistas')}</p>
                     )}
 
+                    {canAddPlayers && (!players || players.length === 0) && (
+                    <div className="mt-3">
+                        <Link
+                            href="/players/new"
+                            className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
+                        >
+                            {t('deportista_agregar') || 'Añadir deportista'}
+                        </Link>
+                    </div>
+                    )}
+
                     {pendingPlayers > 0 && (
                     <p className="text-gray-700">
                         {t('tienes')} <span className="font-semibold text-gray-900">{pendingPlayers}</span>{' '}
@@ -196,7 +207,7 @@ export default async function DashboardPage() {
                     </p>
                     )}
 
-                    {pendingPlayers === 0 && (
+                    {hasAnySubscription && pendingPlayers === 0 && (
                     <div className="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-yellow-900">
                         <p className="text-sm font-medium">
                             {t('limite_deportistas_alcanzado_dashboard') ?? 'Has alcanzado el límite de deportistas de tu suscripción. Amplía tu suscripción para agregar más'}
