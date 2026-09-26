@@ -12,6 +12,7 @@ import { isSubscriptionActive } from '@/lib/subscriptions/shared';
 import ConfirmDeleteButton from '@/components/ConfirmDeleteButton';
 import EditPlayerNameModal from '@/components/EditPlayerNameModal';
 import TitleH1 from '@/components/TitleH1';
+import ActionResultBanner from '@/components/ActionResultBanner';
 
 type PageParams = { id: string };
 
@@ -178,7 +179,7 @@ export default async function PlayerDetailPage({
 
         if (ownsErr || !owns || (owns as any)?.p?.user_id !== user.id || owns.player_id !== playerId) {
             console.error('deleteCompetitionAction: ownership check failed', ownsErr, owns);
-            return; // salimos en silencio; si prefieres, lanza un Error
+            redirect(`/players/${playerId}?actionError=delete_competition`);
         }
 
         // 1) Admin client (service role) para bypass RLS
@@ -217,11 +218,10 @@ export default async function PlayerDetailPage({
 
         if (delCompErr || !deleted?.id) {
             console.error('deleteCompetitionAction: competition delete', delCompErr);
-            return; // si quieres feedback visible, lanza Error aquí
+            redirect(`/players/${playerId}?actionError=delete_competition`);
         }
 
-        // 4) Volver al detalle para refrescar
-        redirect(`/players/${playerId}`);
+        redirect(`/players/${playerId}?actionOk=delete_competition`);
     }
 
     // --- Estado de suscripción del usuario ---
@@ -236,6 +236,7 @@ export default async function PlayerDetailPage({
 
     return (
         <div>
+            <ActionResultBanner />
             <TitleH1>
                 <span className="inline">{t('jugador')}</span>
                 {' '}

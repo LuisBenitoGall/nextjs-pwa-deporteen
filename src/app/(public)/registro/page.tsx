@@ -63,11 +63,12 @@ export default function RegistroPage() {
         }
     });
 
-    // Autodetecta idioma del navegador (es, ca, eu, gl, en... lo que venga)
+    // Autodetecta idioma del navegador solo si el usuario no eligió uno en el formulario
     useEffect(() => {
         try {
+            const current = watch('locale');
+            if (current && String(current).trim().length >= 2) return;
             const code = (navigator.language || 'es').slice(0, 2).toLowerCase();
-            if (!watch('locale')) setValue('locale', code);
             setValue('locale', code);
         } catch {}
     }, [setValue, watch]);
@@ -82,36 +83,39 @@ export default function RegistroPage() {
                 ? `${origin}/auth/callback?next=${encodeURIComponent('/dashboard')}`
                 : undefined;
 
-            const { error: signUpError } = await supabase.auth.signUp({
-                email: data.email,
-                password: data.password,
-                options: {
+            const registerRes = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: data.email,
+                    password: data.password,
                     emailRedirectTo,
-                    data: {
-                        name: data.name,
-                        surname: data.surname,
-                        accepted_terms: data.accepted_terms,
-                        locale: (data.locale && data.locale.trim().slice(0,2).toLowerCase())
-                            || (navigator.language || 'es').slice(0,2).toLowerCase()
-                    }
-                }
+                    name: data.name,
+                    surname: data.surname,
+                    locale: (data.locale && data.locale.trim().slice(0, 2).toLowerCase())
+                        || (navigator.language || 'es').slice(0, 2).toLowerCase(),
+                    accepted_terms: data.accepted_terms,
+                }),
             });
-            if (signUpError) throw signUpError;
+            if (!registerRes.ok) {
+                const payload = await registerRes.json().catch(() => ({}));
+                throw new Error(payload.message || 'No se pudo crear la cuenta');
+            }
 
-            // A veces Supabase no devuelve session aunque no pidas confirmación: iniciamos sesión explícitamente.
-            const { error: signInErr } = await supabase.auth.signInWithPassword({
-                email: data.email,
-                password: data.password
+            const loginRes = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: data.email, password: data.password }),
             });
 
-            if (signInErr) {
-                // Si algún día activas confirmación por email, caerá aquí
-                const msg = signInErr.message?.toLowerCase() || '';
+            if (!loginRes.ok) {
+                const payload = await loginRes.json().catch(() => ({}));
+                const msg = String(payload.message || '').toLowerCase();
                 if (msg.includes('confirm') || msg.includes('confirmación') || msg.includes('email not confirmed')) {
                     router.replace('/auth/check-email');
                     return;
                 }
-                throw signInErr;
+                throw new Error(payload.message || 'No se pudo iniciar sesión tras el registro');
             }
             router.refresh();        // <- fuerza a Next a leer cookies nuevas
             // La sync a public.users la hace el trigger; no hace falta upsert manual.

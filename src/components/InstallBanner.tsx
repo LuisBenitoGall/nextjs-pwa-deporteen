@@ -26,7 +26,7 @@ export default function InstallBanner() {
   if (!show) return null;
 
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 max-w-sm w-[92vw] rounded-2xl shadow-xl bg-white/95 backdrop-blur p-3 border border-black/5">
+    <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[55] max-w-sm w-[92vw] rounded-2xl shadow-xl bg-white/95 backdrop-blur p-3 border border-black/5">
       {!ios ? (
         <div className="flex items-center gap-3">
           <div className="text-sm">

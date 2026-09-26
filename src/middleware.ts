@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { userCanAccessAdminPanel } from '@/lib/auth/adminAccess';
+import { isProtectedAppPath } from '@/lib/auth/protectedRoutes';
 
 function applySecurityHeaders(res: NextResponse, nonce: string) {
   const isDev = process.env.NODE_ENV !== 'production';
@@ -35,6 +36,18 @@ function applySecurityHeaders(res: NextResponse, nonce: string) {
   res.headers.set('Permissions-Policy', 'camera=(self), microphone=(self), geolocation=(self)');
 }
 
+async function userIsDeactivated(
+  supabase: ReturnType<typeof createServerClient>,
+  userId: string
+): Promise<boolean> {
+  const { data: profile } = await supabase
+    .from('users')
+    .select('status')
+    .eq('id', userId)
+    .maybeSingle();
+  return profile?.status === false;
+}
+
 export async function middleware(req: NextRequest) {
   const nonce = crypto.randomUUID();
   const requestHeaders = new Headers(req.headers);
@@ -48,14 +61,8 @@ export async function middleware(req: NextRequest) {
   const hasSupabaseConfig = Boolean(supabaseUrl && supabaseAnon);
 
   // CRIT-12: sin credenciales Supabase, no instanciar cliente SSR (evita 500 global).
-  // Rutas protegidas se tratan como sin sesión; el resto sigue con cabeceras de seguridad.
   if (!hasSupabaseConfig) {
-    const isProtected =
-      p.startsWith('/dashboard') ||
-      p.startsWith('/players') ||
-      p.startsWith('/account') ||
-      p.startsWith('/subscription') ||
-      p.startsWith('/billing');
+    const isProtected = isProtectedAppPath(p);
 
     if (p.startsWith('/admin') || isProtected) {
       const url = req.nextUrl.clone();
@@ -106,14 +113,11 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
 
-  const isProtected =
-    p.startsWith('/dashboard') ||
-    p.startsWith('/players') ||
-    p.startsWith('/account') ||
-    p.startsWith('/subscription') ||
-    p.startsWith('/billing');
+  const isProtected = isProtectedAppPath(p);
 
   if (isProtected && !session) {
     const url = req.nextUrl.clone();
@@ -121,6 +125,17 @@ export async function middleware(req: NextRequest) {
     url.searchParams.set('next', req.nextUrl.pathname);
     return NextResponse.redirect(url);
   }
+
+  if (session && isProtected) {
+    const deactivated = await userIsDeactivated(supabase, session.user.id);
+    if (deactivated) {
+      const url = req.nextUrl.clone();
+      url.pathname = '/logout';
+      url.searchParams.set('reason', 'disabled');
+      return NextResponse.redirect(url);
+    }
+  }
+
   if (session && (p === '/login' || p === '/registro')) {
     const url = req.nextUrl.clone();
     url.pathname = '/dashboard';

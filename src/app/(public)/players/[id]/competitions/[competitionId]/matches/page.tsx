@@ -10,6 +10,8 @@ import { ResponsiveContainer, CartesianGrid, Tooltip, Legend, BarChart, Bar, XAx
 
 //Components
 import TitleH1 from '@/components/TitleH1';
+import { LIMITS } from '@/config/constants';
+import PageLoadError from '@/components/PageLoadError';
 
 type TabKey = 'matches' | 'charts';
 
@@ -166,8 +168,20 @@ export default function MatchesByCompetitionPage() {
         return () => { mounted = false; };
     }, [supabase, playerId, competitionId]);
 
-    if (loading) return <div className="p-6">{t('cargando') || 'Cargandoâ€¦'}</div>;
-    if (error) return <div className="p-6 text-red-600">{error}</div>;
+    const pageSize = LIMITS.MATCH_LIST_PAGE_SIZE;
+    const visibleMatches = matches.slice(0, pageSize);
+    const listTruncated = matches.length > pageSize;
+
+    if (loading) return <div className="p-6">{t('cargando') || 'Cargando…'}</div>;
+    if (error) {
+        return (
+            <PageLoadError
+                message={error}
+                backHref={playerId ? `/players/${playerId}` : '/dashboard'}
+                backLabelKey={playerId ? 'volver_panel' : 'mi_panel_volver'}
+            />
+        );
+    }
 
     const seasonLabel =
     season?.year_start && season?.year_end
@@ -175,9 +189,9 @@ export default function MatchesByCompetitionPage() {
     : null;
 
     // 4.a) Serie de marcador por fecha
-    // 4.b) Detectar mÃ©tricas numÃ©ricas desde sport.stats y matches.stats
-    function normalizeType(t: any): 'number'|'text'|'boolean' {
-        const v = String(t||'').toLowerCase();
+    // 4.b) Detectar métricas numéricas desde sport.stats y matches.stats
+    function normalizeType(typeRaw: unknown): 'number'|'text'|'boolean' {
+        const v = String(typeRaw||'').toLowerCase();
         if (v.includes('bool')) return 'boolean';
         if (v.includes('int') || v.includes('num') || v.includes('float')) return 'number';
         return 'text';
@@ -314,6 +328,13 @@ const otherTeam = Math.max(0, teamTotalForPie - playerScoringTotal);
                 {seasonLabel ? <span className="text-gray-500"> {seasonLabel}</span> : null}
             </TitleH1>
 
+            {listTruncated && (
+                <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                    {t('match_list_truncated', { n: String(pageSize), total: String(matches.length) })
+                        || `Mostrando los primeros ${pageSize} de ${matches.length} partidos.`}
+                </p>
+            )}
+
             {/* Tabs */}
             <div className="mb-6 flex gap-2">
                 <Link href={`/players/${playerId}`}>
@@ -388,7 +409,7 @@ const otherTeam = Math.max(0, teamTotalForPie - playerScoringTotal);
                                 <tr>
                                     <th className="px-3 py-2 text-left">{t('fecha') || 'Fecha'}</th>
                                     <th className="px-3 py-2 text-left">{t('lugar') || 'Lugar'}</th>
-                                    <th className="px-3 py-2 text-left">{t('condicion') || 'CondiciÃ³n'}</th>
+                                    <th className="px-3 py-2 text-left">{t('condicion') || 'Condición'}</th>
                                     <th className="px-3 py-2 text-left">{t('rival') || 'Rival'}</th>
                                     <th className="px-3 py-2 text-left">{t('marcador') || 'Marcador'}</th>
                                     <th className="px-3 py-2 text-left">{t('acciones') || 'Acciones'}</th>
@@ -399,11 +420,11 @@ const otherTeam = Math.max(0, teamTotalForPie - playerScoringTotal);
                                 {matches.length === 0 && (
                                     <tr>
                                         <td colSpan={6} className="px-3 py-6 text-center text-gray-500">
-                                            {t('sin_partidos') || 'No hay partidos para esta competiciÃ³n y temporada.'}
+                                            {t('sin_partidos') || 'No hay partidos para esta competición y temporada.'}
                                         </td>
                                     </tr>
                                 )}
-                                {matches.map(m => {
+                                {visibleMatches.map(m => {
                                     // Datos bÃ¡sicos
                                     const rival = m.rival_team_name || t('equipo_rival') || 'Rival';
                                     const myGoals = Number(m.my_score ?? 0);

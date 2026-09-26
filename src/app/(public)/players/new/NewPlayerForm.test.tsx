@@ -535,7 +535,7 @@ describe('NewPlayerForm', () => {
         const createCalls = mockRpc.mock.calls.filter((c: any[]) => c[0] === 'create_player_link_subscription');
         expect(createCalls.length).toBe(0);
       });
-      expect(screen.getByText(/Introduce un nombre/i)).toBeInTheDocument();
+      expect(screen.getByText(/introduce un nombre|player_form_name_required/i)).toBeInTheDocument();
     });
 
     it('should validate required fields before submission', async () => {
@@ -557,7 +557,11 @@ describe('NewPlayerForm', () => {
       }
 
       await waitFor(() => {
-        expect(screen.queryByText(/introduce un nombre/i) || screen.queryByText(/Introduce el nombre/i)).toBeInTheDocument();
+        expect(
+          screen.queryByText(/introduce un nombre/i)
+            || screen.queryByText(/Introduce el nombre/i)
+            || screen.queryByText(/player_form_name_required/i)
+        ).toBeInTheDocument();
       });
     });
   });

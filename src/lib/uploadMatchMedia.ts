@@ -116,6 +116,16 @@ export async function uploadMatchMedia(params: {
     const res = await fetchWithTimeout('/api/r2/upload', { method: 'POST', body: form });
     if (!res.ok) {
       const { error } = await res.json().catch(() => ({ error: 'Error R2' }));
+      const ext = guessExt(mime) || (kind === 'image' ? '.jpg' : '.mp4');
+      enqueue({
+        id: mediaId,
+        key: deviceKey,
+        matchId,
+        ext,
+        mime,
+        userId: uid,
+        playerId,
+      });
       throw new Error(error || 'No se pudo subir a R2.');
     }
     const { mediaId: r2Id, path } = await res.json() as { mediaId: string; path: string };
@@ -220,6 +230,7 @@ export async function uploadMatchMedia(params: {
         ext,
         mime,
         userId: uid,
+        playerId,
       });
       throw new Error(up.error.message || 'No se pudo subir el archivo a la nube.');
     }
