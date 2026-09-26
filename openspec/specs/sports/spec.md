@@ -10,6 +10,7 @@ Lista **cerrada** de deportes de equipo soportados en lanzamiento. Cada deporte 
 
 - El catálogo MUST estar en Postgres (`public.sports`) con seed reproducible en migraciones (`20260926120000_seats_remaining_and_sports_catalog.sql`).
 - Deportes v1 (9): baloncesto, fútbol, fútbol sala, balonmano, rugby, voleibol, waterpolo, hockey hierba, hockey patines.
+- **Slugs en BD:** kebab-case con **guion** (`futbol-sala`, `hockey-hierba`), alineados con `src/lib/sports/index.ts` y `normalizeSlug()` (espacios → guion, no guion bajo). Las claves i18n (`futbol_sala`) no son slugs de BD.
 - Iconos de UI alineados con `src/lib/sports/index.ts` (slug coherente).
 - Solo filas con `active = true` se ofrecen en formularios de competición/alta.
 

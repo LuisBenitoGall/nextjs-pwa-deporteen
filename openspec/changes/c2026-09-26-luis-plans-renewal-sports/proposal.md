@@ -67,7 +67,7 @@ Script listo para el SQL Editor (idempotente, seguro con UUID existentes):
 
 Repo: `supabase/migrations/20260926120000_seats_remaining_and_sports_catalog.sql` (INSERT por id; en prod preferir el script del store).
 
-**Riesgo deportes:** insertar por UUID fijo duplicaría filas si prod ya tiene el mismo deporte con otro `id`. El script del store **actualiza por slug** y solo inserta slugs faltantes; no reasigna FK. Riesgo residual: slugs duplicados en BD o UUID fijo ocupado por otro slug (consultas C/E del diagnóstico).
+**Riesgo deportes:** insertar por UUID fijo duplicaría filas si prod ya tiene el mismo deporte con otro `id`. El script del store **actualiza por slug** y solo inserta slugs faltantes; no reasigna FK. Riesgo residual: **legacy con guion bajo** (`futbol_sala`) coexistiendo con catálogo v1 (`futbol-sala`) — convención código = **guion** (`src/lib/sports/index.ts`). Reconciliación: store `docs/reconciliar-deportes-duplicados.sql`.
 
 **`players.deleted_at`:** no existe en prod; el RPC `seats_remaining` cuenta solo `COALESCE(players.status, true)`. La app libera asiento con `status = false` (`deletePlayer` en cuenta). El borrado de cuenta intenta además `deleted_at` en `players`/`users` — si falla en prod, es decisión aparte (añadir columna o quitar ese UPDATE del código); fuera del alcance de este change salvo alinear el RPC.
 
