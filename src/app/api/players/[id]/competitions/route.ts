@@ -14,13 +14,13 @@ type Body = {
 
 export async function POST(
   req: Request,
-  context: { params: Promise<{ playerId: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user } = await getServerUser();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { playerId } = await context.params;
+    const { id: playerId } = await context.params;
     const body = (await req.json()) as Body;
 
     if (!body.sportId) {
