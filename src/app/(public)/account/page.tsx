@@ -190,7 +190,6 @@ export default async function AccountPage() {
     //     // No rompemos la página por un error de suscripciones
     //     console.error('subscriptions error', subsErr);
     // }
-    const now = new Date();
     const subs = (subsRaw || []).map((s) => {
         const start = s.created_at || null;
         const end = s.current_period_end || null;
