@@ -51,9 +51,5 @@ export default function manifest(): MetadataRoute.Manifest {
         icons: [{ src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' }],
       },
     ],
-    screenshots: [
-      { src: '/screenshots/screenshot-mobile-1080x1920.png', sizes: '1080x1920', type: 'image/png', form_factor: 'narrow' },
-      { src: '/screenshots/screenshot-tablet-2048x1536.png', sizes: '2048x1536', type: 'image/png', form_factor: 'wide' }
-    ]
   };
 }

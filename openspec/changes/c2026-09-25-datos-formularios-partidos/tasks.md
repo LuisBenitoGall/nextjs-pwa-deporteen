@@ -19,6 +19,7 @@
 - [x] Luis 1-A / 2-A: specs `matches` y `players` alineados
 - [x] Luis 3-A: migración RPC memberships + `NewPlayerForm` (aplicar SQL en Supabase)
 - [x] Luis 5-A: `getCloudBytesUsed` + migración `deleted_at` (aplicar SQL en Supabase)
-- [x] Luis 11-B: manifest sin `screenshots`
+- [x] Luis 11-B: manifest sin `screenshots` (vigilar que merges no reintroduzcan MED-21)
+- [x] MED-18: auth + ownership en `GET /api/players/[id]/media` + tests
 - [ ] Aplicar migraciones `20260925153000` y `20260925153100` en Supabase producción/staging
 - [ ] Verificación E2E con Supabase (sin credenciales en VM)

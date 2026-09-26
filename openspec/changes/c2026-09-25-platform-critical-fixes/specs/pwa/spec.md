@@ -5,7 +5,8 @@
 ### MODIFIED Criterios de Aceptación
 
 - Los `shortcuts` del manifest MUST apuntar solo a rutas existentes en la app (p. ej. `/dashboard`, `/gallery`, `/players/new`, `/matches/new` tras integración #45).
-- **Decisión Luis 11-B (2026-09-25):** el manifest **no** incluye `screenshots` hasta disponer de capturas acordadas con producto. No listar URLs rotas. Cuando se añadan, será **mejora opcional de baja prioridad** para enriquecer el flujo de instalación en navegadores compatibles; no es obligatorio para el producto ni para ninguna tienda.
+- **Decisión Luis 11-B (2026-09-25):** el manifest **no** incluye `screenshots` hasta disponer de capturas acordadas con producto. No listar URLs rotas (MED-21). Cuando se añadan, será **mejora opcional de baja prioridad** para enriquecer el flujo de instalación en navegadores compatibles; no es obligatorio para el producto ni para ninguna tienda.
+- Los merges de la pila #44→#45→#46 MUST mantener el manifest **sin** bloque `screenshots` hasta que existan PNG en `public/screenshots/`.
 
 ## Delta RF-2 (Service Worker)
 

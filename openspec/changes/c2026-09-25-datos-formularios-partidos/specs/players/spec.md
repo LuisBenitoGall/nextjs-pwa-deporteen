@@ -32,3 +32,7 @@
 ### AÑADIDO: Historial por temporada
 
 - Ruta `/players/[id]/season/[seasonId]` lista partidos de esa temporada.
+
+### MED-18 — API medios por jugador
+
+- `GET /api/players/[id]/media` MUST exigir sesión autenticada y que `players.user_id` coincida con el usuario de la sesión; 401 sin sesión, 404 si el jugador no es del usuario.
