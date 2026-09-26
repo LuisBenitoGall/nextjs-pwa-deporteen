@@ -292,11 +292,8 @@ export default async function AccountPage() {
             }
         } catch {}
 
-        // Actualiza players vinculados al mismo id
-        const { error: pErr } = await admin
-            .from('players')
-            .update({ deleted_at: nowIso, active: false })
-            .eq('user_id', user_id);
+        const { deactivateUserPlayers } = await import('@/lib/account/deactivateUserPlayers');
+        const { error: pErr } = await deactivateUserPlayers(admin, user_id, nowIso);
         if (pErr) console.error('deleteAccount: players update error', pErr);
 
         // Cancelar suscripciones activas

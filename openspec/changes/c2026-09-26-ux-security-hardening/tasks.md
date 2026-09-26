@@ -9,3 +9,4 @@
 - [x] MED-25, MED-07, BAJO-08, error.tsx
 - [x] Tests logout + CI verde
 - [x] Ronda 2: medios/sync, rate limit, MED-10/11/14/19 parcial, ALTO-17/06, BAJO parcial, CRIT-12 cliente lazy
+- [x] MED-19: borrado cuenta — jugadores con `status: false` únicamente (sin `players.deleted_at`)

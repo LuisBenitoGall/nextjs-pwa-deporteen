@@ -12,7 +12,8 @@
 
 ### DECISIÓN Luis 4-A (2026-09-25): borrado y retención
 
-- Borrado de jugador: **soft delete** (`status: false` / `deleted_at` según tabla) y limpieza de `match_media` y objetos en almacenamiento cuando corresponda.
+- Borrado de jugador: **soft delete** con `players.status = false` (la tabla `players` **no** tiene `deleted_at` en Supabase). Limpieza de `match_media` (`deleted_at` en esa tabla) y objetos en almacenamiento cuando corresponda.
+- Borrado de cuenta: desactivar usuario (`users.status`) y los mismos jugadores vinculados solo vía `players.status = false`, sin escribir columnas inexistentes.
 - **Política de retención (producto):** medios en nube se eliminan con el borrado lógico del jugador o cuenta; blobs solo locales (IndexedDB) no se recuperan automáticamente tras desinstalar la PWA.
 
 ### MODIFICADO: Alta de deportista
