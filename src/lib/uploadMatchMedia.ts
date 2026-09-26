@@ -4,8 +4,10 @@ import { idbPut } from '@/lib/mediaLocal';
 import { fetchWithTimeout } from '@/lib/fetchWithTimeout';
 import { enqueue } from '@/lib/mediaSync';
 
-// Nube OFF por defecto. Actívala poniendo NEXT_PUBLIC_CLOUD_MEDIA=1 en .env.local
-const CLOUD_ENABLED = process.env.NEXT_PUBLIC_CLOUD_MEDIA === '1';
+/** @deprecated El flag ya no omite la suscripción; solo se usa en builds legacy para telemetría. */
+const LEGACY_CLOUD_FLAG = process.env.NEXT_PUBLIC_CLOUD_MEDIA === '1';
+
+const REMOTE_UPLOAD_ENDPOINT = '/api/remote-media/upload';
 
 export function guessExt(mime: string): string {
   if (!mime) return '';
@@ -102,10 +104,10 @@ export async function uploadMatchMedia(params: {
   // 1) Guardar local siempre: sirve como caché inmediata aunque el proveedor sea Drive/Supabase.
   await idbPut(deviceKey, file);
 
-  const requestedProvider = params.provider ?? (CLOUD_ENABLED ? 'supabase' : 'local');
+  const requestedProvider = params.provider ?? (LEGACY_CLOUD_FLAG ? 'supabase' : 'local');
 
-  // R2: la API maneja tanto el upload como el insert en match_media
-  if (requestedProvider === 'r2') {
+  // Remoto facturable (R2 / Supabase): solo vía API con validación en servidor
+  if (requestedProvider === 'r2' || requestedProvider === 'supabase') {
     const form = new FormData();
     form.append('file', file);
     form.append('matchId', matchId);
@@ -113,23 +115,35 @@ export async function uploadMatchMedia(params: {
     form.append('device_uri', deviceKey);
     if (playerId) form.append('playerId', playerId);
     if (duration_ms != null) form.append('duration_seconds', String(duration_ms / 1000));
-    const res = await fetchWithTimeout('/api/r2/upload', { method: 'POST', body: form });
+    const res = await fetchWithTimeout(REMOTE_UPLOAD_ENDPOINT, { method: 'POST', body: form });
     if (!res.ok) {
-      const { error } = await res.json().catch(() => ({ error: 'Error R2' }));
-      const ext = guessExt(mime) || (kind === 'image' ? '.jpg' : '.mp4');
-      enqueue({
-        id: mediaId,
-        key: deviceKey,
-        matchId,
-        ext,
-        mime,
-        userId: uid,
-        playerId,
-      });
-      throw new Error(error || 'No se pudo subir a R2.');
+      const payload = await res.json().catch(() => ({ error: 'Error de almacenamiento remoto' })) as {
+        error?: string;
+        code?: string;
+      };
+      const code = payload.code;
+      const message = payload.error || payload.code || 'No se pudo subir a la nube.';
+      const permanentDenial =
+        res.status === 403 ||
+        res.status === 409 ||
+        code === 'NO_ACTIVE_STORAGE_SUBSCRIPTION' ||
+        code === 'QUOTA_EXCEEDED';
+      if (!permanentDenial) {
+        const ext = guessExt(mime) || (kind === 'image' ? '.jpg' : '.mp4');
+        enqueue({
+          id: mediaId,
+          key: deviceKey,
+          matchId,
+          ext,
+          mime,
+          userId: uid,
+          playerId,
+        });
+      }
+      throw new Error(message);
     }
-    const { mediaId: r2Id, path } = await res.json() as { mediaId: string; path: string };
-    return { id: r2Id, storagePath: path };
+    const { mediaId: remoteId, path } = await res.json() as { mediaId: string; path: string };
+    return { id: remoteId, storagePath: path };
   }
 
   let storagePath: string | null = null;
@@ -191,7 +205,7 @@ export async function uploadMatchMedia(params: {
       match_id: matchId,
       player_id: playerId,
       kind,
-      storage_provider: requestedProvider === 'drive' ? 'drive' : requestedProvider === 'supabase' ? 'supabase' : 'local',
+      storage_provider: requestedProvider === 'drive' ? 'drive' : 'local',
       mime_type: mime,
       size_bytes: file.size,
       width, height, duration_ms,
@@ -205,36 +219,6 @@ export async function uploadMatchMedia(params: {
     .single();
 
   if (insertRes.error) throw new Error(insertRes.error.message || 'No se pudo insertar en match_media');
-
-  // 3) Subida opcional a Supabase Storage (solo si activas el flag o se pide explícitamente)
-  if (requestedProvider === 'supabase') {
-    const ext = guessExt(mime) || (kind === 'image' ? '.jpg' : '.mp4');
-    storagePath = `${uid}/matches/${matchId}/${mediaId}${ext}`;
-
-    const up = await supabase.storage
-      .from('matches')
-      .upload(storagePath, file, { upsert: true, contentType: mime });
-
-    if (!up.error) {
-      await supabase
-        .from('match_media')
-        .update({ storage_path: storagePath, synced_at: new Date().toISOString() })
-        .eq('id', mediaId);
-    } else {
-      storagePath = null;
-      const ext = guessExt(mime) || (kind === 'image' ? '.jpg' : '.mp4');
-      enqueue({
-        id: mediaId,
-        key: deviceKey,
-        matchId,
-        ext,
-        mime,
-        userId: uid,
-        playerId,
-      });
-      throw new Error(up.error.message || 'No se pudo subir el archivo a la nube.');
-    }
-  }
 
   return { id: mediaId, storagePath };
 }

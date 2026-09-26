@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import { getDriveStatus, type StorageProvider } from '@/lib/googleDrive/server';
 import { isAllowedProvider, isCrossUserAttempt } from '@/lib/storageProvider/validation';
-import { getServerUser } from '@/lib/supabase/server';
+import { createSupabaseServerClient, getServerUser } from '@/lib/supabase/server';
+import { hasActiveStorageSubscription } from '@/lib/cloud/has-active-storage-subscription';
+import { isBillableRemoteProvider } from '@/lib/cloud/remote-access';
 
 export const runtime = 'nodejs';
 
@@ -42,6 +44,20 @@ export async function POST(req: Request) {
     const status = await getDriveStatus(user.id);
     if (status !== 'connected') {
       return NextResponse.json({ error: 'Drive not connected', code: 'reconnect-required' }, { status: 409 });
+    }
+  }
+
+  if (isBillableRemoteProvider(body.provider)) {
+    const supabase = await createSupabaseServerClient();
+    const active = await hasActiveStorageSubscription(supabase, user.id);
+    if (!active) {
+      return NextResponse.json(
+        {
+          error: 'Sin suscripción de almacenamiento remoto activa.',
+          code: 'NO_ACTIVE_STORAGE_SUBSCRIPTION',
+        },
+        { status: 403 }
+      );
     }
   }
 

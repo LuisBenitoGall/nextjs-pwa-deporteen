@@ -2,6 +2,7 @@ import 'server-only';
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { BYTES_PER_GB } from '@/lib/cloud/guardrails';
+import { sumBillableRemoteBytes } from '@/lib/cloud/usage-helpers';
 type AppSupabase = SupabaseClient;
 
 export type CloudUsageSnapshot = {
@@ -28,19 +29,20 @@ export async function getActiveCloudPlanGb(supabase: AppSupabase, userId: string
   return row?.gb_amount ?? 0;
 }
 
+/**
+ * Bytes remotos facturables del usuario (todos sus jugadores).
+ * Solo medios no borrados; excluye local y Google Drive del usuario.
+ */
 export async function getCloudBytesUsed(supabase: AppSupabase, userId: string): Promise<number> {
   const { data, error } = await supabase
     .from('match_media')
-    .select('size_bytes,storage_path')
+    .select('size_bytes,storage_provider,storage_path')
     .eq('user_id', userId)
-    .like('storage_path', 'r2:%')
     .is('deleted_at', null);
 
   if (error || !data) return 0;
-  return (data as Array<{ size_bytes?: number | null }>).reduce(
-    (sum, row) => sum + (row.size_bytes ?? 0),
-    0
-  );
+
+  return sumBillableRemoteBytes(data as Array<{ size_bytes?: number | null; storage_provider?: string | null; storage_path?: string | null }>);
 }
 
 export async function getCloudUsage(supabase: AppSupabase, userId: string): Promise<CloudUsageSnapshot> {
