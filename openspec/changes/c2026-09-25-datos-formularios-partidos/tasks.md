@@ -21,5 +21,6 @@
 - [x] Luis 5-A: `getCloudBytesUsed` + migración `deleted_at` (aplicar SQL en Supabase)
 - [x] Luis 11-B: manifest sin `screenshots` (vigilar que merges no reintroduzcan MED-21)
 - [x] MED-18: auth + ownership en `GET /api/players/[id]/media` + tests
-- [ ] Aplicar migraciones `20260925153000` y `20260925153100` en Supabase producción/staging
+- [x] Aplicar migraciones `20260925153000` y `20260925153100` en Supabase producción/staging (Luis, 26/09/2026)
+- [x] Corregir slug dinámico API `players/[id]/competitions` (conflicto `id` vs `playerId` rompía rutas `/api/players/*`)
 - [ ] Verificación E2E con Supabase (sin credenciales en VM)
