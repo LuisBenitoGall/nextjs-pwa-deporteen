@@ -37,11 +37,16 @@ function LoginPageInner() {
         setBusy(true);
         setErr(null);
         try {
-            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-            if (error) throw error;
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+            });
+            const payload = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(payload.message ?? 'Error al iniciar sesión');
             try {
               const bc = new BroadcastChannel('auth');
-              bc.postMessage({ type: 'SIGNED_IN', user: data.user });
+              bc.postMessage({ type: 'SIGNED_IN', user: payload.user });
               bc.close();
             } catch {}
             router.replace(nextPath);

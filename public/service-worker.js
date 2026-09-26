@@ -2,7 +2,7 @@
 // public/service-worker.js
 
 const CACHE_PREFIX  = 'pwa-esports';
-const CACHE_VERSION = 'v5';                // << súbelo para forzar actualización
+const CACHE_VERSION = 'v6';                // << súbelo para forzar actualización
 const CACHE_NAME    = `${CACHE_PREFIX}-${CACHE_VERSION}`;
 const BLOCK_SITE    = false;
 
@@ -111,9 +111,13 @@ async function networkFirst(request) {
   }
 }
 
-// Background Sync (opcional; no toca Supabase)
+// Background Sync: avisa a clientes abiertos para procesar IndexedDB + cola local
 self.addEventListener('sync', (event) => {
   if (event.tag === 'media-sync') {
-    event.waitUntil(fetch('/api/media/sync', { method: 'POST' }).catch(() => {}));
+    event.waitUntil(
+      self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+        clients.forEach((client) => client.postMessage({ type: 'MEDIA_SYNC' }));
+      })
+    );
   }
 });

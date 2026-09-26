@@ -3,14 +3,18 @@ import { cookies } from 'next/headers';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 function resolveRedirectOrigin(request: Request): string {
-  if (process.env.NEXT_PUBLIC_APP_URL) {
-    try {
-      return new URL(process.env.NEXT_PUBLIC_APP_URL).origin;
-    } catch {
-      /* fall through */
+  try {
+    return new URL(request.url).origin;
+  } catch {
+    if (process.env.NEXT_PUBLIC_APP_URL) {
+      try {
+        return new URL(process.env.NEXT_PUBLIC_APP_URL).origin;
+      } catch {
+        /* fall through */
+      }
     }
+    return 'http://localhost:3000';
   }
-  return new URL(request.url).origin;
 }
 
 async function clearSupabaseCookies() {

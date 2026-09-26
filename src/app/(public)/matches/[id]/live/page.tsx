@@ -89,6 +89,8 @@ export default function LiveMatchPage() {
     // Estado editable
     const [myScore, setMyScore]       = useState<number>(0);
     const [rivalScore, setRivalScore] = useState<number>(0);
+    const [leftScoreDraft, setLeftScoreDraft] = useState<string | null>(null);
+    const [rightScoreDraft, setRightScoreDraft] = useState<string | null>(null);
     const [notes, setNotes]           = useState<string>('');
     const [stats, setStats]           = useState<Record<string, any>>({});
 
@@ -277,6 +279,20 @@ export default function LiveMatchPage() {
 
     useEffect(() => () => { if (savingRef.current) clearTimeout(savingRef.current); }, []);
 
+    useEffect(() => {
+        const onSync = (ev: Event) => {
+            const detail = (ev as CustomEvent<{ failed?: number; remaining?: number }>).detail;
+            if (!detail) return;
+            if (detail.remaining && detail.remaining > 0) {
+                setSaveError(t('media_sync_pending') || 'Algunos archivos siguen pendientes de sincronizar.');
+            } else if (detail.failed && detail.failed > 0) {
+                setSaveError(t('media_sync_failed') || 'No se pudieron sincronizar algunos archivos.');
+            }
+        };
+        window.addEventListener('media-sync-status', onSync);
+        return () => window.removeEventListener('media-sync-status', onSync);
+    }, [t]);
+
     // Auto-activar pantalla en el primer gesto del usuario
     useEffect(() => {
         const onFirst = async () => { try { await wakeRequest(); } catch {} };
@@ -369,6 +385,8 @@ export default function LiveMatchPage() {
             clearTimeout(savingRef.current);
             savingRef.current = null;
         }
+        setLeftScoreDraft(null);
+        setRightScoreDraft(null);
 
         // Optimistic UI
         setMyScore(nextMy);
@@ -484,6 +502,13 @@ export default function LiveMatchPage() {
     }
 
     function handleScoreInput(side: 'left' | 'right', raw: string) {
+        if (!/^\d*$/.test(raw)) return;
+
+        if (side === 'left') setLeftScoreDraft(raw);
+        else setRightScoreDraft(raw);
+
+        if (raw === '') return;
+
         const n = Math.max(0, parseInt(raw, 10) || 0);
 
         if (side === 'left') {
@@ -637,7 +662,7 @@ export default function LiveMatchPage() {
                                 type="text"
                                 inputMode="numeric"
                                 pattern="[0-9]*"
-                                value={leftScore}
+                                value={leftScoreDraft ?? String(leftScore)}
                                 onChange={(e) => handleScoreInput('left', e.target.value)}
                                 className="border rounded-md w-24 sm:w-28 md:w-32 lg:w-40 aspect-square text-5xl md:text-6xl font-bold text-center bg-white"
 
@@ -656,7 +681,7 @@ export default function LiveMatchPage() {
                                 type="text"
                                 inputMode="numeric"
                                 pattern="[0-9]*"
-                                value={rightScore}
+                                value={rightScoreDraft ?? String(rightScore)}
                                 onChange={(e) => handleScoreInput('right', e.target.value)}
                                 className="border rounded-md w-24 sm:w-28 md:w-32 lg:w-40 aspect-square text-5xl md:text-6xl font-bold text-center bg-white"
 

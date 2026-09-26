@@ -15,6 +15,7 @@ import { resolveDriveMediaSource } from '@/lib/googleDrive/mediaResolution';
 //Componentes
 import ConfirmDeleteButton from '@/components/ConfirmDeleteButton';
 import TitleH1 from '@/components/TitleH1';
+import PageLoadError from '@/components/PageLoadError';
 import { StorageBadge } from '@/components/StorageIcon';
 
 type MatchRow = {
@@ -246,7 +247,15 @@ export default function MatchGalleryPage() {
         const msg = t('cargando');
         return <div className="p-6">{msg === 'cargando' ? 'Cargando…' : msg}</div>;
     }
-    if (error) return <div className="p-6 text-red-600">{error}</div>;
+    if (error) {
+        return (
+            <PageLoadError
+                message={error}
+                backHref={backToMatchUrl}
+                backLabelKey="partido_volver"
+            />
+        );
+    }
 
     return (
         <div>
