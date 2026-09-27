@@ -1,35 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
+import {
+  buildCookieConsentRow,
+  parseCookieConsentPayload,
+  truncateUserAgent,
+} from '@/lib/cookie-consent';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-
-type UntypedTableClient = {
-  from: (table: string) => {
-    insert: (row: Record<string, unknown>) => Promise<{ error: { message: string } | null }>;
-  };
-};
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
-  if (!body?.choices || !body?.consent_version) {
+  const payload = parseCookieConsentPayload(body);
+  if (!payload) {
     return NextResponse.json({ error: 'Bad request' }, { status: 400 });
   }
 
   const supabase = await createSupabaseServerClient();
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0] ?? null;
-  const ua = req.headers.get('user-agent') ?? null;
+  const ua = truncateUserAgent(req.headers.get('user-agent'));
   const { data: auth } = await supabase.auth.getUser();
   const user_id = auth?.user?.id ?? null;
 
-  // Tabla cookie_consents aún no desplegada en public; persistencia best-effort.
-  const db = supabase as unknown as UntypedTableClient;
-  const { error } = await db.from('cookie_consents').insert({
-    user_id,
-    ip,
-    user_agent: ua,
-    consent_version: body.consent_version,
-    choices: body.choices,
-    device_id: body.device_id ?? null,
-  });
+  const row = buildCookieConsentRow(payload, { user_id, user_agent: ua });
 
+  const { error } = await supabase.from('cookie_consents').insert(row);
+
+  // El consentimiento de cookies no debe romper la UX aunque falle telemetría.
   if (error) {
     console.warn('[cookies/consent] insert failed:', error.message);
     return NextResponse.json({ ok: false, warning: 'consent_not_persisted' });
