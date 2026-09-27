@@ -1,6 +1,5 @@
 import { idbGet } from './mediaLocal';
 import { supabaseBrowser } from './supabase/client';
-import { guessExt } from './uploadMatchMedia';
 import { fetchWithTimeout } from './fetchWithTimeout';
 
 type PendingItem = {
@@ -62,7 +61,8 @@ async function resolveStorageProvider(): Promise<'local' | 'supabase' | 'r2' | '
   }
 }
 
-async function uploadQueuedToR2(it: PendingItem, blob: Blob): Promise<boolean> {
+/** Subida remota facturable: siempre vía API (suscripción + cuota en servidor). */
+async function uploadQueuedToRemote(it: PendingItem, blob: Blob): Promise<boolean> {
   const file = new File([blob], `sync${it.ext || '.bin'}`, { type: it.mime || 'application/octet-stream' });
   const form = new FormData();
   form.append('file', file);
@@ -71,7 +71,7 @@ async function uploadQueuedToR2(it: PendingItem, blob: Blob): Promise<boolean> {
   form.append('device_uri', it.key);
   if (it.playerId) form.append('playerId', it.playerId);
 
-  const res = await fetchWithTimeout('/api/r2/upload', { method: 'POST', body: form });
+  const res = await fetchWithTimeout('/api/remote-media/upload', { method: 'POST', body: form });
   if (res.ok) return true;
 
   const payload = await res.json().catch(() => ({} as { code?: string; error?: string }));
@@ -79,28 +79,6 @@ async function uploadQueuedToR2(it: PendingItem, blob: Blob): Promise<boolean> {
     return true;
   }
   return false;
-}
-
-async function uploadQueuedToSupabase(
-  supabase: ReturnType<typeof supabaseBrowser>,
-  uid: string,
-  it: PendingItem,
-  blob: Blob
-): Promise<boolean> {
-  const ext = it.ext || guessExt(it.mime) || '.bin';
-  const storagePath = `${uid}/matches/${it.matchId}/${it.id}${ext}`;
-  const { error: upErr } = await supabase.storage
-    .from('matches')
-    .upload(storagePath, blob, { upsert: true, contentType: it.mime });
-
-  if (upErr) return false;
-
-  const { error: upDbErr } = await supabase
-    .from('match_media')
-    .update({ storage_path: storagePath, synced_at: new Date().toISOString() })
-    .eq('id', it.id);
-
-  return !upDbErr;
 }
 
 export async function trySyncAll(): Promise<MediaSyncResult> {
@@ -122,10 +100,8 @@ export async function trySyncAll(): Promise<MediaSyncResult> {
     }
 
     let ok = false;
-    if (provider === 'r2') {
-      ok = await uploadQueuedToR2(it, blob);
-    } else if (provider === 'supabase') {
-      ok = await uploadQueuedToSupabase(supabase, uid, it, blob);
+    if (provider === 'r2' || provider === 'supabase') {
+      ok = await uploadQueuedToRemote(it, blob);
     } else {
       failed++;
       continue;

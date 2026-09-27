@@ -6,32 +6,10 @@ import { supabase } from '@/lib/supabase/client';
  * Devuelve la ruta y una URL firmada (1 hora).
  * OJO: úsalo desde componentes cliente (o pásale el userId).
  */
-export async function uploadToMatchMediaBucket(file: File, userId?: string) {
-  const uid = userId ?? (await supabase.auth.getUser()).data.user?.id;
-  if (!uid) throw new Error('No hay sesión de usuario.');
-
-  const safeName = file.name.replace(/\s+/g, '_');
-  const path = `${uid}/${crypto.randomUUID()}_${safeName}`;
-
-  const { error: upErr } = await supabase
-    .storage
-    .from('match-media')
-    .upload(path, file, {
-      cacheControl: '3600',
-      upsert: false,
-      contentType: file.type || 'application/octet-stream',
-    });
-
-  if (upErr) throw upErr;
-
-  const { data: signed, error: signErr } = await supabase
-    .storage
-    .from('match-media')
-    .createSignedUrl(path, 60 * 60);
-
-  if (signErr) throw signErr;
-
-  return { path, signedUrl: signed.signedUrl };
+export async function uploadToMatchMediaBucket(_file: File, _userId?: string) {
+  throw new Error(
+    'uploadToMatchMediaBucket está deshabilitado: use /api/remote-media/upload con suscripción de almacenamiento activa.'
+  );
 }
 
 /**

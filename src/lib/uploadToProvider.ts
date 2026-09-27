@@ -2,7 +2,6 @@
 // Router de subida: enruta al proveedor correcto según la preferencia del usuario.
 // Devuelve los campos a guardar en match_media.
 import { idbPut } from '@/lib/mediaLocal';
-import { guessExt } from '@/lib/uploadMatchMedia';
 import { supabase } from '@/lib/supabase/client';
 import type { StorageProvider } from '@/hooks/useStorageProvider';
 
@@ -36,28 +35,37 @@ async function uploadLocal(file: File, matchId: string): Promise<UploadResult> {
     };
 }
 
-// ─── Supabase Storage ────────────────────────────────────────────────────────
+// ─── Remoto facturable (API) ─────────────────────────────────────────────────
 
-async function uploadSupabase(file: File, matchId: string): Promise<UploadResult> {
+async function uploadRemoteViaApi(file: File, matchId: string): Promise<UploadResult> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('No autenticado.');
 
     const mediaId = crypto.randomUUID();
-    const ext = guessExt(file.type) || '.bin';
-    const storagePath = `${user.id}/matches/${matchId}/${mediaId}${ext}`;
-
-    // Guardar también local como caché offline
     const deviceKey = `media:${mediaId}`;
     await idbPut(deviceKey, file);
 
-    const { error } = await supabase.storage
-        .from('matches')
-        .upload(storagePath, file, { upsert: false, contentType: file.type });
-    if (error) throw error;
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('matchId', matchId);
+    formData.append('mediaId', mediaId);
+    formData.append('device_uri', deviceKey);
+
+    const res = await fetch('/api/remote-media/upload', {
+        method: 'POST',
+        body: formData,
+    });
+    if (!res.ok) {
+        const { error, code } = await res.json().catch(() => ({ error: 'Error de almacenamiento remoto' }));
+        throw new Error(error || code || 'No se pudo subir a la nube.');
+    }
+
+    const { storageProvider, path } = await res.json() as { storageProvider: StorageProvider; path: string };
+    const provider = storageProvider === 'supabase' ? 'supabase' : 'r2';
 
     return {
-        storage_provider: 'supabase',
-        storage_path: storagePath,
+        storage_provider: provider,
+        storage_path: provider === 'r2' ? `r2:${path}` : path,
         device_uri: deviceKey,
         google_drive_file_id: null,
     };
@@ -110,30 +118,8 @@ async function uploadDrive(file: File, accessToken: string): Promise<UploadResul
 // ─── Cloudflare R2 ───────────────────────────────────────────────────────────
 
 async function uploadR2(file: File, matchId: string): Promise<UploadResult> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('No autenticado.');
-
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('matchId', matchId);
-
-    const res = await fetch('/api/r2/upload', {
-        method: 'POST',
-        body: formData,
-    });
-    if (!res.ok) {
-        const { error } = await res.json().catch(() => ({ error: 'Error R2' }));
-        throw new Error(error || 'No se pudo subir a R2.');
-    }
-
-    const { path } = await res.json() as { path: string };
-
-    return {
-        storage_provider: 'r2',
-        storage_path: path,
-        device_uri: null,
-        google_drive_file_id: null,
-    };
+    const result = await uploadRemoteViaApi(file, matchId);
+    return { ...result, device_uri: result.device_uri };
 }
 
 // ─── Función principal ───────────────────────────────────────────────────────
@@ -142,7 +128,7 @@ export async function uploadToProvider(params: UploadParams): Promise<UploadResu
     const { file, provider, matchId, googleAccessToken } = params;
 
     switch (provider) {
-        case 'supabase': return uploadSupabase(file, matchId);
+        case 'supabase': return uploadRemoteViaApi(file, matchId);
         case 'drive': {
             if (!googleAccessToken) throw new Error('Se requiere autenticación con Google para Drive.');
             return uploadDrive(file, googleAccessToken);

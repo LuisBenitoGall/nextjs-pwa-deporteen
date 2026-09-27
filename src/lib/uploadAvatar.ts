@@ -1,11 +1,7 @@
 // src/lib/uploadAvatar.ts
 // Compresión + subida a Supabase Storage. Solo para client components.
 import { supabase } from '@/lib/supabase/client';
-import { guessExt } from '@/lib/uploadMatchMedia';
-
-const BUCKET = 'match-media';
 const MAX_BYTES = 100 * 1024; // 100 KB
-const SIGNED_URL_EXPIRY = 315_360_000; // ~10 años en segundos
 
 /** Valida que el archivo sea una imagen. Lanza Error si no. */
 export function validateImageFile(file: File): void {
@@ -80,21 +76,17 @@ export async function uploadAvatar(
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('No autenticado.');
 
-    const ext = guessExt(compressed.type) || '.jpg';
-    const storagePath = `${user.id}/avatars/${playerId}/${seasonId}${ext}`;
+    const form = new FormData();
+    form.append('file', compressed);
+    form.append('playerId', playerId);
+    form.append('seasonId', seasonId);
 
-    const { error: upErr } = await supabase.storage
-        .from(BUCKET)
-        .upload(storagePath, compressed, {
-            upsert: true,
-            contentType: compressed.type,
-        });
-    if (upErr) throw upErr;
+    const res = await fetch('/api/player-avatar/upload', { method: 'POST', body: form });
+    if (!res.ok) {
+        const payload = await res.json().catch(() => ({})) as { error?: string; code?: string };
+        throw new Error(payload.error || payload.code || 'No se pudo subir el avatar.');
+    }
 
-    const { data: signed, error: signErr } = await supabase.storage
-        .from(BUCKET)
-        .createSignedUrl(storagePath, SIGNED_URL_EXPIRY);
-    if (signErr) throw signErr;
-
-    return signed.signedUrl;
+    const { signedUrl } = await res.json() as { signedUrl: string };
+    return signedUrl;
 }

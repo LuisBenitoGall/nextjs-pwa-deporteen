@@ -1,15 +1,18 @@
-// src/app/api/r2/upload/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { processRemoteMatchMediaUpload } from '@/lib/cloud/remote-upload-service';
 
 export const runtime = 'nodejs';
 
+/**
+ * Punto de entrada canónico para subidas remotas facturables (sustituye atajos cliente → Storage).
+ * El backend físico se elige con REMOTE_STORAGE_BACKEND.
+ */
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createSupabaseServerClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'No autenticado.' }, { status: 401 });
+    if (!user) return NextResponse.json({ error: 'No autenticado.', code: 'UNAUTHORIZED' }, { status: 401 });
 
     const form = await req.formData();
     const file = form.get('file') as File | null;
@@ -21,8 +24,8 @@ export async function POST(req: NextRequest) {
     const clientMediaId = (form.get('mediaId') as string | null)?.trim() || null;
     const deviceUri = (form.get('device_uri') as string | null)?.trim() || null;
 
-    if (!file) return NextResponse.json({ error: 'Falta el archivo.' }, { status: 400 });
-    if (!matchId) return NextResponse.json({ error: 'Falta matchId.' }, { status: 400 });
+    if (!file) return NextResponse.json({ error: 'Falta el archivo.', code: 'INVALID_PAYLOAD' }, { status: 400 });
+    if (!matchId) return NextResponse.json({ error: 'Falta matchId.', code: 'INVALID_PAYLOAD' }, { status: 400 });
 
     const result = await processRemoteMatchMediaUpload({
       supabase,
@@ -46,8 +49,8 @@ export async function POST(req: NextRequest) {
       storageProvider: result.storageProvider,
     });
   } catch (err: unknown) {
-    console.error('[R2 upload]', err);
+    console.error('[remote-media upload]', err);
     const message = err instanceof Error ? err.message : 'Error interno.';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: message, code: 'INTERNAL_ERROR' }, { status: 500 });
   }
 }
