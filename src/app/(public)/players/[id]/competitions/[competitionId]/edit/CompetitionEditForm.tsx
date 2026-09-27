@@ -75,7 +75,7 @@ export default function CompetitionEditForm({ playerId, competitionId, initial }
       const { error: updErr } = await supabase
         .from('competitions')
         .update({
-          name: competitionName.trim() || null,
+          name: competitionName.trim() || undefined,
           sport_id: sportId,
           club_id: club.id,
           team_id: team.id,

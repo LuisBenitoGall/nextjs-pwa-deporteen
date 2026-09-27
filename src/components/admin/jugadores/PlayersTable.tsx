@@ -18,10 +18,10 @@ export interface AdminPlayer {
   id: string;
   full_name: string;
   user_id: string;
-  season_id: string;
+  birthday: string | null;
+  status: boolean;
   created_at: string;
   updated_at: string;
-  avatar: string | null;
   profile: { id: string; username: string | null; full_name: string | null } | null;
 }
 

@@ -13,7 +13,7 @@ export default async function Page({ searchParams }: { searchParams?: Promise<Re
     let remaining = 0;
     try {
         const { data } = await supabase.rpc('seats_remaining', { p_user_id: user.id });
-        remaining = typeof data === 'number' ? data : (data?.remaining ?? data?.seats ?? 0);
+        remaining = typeof data === 'number' ? data : 0;
     } catch { /* si peta, remaining=0 y bloqueamos alta */ }
 
     const resolvedSearchParams = await searchParams;

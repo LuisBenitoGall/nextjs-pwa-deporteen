@@ -1,8 +1,8 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { AppSupabaseClient } from '@/lib/supabase/types';
 
 /** Comprueba que el partido pertenece a un jugador del usuario autenticado. */
 export async function userOwnsMatch(
-  supabase: SupabaseClient,
+  supabase: AppSupabaseClient,
   userId: string,
   matchId: string
 ): Promise<boolean> {

@@ -21,20 +21,29 @@ export async function GET() {
   const supabase = getSupabaseAdmin();
   const { data: matches } = await supabase
     .from('matches')
-    .select('id, user_id, rival_team_name, my_score, rival_score, place, date_at, notes, created_at')
+    .select(
+      'id, player_id, rival_team_name, my_score, rival_score, place, date_at, notes, created_at, players(user_id)',
+    )
     .order('created_at', { ascending: false });
 
-  const rows = (matches ?? []).map((m) => ({
-    id: m.id,
-    user_id: m.user_id,
-    rival: m.rival_team_name ?? '',
-    my_score: m.my_score ?? '',
-    rival_score: m.rival_score ?? '',
-    place: m.place ?? '',
-    date_at: m.date_at ?? '',
-    notes: m.notes ?? '',
-    created_at: m.created_at,
-  }));
+  const rows = (matches ?? []).map((m) => {
+    const ownerUserId =
+      m.players && typeof m.players === 'object' && 'user_id' in m.players
+        ? String((m.players as { user_id: string }).user_id)
+        : '';
+    return {
+      id: m.id,
+      player_id: m.player_id,
+      user_id: ownerUserId,
+      rival: m.rival_team_name ?? '',
+      my_score: m.my_score ?? '',
+      rival_score: m.rival_score ?? '',
+      place: m.place ?? '',
+      date_at: m.date_at ?? '',
+      notes: m.notes ?? '',
+      created_at: m.created_at,
+    };
+  });
 
   const csv = toCSV(rows);
   return new NextResponse(csv, {

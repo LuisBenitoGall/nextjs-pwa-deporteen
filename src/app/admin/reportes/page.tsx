@@ -1,6 +1,7 @@
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import ReportDownloadButton from '@/components/admin/reportes/ReportDownloadButton';
+import { legacyProfileFromUser } from '@/lib/admin/appUsers';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,10 +10,14 @@ export const metadata = { title: 'Reportes — Admin' };
 async function getSummary() {
   const supabase = getSupabaseAdmin();
   const [
-    { data: users },
+    { data: usersRaw },
     { data: subs },
   ] = await Promise.all([
-    supabase.from('profiles').select('id, username, full_name').limit(5).order('id', { ascending: false }),
+    supabase
+      .from('users')
+      .select('id, name, surname, email, created_at')
+      .order('created_at', { ascending: false })
+      .limit(5),
     supabase
       .from('storage_subscriptions')
       .select('status, gb_amount, amount_cents, currency, current_period_end, user_id')
@@ -20,7 +25,8 @@ async function getSummary() {
       .order('current_period_end', { ascending: true })
       .limit(5),
   ]);
-  return { recentUsers: users ?? [], expiringSubs: subs ?? [] };
+  const recentUsers = (usersRaw ?? []).map(legacyProfileFromUser);
+  return { recentUsers, expiringSubs: subs ?? [] };
 }
 
 export default async function AdminReportesPage() {

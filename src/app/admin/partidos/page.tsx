@@ -11,11 +11,21 @@ export default async function AdminPartidosPage() {
 
   const { data } = await supabase
     .from('matches')
-    .select('*')
+    .select('*, players(user_id)')
     .order('created_at', { ascending: false })
     .limit(500);
 
-  const matches: AdminMatch[] = data ?? [];
+  const matches: AdminMatch[] = (data ?? []).map((m) => {
+    const ownerUserId =
+      m.players && typeof m.players === 'object' && 'user_id' in m.players
+        ? (m.players as { user_id: string }).user_id
+        : null;
+    const { players: _players, ...rest } = m;
+    return {
+      ...rest,
+      user_id: ownerUserId,
+    };
+  });
 
   return (
     <div className="space-y-6">

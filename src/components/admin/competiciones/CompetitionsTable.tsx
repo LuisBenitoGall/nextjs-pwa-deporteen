@@ -14,13 +14,15 @@ import {
 
 export interface AdminCompetition {
   id: string;
-  player_id: string;
+  player_id: string | null;
   season_id: string;
   sport_id: string;
   club_id: string | null;
   team_id: string | null;
   category_id: string | null;
-  name: string | null;
+  name: string;
+  created_at?: string;
+  updated_at?: string;
   player: { id: string; full_name: string; user_id: string } | null;
 }
 

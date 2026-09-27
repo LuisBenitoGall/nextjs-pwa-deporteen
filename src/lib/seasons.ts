@@ -2,7 +2,7 @@
 // Utilidades para calcular y obtener la temporada vigente
 // con el modelo minimalista: seasons(id, year_start, year_end).
 
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { AppSupabaseClient } from '@/lib/supabase/types';
 
 /** Devuelve los años (inicio y fin) de la temporada a la que pertenece `date`. */
 export function getSeasonYearsFor(date: Date): { year_start: number; year_end: number } {
@@ -18,7 +18,7 @@ export function getSeasonYearsFor(date: Date): { year_start: number; year_end: n
  * Lanza error si no existe fila para esos años.
  */
 export async function getCurrentSeasonId(
-  supabase: SupabaseClient,
+  supabase: AppSupabaseClient,
   now: Date = new Date()
 ): Promise<string> {
   const { year_start, year_end } = getSeasonYearsFor(now);

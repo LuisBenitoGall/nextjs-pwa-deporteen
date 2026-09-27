@@ -121,7 +121,7 @@ export default function NewPlayerForm({
 
             const { data, error } = await supabase.rpc('seats_remaining', { p_user_id: user.id });
             if (!error) {
-            const n = typeof data === 'number' ? data : (data?.remaining ?? data?.seats ?? null);
+            const n = typeof data === 'number' ? data : null;
             if (mounted && typeof n === 'number') setSeatsRemaining(n);
             }
         } finally {
@@ -227,15 +227,12 @@ export default function NewPlayerForm({
         // 2) Crear jugador + suscripción (con o sin código) en la misma operación
         const seasonId = await getCurrentSeasonId(supabase);
 
-        const { data: rows, error: rpcErr } = await supabase.rpc(
-            'create_player_link_subscription',
-            {
-                p_full_name: name.trim(),
-                p_birthday: null,                 // si no capturas fecha en el formulario
-                p_status: true,
-                p_code_text: pendingCode?.trim() || null
-            }
-        );
+        const trimmedCode = pendingCode?.trim();
+        const { data: rows, error: rpcErr } = await supabase.rpc('create_player_link_subscription', {
+            p_full_name: name.trim(),
+            p_status: true,
+            ...(trimmedCode ? { p_code_text: trimmedCode } : {}),
+        });
         if (rpcErr || !rows) throw rpcErr || new Error('No se pudo crear el deportista');
 
         const row = Array.isArray(rows) ? rows[0] : rows;

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getServerAnon } from '@/lib/supabase/server';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 const REGISTER_LIMIT = 5;
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: 'Servicio no configurado.' }, { status: 503 });
   }
 
-  const supabase = createClient(url, anon);
+  const supabase = getServerAnon();
   const { data, error } = await supabase.auth.signUp({
     email,
     password,

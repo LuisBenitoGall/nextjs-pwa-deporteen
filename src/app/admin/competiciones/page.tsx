@@ -25,7 +25,11 @@ export default async function AdminCompeticionesPage() {
     );
   }
 
-  const playerIds = [...new Set(compsData?.map((c) => c.player_id) ?? [])];
+  const playerIds = [
+    ...new Set(
+      (compsData?.map((c) => c.player_id).filter((id): id is string => Boolean(id)) ?? []),
+    ),
+  ];
   const { data: players } = playerIds.length
     ? await supabase.from('players').select('id, full_name, user_id').in('id', playerIds)
     : { data: [] };
@@ -34,7 +38,7 @@ export default async function AdminCompeticionesPage() {
 
   const competitions: AdminCompetition[] = (compsData ?? []).map((c) => ({
     ...c,
-    player: playerMap.get(c.player_id) ?? null,
+    player: c.player_id ? playerMap.get(c.player_id) ?? null : null,
   }));
 
   return (

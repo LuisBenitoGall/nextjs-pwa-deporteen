@@ -1,8 +1,8 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { AppSupabaseClient } from '@/lib/supabase/types';
 
 /** Borrado blando de todos los jugadores del usuario (solo columnas reales en `players`). */
 export async function deactivateUserPlayers(
-  admin: SupabaseClient,
+  admin: AppSupabaseClient,
   userId: string,
   updatedAtIso?: string
 ): Promise<{ error: { message: string } | null }> {

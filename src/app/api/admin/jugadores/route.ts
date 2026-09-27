@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth/adminGuard';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { fetchLegacyProfilesByUserIds, legacyProfileMap } from '@/lib/admin/appUsers';
 
 export async function GET() {
   const guard = await requireAdmin();
@@ -15,12 +16,8 @@ export async function GET() {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   const userIds = [...new Set(data?.map((p) => p.user_id) ?? [])];
-  const { data: profiles } = await supabase
-    .from('profiles')
-    .select('id, username, full_name')
-    .in('id', userIds);
-
-  const profileMap = new Map(profiles?.map((p) => [p.id, p]) ?? []);
+  const profiles = await fetchLegacyProfilesByUserIds(supabase, userIds);
+  const profileMap = legacyProfileMap(profiles);
   const players = (data ?? []).map((p) => ({
     ...p,
     profile: profileMap.get(p.user_id) ?? null,

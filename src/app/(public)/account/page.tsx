@@ -107,9 +107,7 @@ export default async function AccountPage() {
     .eq('id', userId)
     .maybeSingle();
 
-    const statusVal = (me as any)?.status;
-    const normalized = typeof statusVal === 'string' ? statusVal.toLowerCase() : statusVal;
-    if (me && (normalized === false || normalized === 'inactive' || normalized === 'false')) {
+    if (me && me.status === false) {
         redirect('/logout');
     }
 
@@ -248,51 +246,13 @@ export default async function AccountPage() {
         const admin = getSupabaseAdmin();
 
         const nowIso = new Date().toISOString();
-        // Actualiza users por id (uuid de Auth)
-        // 1) Desactivar por boolean (si la columna es booleana)
-        const { data: updUser, error: uErr } = await admin
+        const { error: uErr } = await admin
             .from('users')
-            .update({ deleted_at: nowIso, status: false })
-            .eq('id', user_id)
-            .select('id, status')
-            .maybeSingle();
+            .update({ status: false, updated_at: nowIso })
+            .eq('id', user_id);
         if (uErr) {
-            console.error('deleteAccount: users boolean status update error', uErr);
-        } else {
-            console.log('deleteAccount: users updated (bool status try)', updUser);
+            console.error('deleteAccount: users status update error', uErr);
         }
-
-        // 2) Si status sigue "true" o no cambió, intenta con esquema string 'inactive'
-        try {
-            const needsString = !updUser || (updUser as any)?.status === true || (updUser as any)?.status === 'active';
-            if (needsString) {
-                const { data: updStr, error: uErr2 } = await admin
-                    .from('users')
-                    .update({ status: 'inactive' as any })
-                    .eq('id', user_id)
-                    .select('id, status')
-                    .maybeSingle();
-                if (uErr2) {
-                    console.error('deleteAccount: users string status update error', uErr2);
-                } else {
-                    console.log('deleteAccount: users updated (string status try)', updStr);
-                }
-            }
-        } catch (e) {
-            console.error('deleteAccount: fallback string status failed', e);
-        }
-
-        // 3) Opcional: si existe columna 'active' (boolean), intenta marcarla a false en llamada separada
-        try {
-            const { error: uActiveErr } = await admin
-                .from('users')
-                .update({ active: false as any })
-                .eq('id', user_id);
-            if (uActiveErr) {
-                // Puede fallar si la columna no existe; lo ignoramos.
-                console.warn('deleteAccount: users active=false optional update error (ignorable)', uActiveErr?.message || uActiveErr);
-            }
-        } catch {}
 
         const { deactivateUserPlayers } = await import('@/lib/account/deactivateUserPlayers');
         const { error: pErr } = await deactivateUserPlayers(admin, user_id, nowIso);
@@ -308,7 +268,7 @@ export default async function AccountPage() {
         // Borrado lógico de match_media
         const { error: mediaErr } = await admin
             .from('match_media')
-            .update({ deleted_at: nowIso } as any)
+            .update({ deleted_at: nowIso })
             .eq('user_id', user_id);
         if (mediaErr) console.error('deleteAccount: match_media delete error', mediaErr);
 
@@ -317,8 +277,10 @@ export default async function AccountPage() {
         // Invalidación global de sesiones (Admin API; requiere SERVICE_ROLE)
         // Invalida todas las sesiones si el SDK lo soporta; si no, continúa.
         try {
-            await (admin as any)?.auth?.admin?.invalidateRefreshTokens?.(user_id);
-        } catch {}
+            await admin.auth.admin.signOut(user_id, 'global');
+        } catch (e) {
+            console.error('deleteAccount: global signOut error', e);
+        }
 
         // Cerrar sesión actual del contexto de esta request
         try {

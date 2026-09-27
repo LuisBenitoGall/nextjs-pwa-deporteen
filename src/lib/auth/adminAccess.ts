@@ -1,4 +1,5 @@
-import type { SupabaseClient, User } from '@supabase/supabase-js';
+import type { User } from '@supabase/supabase-js';
+import type { AppSupabaseClient } from '@/lib/supabase/types';
 
 /** Valor almacenado en public.users.role para acceso al panel de administración. */
 export const SUPERADMIN_DB_ROLE = 'Superadmin';
@@ -31,7 +32,7 @@ export function isSuperadminDbRole(role: string | null | undefined): boolean {
  * No usar metadatos JWT para conceder admin (evita suplantación vía cliente).
  */
 export async function userCanAccessAdminPanel(
-  supabase: SupabaseClient,
+  supabase: AppSupabaseClient,
   user: User,
 ): Promise<boolean> {
   const email = user.email?.toLowerCase();

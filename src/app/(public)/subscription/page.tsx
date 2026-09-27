@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { createBrowserClient } from '@supabase/ssr';
+import { supabaseBrowser } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import {
     applyI18nToPlans,
@@ -25,18 +25,23 @@ import TitleH1 from '@/components/TitleH1';
 
 const FAKE_MODE = process.env.NEXT_PUBLIC_FAKE_PLANS === '1';
 
+type RedeemRpcPayload = {
+  ok?: boolean;
+  message?: string;
+  subscription_id?: string;
+};
+
+function asRedeemPayload(data: unknown): RedeemRpcPayload | null {
+  if (data == null) return null;
+  const row = Array.isArray(data) ? data[0] : data;
+  return row && typeof row === 'object' ? (row as RedeemRpcPayload) : null;
+}
+
 export default function SubscriptionPage() {
     const t = useT();
     const router = useRouter();
 
-    const supabase = useMemo(
-        () =>
-        createBrowserClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        ),
-        []
-    );
+    const supabase = supabaseBrowser();
 
     // --- UI state
     const [error, setError] = useState<string | null>(null);
@@ -257,7 +262,7 @@ export default function SubscriptionPage() {
                 return;
             }
 
-            const res = Array.isArray(data) ? data[0] : data;
+            const res = asRedeemPayload(data);
             if (!res?.ok || !res?.subscription_id) {
             setError(res?.message || t('suscripcion_codigo_error'));
             return;

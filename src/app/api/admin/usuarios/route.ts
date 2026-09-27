@@ -1,15 +1,15 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth/adminGuard';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { fetchAllLegacyProfiles, legacyProfileMap } from '@/lib/admin/appUsers';
 
-// GET — lista todos los usuarios (auth + profiles)
+// GET — lista todos los usuarios (auth + public.users)
 export async function GET() {
   const guard = await requireAdmin();
   if (!guard.ok) return guard.response;
 
   const supabase = getSupabaseAdmin();
 
-  // Listar usuarios desde auth.admin
   const { data: authData, error: authError } = await supabase.auth.admin.listUsers({
     perPage: 1000,
   });
@@ -17,12 +17,8 @@ export async function GET() {
     return NextResponse.json({ error: authError.message }, { status: 500 });
   }
 
-  // Perfiles para enriquecer
-  const { data: profiles } = await supabase
-    .from('profiles')
-    .select('id, username, full_name, avatar_url');
-
-  const profileMap = new Map(profiles?.map((p) => [p.id, p]) ?? []);
+  const profiles = await fetchAllLegacyProfiles(supabase);
+  const profileMap = legacyProfileMap(profiles);
 
   const users = authData.users.map((u) => {
     const profile = profileMap.get(u.id);
@@ -67,12 +63,14 @@ export async function PATCH(req: Request) {
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  if (full_name !== undefined) updates.full_name = full_name;
-  if (username !== undefined) updates.username = username;
+  if (full_name !== undefined) updates.name = full_name;
+  if (username !== undefined && typeof username === 'string' && username.includes('@')) {
+    updates.email = username;
+  }
 
   if (Object.keys(updates).length > 0) {
     const { error } = await supabase
-      .from('profiles')
+      .from('users')
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', id);
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });

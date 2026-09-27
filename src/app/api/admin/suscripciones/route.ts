@@ -5,6 +5,10 @@ import {
   isStorageSubscriptionStatus,
   parseIsoDateStrict,
 } from '@/lib/admin/storageSubscriptions';
+import {
+  fetchLegacyProfilesByUserIds,
+  legacyProfileMap,
+} from '@/lib/admin/appUsers';
 import { detectAdminSubscriptionsSource } from '@/lib/admin/subscriptionsAdminSource';
 
 function jsonError(
@@ -41,12 +45,8 @@ export async function GET() {
 
   // Enrich with profile info
   const userIds = [...new Set(data?.map((s) => s.user_id) ?? [])];
-  const { data: profiles } = await supabase
-    .from('profiles')
-    .select('id, username, full_name')
-    .in('id', userIds);
-
-  const profileMap = new Map(profiles?.map((p) => [p.id, p]) ?? []);
+  const profiles = await fetchLegacyProfilesByUserIds(supabase, userIds);
+  const profileMap = legacyProfileMap(profiles);
 
   const subscriptions = (data ?? []).map((s) => ({
     ...s,

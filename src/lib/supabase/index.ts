@@ -6,5 +6,4 @@
 export { createSupabaseServerClient } from './server';
 export { getSupabaseAdmin } from './admin';
 
-// Tipos útiles (opcionales; no arrastran cliente)
-export type { SupabaseClient } from '@supabase/supabase-js';
+export type { AppSupabaseClient } from './types';

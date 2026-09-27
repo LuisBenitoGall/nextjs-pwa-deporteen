@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import type { AppSupabaseClient } from '@/lib/supabase/types';
 import { userCanAccessAdminPanel } from '@/lib/auth/adminAccess';
 import { isProtectedAppPath } from '@/lib/auth/protectedRoutes';
 
@@ -37,7 +38,7 @@ function applySecurityHeaders(res: NextResponse, nonce: string) {
 }
 
 async function userIsDeactivated(
-  supabase: ReturnType<typeof createServerClient>,
+  supabase: AppSupabaseClient,
   userId: string
 ): Promise<boolean> {
   const { data: profile } = await supabase

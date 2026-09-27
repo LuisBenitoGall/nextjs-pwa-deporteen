@@ -14,9 +14,9 @@ import {
 
 export interface AdminMatch {
   id: string;
-  user_id: string;
-  competition_id?: string | null;
-  player_id?: string | null;
+  /** Propietario vía jugador (matches no tiene user_id en BD). */
+  user_id?: string | null;
+  player_id: string;
   my_score: number | null;
   rival_score: number | null;
   rival_team_name: string | null;

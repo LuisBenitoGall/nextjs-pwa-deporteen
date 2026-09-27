@@ -1,6 +1,6 @@
 import 'server-only';
 
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { AppSupabaseClient } from '@/lib/supabase/types';
 import { DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getR2Bucket, getR2Client } from '@/lib/r2/client';
 import { decryptToken, getDriveConnection, refreshGoogleAccessToken } from '@/lib/googleDrive/server';
@@ -8,7 +8,7 @@ import { decryptToken, getDriveConnection, refreshGoogleAccessToken } from '@/li
 type MediaRow = { id: string; storage_path: string | null };
 
 async function deleteStorageObject(
-  supabase: SupabaseClient,
+  supabase: AppSupabaseClient,
   userId: string,
   storagePath: string | null
 ): Promise<void> {
@@ -58,7 +58,7 @@ async function deleteStorageObject(
 
 /** Elimina ficheros en almacenamiento y filas `match_media` asociadas a partidos. */
 export async function deleteMatchMediaForMatches(
-  supabase: SupabaseClient,
+  supabase: AppSupabaseClient,
   userId: string,
   matchIds: string[]
 ): Promise<void> {
