@@ -848,6 +848,8 @@
   "suscripcion_renovar": "Renovar suscripción",
   "suscripcion_renovar_texto": "Selecciona alguno de nuestros planes para renovar tu suscripción.",
   "suscripcion_sin_recibos": "Sin recibos todavía.",
+  "suscripcion_aviso_caducidad_cuerpo": "El teu període d'accés per asient caduca en {DAYS} dies ({DATE}). No hi ha cobrament automàtic: renova manualment per mantenir l'accés.",
+  "suscripcion_aviso_caducidad_titulo": "Proper venciment del teu accés",
   "suscripcion_stripe": "Subscriure'm amb Stripe",
   "suscripcion_texto1": "Registra un esportista si disposes d'un codi d'accés gratuït vàlid. Si vols registrar més d'un esportista ho has d'indicar al formulari.",
   "suscripcion_texto2": "Pots donar d'alta <b>1</b> esportista amb un <b>codi d'accés</b>. Si necessites afegir més esportistes, hauràs de completar el pagament per Stripe. Sempre pots crear-ne un ara amb codi i afegir-ne més després per Stripe.",

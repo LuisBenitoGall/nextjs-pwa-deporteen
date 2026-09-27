@@ -848,6 +848,8 @@
   "suscripcion_renovar": "Renew subscription",
   "suscripcion_renovar_texto": "Select one of our plans to renew your subscription.",
   "suscripcion_sin_recibos": "Sin recibos todavía.",
+  "suscripcion_aviso_caducidad_cuerpo": "Your seat access ends in {DAYS} days ({DATE}). There is no automatic charge: renew manually to keep access.",
+  "suscripcion_aviso_caducidad_titulo": "Your access is ending soon",
   "suscripcion_stripe": "Subscribe with Stripe",
   "suscripcion_texto1": "Register an athlete if you have a valid free access code. If you want to register more than one athlete, you must indicate it in the form.",
   "suscripcion_texto2": "You can register <b>1</b> athlete with an <b>access code</b>. If you need to add more athletes, you must complete the payment via Stripe. You can always create one now with a code and add more later via Stripe.",
