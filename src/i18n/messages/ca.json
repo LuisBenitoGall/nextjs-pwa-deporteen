@@ -304,7 +304,7 @@
         },
         {
           "title": "5. Conservación",
-          "html": "<ul><li>Cuenta y registros: mientras exista la cuenta. Datos de facturación: <b>6 años</b>.</li><li>Logs de seguridad: <b>12 meses</b> salvo incidencias.</li><li>Analítica y consentimientos: hasta su revocación.</li></ul>"
+          "html": "<ul><li>Cuenta y registros: mientras exista la cuenta. Datos de facturación: <b>6 años</b>.</li><li>Logs de seguridad: <b>12 meses</b> salvo incidencias.</li><li>Analítica (con consentimiento) y registros de consentimiento de cookies: <b>24 meses</b> desde la fecha del consentimiento, con supresión automática al vencer ese plazo.</li></ul>"
         },
         {
           "title": "6. Destinatarios y encargados",
@@ -850,6 +850,8 @@
   "suscripcion_sin_recibos": "Sin recibos todavía.",
   "suscripcion_aviso_caducidad_cuerpo": "El teu període d'accés per asient caduca en {DAYS} dies ({DATE}). No hi ha cobrament automàtic: renova manualment per mantenir l'accés.",
   "suscripcion_aviso_caducidad_titulo": "Proper venciment del teu accés",
+  "email_suscripcion_caducidad_asunto": "DeporTeen: renova el teu accés ({DAYS} dies restants)",
+  "email_suscripcion_caducidad_cuerpo": "<p>Hola{NAME},</p><p>El teu accés a DeporTeen finalitzarà el <strong>{DATE}</strong> (aprox. {DAYS} dies).</p><p><strong>No hi ha renovació automàtica.</strong> Renova manualment per mantenir l'accés.</p><p><a href=\"{RENEW_URL}\">Renovar accés</a></p><p>— DeporTeen</p>",
   "suscripcion_stripe": "Subscriure'm amb Stripe",
   "suscripcion_texto1": "Registra un esportista si disposes d'un codi d'accés gratuït vàlid. Si vols registrar més d'un esportista ho has d'indicar al formulari.",
   "suscripcion_texto2": "Pots donar d'alta <b>1</b> esportista amb un <b>codi d'accés</b>. Si necessites afegir més esportistes, hauràs de completar el pagament per Stripe. Sempre pots crear-ne un ara amb codi i afegir-ne més després per Stripe.",

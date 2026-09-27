@@ -300,7 +300,7 @@
         },
         {
           "title": "4. Retention",
-          "html": "<ul><li>Account and records while account exists. Billing data: <b>6 years</b>.</li><li>Security logs: <b>12 months</b>.</li></ul>"
+          "html": "<ul><li>Account and records while account exists. Billing data: <b>6 years</b>.</li><li>Security logs: <b>12 months</b> unless incidents require longer.</li><li>Analytics (with consent) and cookie consent records: <b>24 months</b> from the consent date, automatically deleted after that period.</li></ul>"
         },
         {
           "title": "5. Recipients",
@@ -850,6 +850,8 @@
   "suscripcion_sin_recibos": "Sin recibos todavía.",
   "suscripcion_aviso_caducidad_cuerpo": "Your seat access ends in {DAYS} days ({DATE}). There is no automatic charge: renew manually to keep access.",
   "suscripcion_aviso_caducidad_titulo": "Your access is ending soon",
+  "email_suscripcion_caducidad_asunto": "DeporTeen: renew your access ({DAYS} days left)",
+  "email_suscripcion_caducidad_cuerpo": "<p>Hello{NAME},</p><p>Your DeporTeen access will end on <strong>{DATE}</strong> (about {DAYS} days).</p><p><strong>There is no automatic renewal.</strong> Renew manually to keep access.</p><p><a href=\"{RENEW_URL}\">Renew access</a></p><p>— DeporTeen</p>",
   "suscripcion_stripe": "Subscribe with Stripe",
   "suscripcion_texto1": "Register an athlete if you have a valid free access code. If you want to register more than one athlete, you must indicate it in the form.",
   "suscripcion_texto2": "You can register <b>1</b> athlete with an <b>access code</b>. If you need to add more athletes, you must complete the payment via Stripe. You can always create one now with a code and add more later via Stripe.",

@@ -1207,6 +1207,7 @@ export type Database = {
           current_period_end: string | null
           id: string
           notified_expiry_7d_at: string | null
+          notified_expiry_email: Json
           plan_id: string | null
           seats: number
           status: string | null
@@ -1224,6 +1225,7 @@ export type Database = {
           current_period_end?: string | null
           id?: string
           notified_expiry_7d_at?: string | null
+          notified_expiry_email?: Json
           plan_id?: string | null
           seats?: number
           status?: string | null
@@ -1241,6 +1243,7 @@ export type Database = {
           current_period_end?: string | null
           id?: string
           notified_expiry_7d_at?: string | null
+          notified_expiry_email?: Json
           plan_id?: string | null
           seats?: number
           status?: string | null

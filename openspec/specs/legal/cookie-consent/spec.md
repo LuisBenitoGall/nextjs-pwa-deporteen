@@ -30,8 +30,8 @@ Registro en base de datos de las decisiones del banner y panel de cookies de Dep
 ### RF-4: Privacidad y acceso
 
 - Sin almacenamiento de IP en `cookie_consents`.
-- RLS: cada usuario autenticado inserta y lee solo lo suyo; anónimos solo insertan; `service_role` para operación.
-- Retención: **pendiente Luis** — propuesta 24 meses desde `created_at` (ver change `c2026-09-27-cookie-consents-persistence`).
+- RLS: cada usuario autenticado inserta y lee solo lo suyo; anónimos solo insertan; `service_role` para operación y **purga programada**.
+- Retención: **24 meses** desde `created_at`; purga automática vía `/api/cron/daily` (change `c2026-09-27-luis-consent-retention-cron`).
 
 ## Esquema `cookie_consents`
 

@@ -1,5 +1,6 @@
 import type { ConsentChoices } from '@/lib/consent';
 import type { Database } from '@/lib/database.types';
+import { COOKIE_CONSENT_RETENTION_MONTHS } from '@/config/constants';
 
 export type CookieConsentInsert = Database['public']['Tables']['cookie_consents']['Insert'];
 
@@ -67,4 +68,15 @@ export function buildCookieConsentRow(
     choices: payload.choices,
     user_agent: ctx.user_agent,
   };
+}
+
+const MS_PER_MONTH = (365.25 / 12) * 24 * 60 * 60 * 1000;
+
+/** Fecha límite: registros anteriores deben purgarse (Luis 27/09/2026 — 24 meses). */
+export function cookieConsentRetentionCutoff(now: Date = new Date()): Date {
+  return new Date(now.getTime() - COOKIE_CONSENT_RETENTION_MONTHS * MS_PER_MONTH);
+}
+
+export function cookieConsentRetentionCutoffIso(now: Date = new Date()): string {
+  return cookieConsentRetentionCutoff(now).toISOString();
 }

@@ -106,3 +106,6 @@ export const SUBSCRIPTION_EXPIRY_NOTICE_DAYS: readonly number[] = (() => {
     .filter((n) => Number.isFinite(n) && n > 0);
   return parsed.length ? [...new Set(parsed)].sort((a, b) => a - b) : [30, 15, 7, 1];
 })();
+
+/** Conservación de registros `cookie_consents` (Luis 27/09/2026). */
+export const COOKIE_CONSENT_RETENTION_MONTHS = 24;

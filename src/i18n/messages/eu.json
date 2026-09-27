@@ -304,7 +304,7 @@
         },
         {
           "title": "5. Kontserbazioa",
-          "html": "<ul><li>Kontua eta erregistroak: kontua dagoen bitartean. Fakturazio datuak: <b>6 urte</b>.</li><li>Segurtasun erregistroak: <b>12 hilabete</b> gertakariak salbu.</li><li>Analitika eta baimenak: atzera botatzen diren arte.</li></ul>"
+          "html": "<ul><li>Kontua eta erregistroak: kontua dagoen bitartean. Fakturazio datuak: <b>6 urte</b>.</li><li>Segurtasun erregistroak: <b>12 hilabete</b> gertakariak salbu.</li><li>Analitika (baimenarekin) eta cookie baimen erregistroak: <b>24 hilabete</b> baimen dataztik, epe hori amaitzean automatikoki ezabatzen dira.</li></ul>"
         },
         {
           "title": "6. Hartzaileak eta tratamendu-egileak",
@@ -850,6 +850,8 @@
   "suscripcion_sin_recibos": "Sin recibos todavía.",
   "suscripcion_aviso_caducidad_cuerpo": "Zure eserlekuaren sarbidea {DAYS} egun barru amaituko da ({DATE}). Ez dago kobratze automatikorik: berritu eskuz sarbidea mantentzeko.",
   "suscripcion_aviso_caducidad_titulo": "Zure sarbidearen iraungitzea hurbil",
+  "email_suscripcion_caducidad_asunto": "DeporTeen: berritu zure sarbidea ({DAYS} egun geratzen dira)",
+  "email_suscripcion_caducidad_cuerpo": "<p>Kaixo{NAME},</p><p>Zure DeporTeen sarbidea <strong>{DATE}</strong> egunean amaituko da (gutxi gorabehera {DAYS} egun).</p><p><strong>Ez dago berritze automatikorik.</strong> Berritu eskuz sarbidea mantentzeko.</p><p><a href=\"{RENEW_URL}\">Sarbidea berritu</a></p><p>— DeporTeen</p>",
   "suscripcion_stripe": "Harpidetu Stripe-rekin",
   "suscripcion_texto1": "Lehenik adierazi alta eman nahi dituzun jokalari kopurua.",
   "suscripcion_texto2": "Jokalari bat erregistra dezakezu sarbide kode baliodun batekin. Plaza gehiago behar badituzu, harpidetu zaitez gure plan batetara.",
