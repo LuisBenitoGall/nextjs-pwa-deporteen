@@ -21,7 +21,13 @@ El endpoint `POST /api/cookies/consent` inserta en `public.cookie_consents`, per
 
 - Inserciones anónimas dependen de política `INSERT` para rol `anon`; fallos de RLS deben seguir sin bloquear navegación (respuesta `ok: false`).
 
+## Esquema versionado (#52) y tipos (#53)
+
+- **Baseline** (`supabase/schema/baseline_public.sql`): no se regenera en este change; la tabla entra vía migración incremental `20260927170000_cookie_consents.sql` (forward-only en base existente; bootstrap + migraciones en entornos nuevos).
+- **`compare-schema-inventory.sh`**: sigue esperando 27 tablas / 67 políticas hasta un volcado baseline acordado (28 / 70 tras esta migración en referencia).
+- **Tipos:** tras aplicar la migración en referencia, `pnpm db:types:generate` incluye `cookie_consents`; el endpoint usa `AppSupabaseClient` sin casts auxiliares.
+
 ## Verificación
 
-- `pnpm lint`, `pnpm types`, `pnpm test:run`, `pnpm build`.
+- `pnpm lint`, `pnpm types`, `pnpm db:types:check`, `pnpm test:run`, `pnpm build`.
 - SQL en base real: columnas, RLS, políticas.

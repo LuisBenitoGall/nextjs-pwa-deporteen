@@ -16,4 +16,5 @@
 
 ## 4. Calidad
 
-- [x] 4.1 `pnpm lint`, `pnpm types`, `pnpm test:run`, `pnpm build`
+- [x] 4.1 `pnpm lint`, `pnpm types`, `pnpm db:types:check`, `pnpm test:run`, `pnpm build`
+- [x] 4.2 Rebase sobre `master` post-#52/#53; tipos regenerados; sin `cookie-consent-db` ni casts en route

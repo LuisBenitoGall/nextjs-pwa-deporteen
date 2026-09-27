@@ -275,6 +275,36 @@ export type Database = {
           },
         ]
       }
+      cookie_consents: {
+        Row: {
+          choices: Json
+          consent_version: string
+          created_at: string
+          device_id: string | null
+          id: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          choices: Json
+          consent_version: string
+          created_at?: string
+          device_id?: string | null
+          id?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          choices?: Json
+          consent_version?: string
+          created_at?: string
+          device_id?: string | null
+          id?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       google_drive_connections: {
         Row: {
           connected_at: string

@@ -35,4 +35,4 @@ Registro en base de datos de las decisiones del banner y panel de cookies de Dep
 
 ## Esquema `cookie_consents`
 
-Ver migración `supabase/migrations/20260927170000_cookie_consents.sql`.
+Ver migración `supabase/migrations/20260927170000_cookie_consents.sql`. En el flujo de versionado (#52), la tabla no está en el baseline hasta un volcado futuro; entornos existentes aplican solo la migración incremental.
