@@ -167,8 +167,8 @@ export default function AccountEditPage() {
       .from('users')
       .upsert({
         id: authUserId,
-        name: values.name || null,
-        surname: values.surname || null,
+        name: values.name || '',
+        surname: values.surname || '',
         phone: values.phone || null,
         locale: values.locale || null,
         email: nextEmail || null,

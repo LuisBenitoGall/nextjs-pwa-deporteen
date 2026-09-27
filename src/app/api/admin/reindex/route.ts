@@ -1,22 +1,20 @@
 // app/api/admin/reindex/route.ts
 export const runtime = 'nodejs';
 import { NextResponse } from 'next/server';
-import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import { requireAdmin } from '@/lib/auth/adminGuard';
 
+/** Endpoint legacy: columnas `flagged`/`score` no existen en public.players. */
 export async function POST() {
   const guard = await requireAdmin();
   if (!guard.ok) {
     return guard.response;
   }
 
-  const supabaseAdmin = getSupabaseAdmin();
-  // Operaciones que requieren service role (sin RLS)
-  const { error } = await supabaseAdmin
-    .from('players')
-    .update({ flagged: true })
-    .gt('score', 9000);
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ ok: true });
+  return NextResponse.json(
+    {
+      ok: false,
+      error: 'Reindex deshabilitado: el esquema actual de players no incluye flagged/score.',
+    },
+    { status: 501 },
+  );
 }

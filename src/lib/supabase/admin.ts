@@ -3,15 +3,16 @@
 // Never import this in client components.
 
 import 'server-only';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
+import type { AppSupabaseClient } from '@/lib/supabase/types';
 
 // Cache instance across HMR in dev
 declare global {
    
-  var __supabase_admin__: SupabaseClient | undefined;
+  var __supabase_admin__: AppSupabaseClient | undefined;
 }
 
-export function getSupabaseAdmin(): SupabaseClient {
+export function getSupabaseAdmin(): AppSupabaseClient {
   if (typeof window !== 'undefined') {
     throw new Error('[Supabase Admin] No se puede usar en el cliente');
   }
@@ -25,9 +26,9 @@ export function getSupabaseAdmin(): SupabaseClient {
     globalThis.__supabase_admin__ = createClient(url, serviceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
       global: { headers: { 'X-Client-Info': 'deporteen-admin' } },
-    });
+    }) as AppSupabaseClient;
   }
   return globalThis.__supabase_admin__!;
 }
 
-export type { SupabaseClient };
+export type { AppSupabaseClient };

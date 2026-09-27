@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
+import { supabaseBrowser } from '@/lib/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useT } from '@/i18n/I18nProvider';
 
@@ -48,14 +48,7 @@ export default function NewMatchEmbedded({ playerId }: Props) {
     const router = useRouter();
     const searchParams = useSearchParams();
 
-    const supabase = useMemo(
-        () =>
-            createBrowserClient(
-                process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-            ),
-        []
-    );
+    const supabase = supabaseBrowser();
 
     // Estado UI
     const [loading, setLoading]   = useState(true);
@@ -99,6 +92,12 @@ export default function NewMatchEmbedded({ playerId }: Props) {
             if (!mounted) return;
             if (!auth?.user) {
                 setError(t('sesion_iniciar_aviso'));
+                setLoading(false);
+                return;
+            }
+
+            if (!playerId) {
+                setError(t('error_generico') || 'Jugador no indicado.');
                 setLoading(false);
                 return;
             }

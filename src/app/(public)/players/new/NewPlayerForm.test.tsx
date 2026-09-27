@@ -326,7 +326,7 @@ describe('NewPlayerForm', () => {
       mockRpc.mockImplementation((funcName: string, params: any) => {
         if (funcName === 'create_player_link_subscription') {
           expect(params.p_full_name).toBe('Test User');
-          expect(params.p_code_text).toBeNull();
+          expect(params.p_code_text).toBeUndefined();
           expect(params.p_status).toBe(true);
           return Promise.resolve({
             data: [{ player_id: 'player-1', subscription_id: 'sub-1' }],
@@ -395,7 +395,6 @@ describe('NewPlayerForm', () => {
         expect(createCalls.length).toBeGreaterThan(0);
         expect(createCalls[0][1]).toMatchObject({
           p_full_name: 'Test User',
-          p_code_text: null,
           p_status: true,
           p_season_id: 'season-123',
           p_memberships: [

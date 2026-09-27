@@ -21,10 +21,7 @@ export async function getSeatStatus(userId?: string): Promise<SeatStatus> {
         return { remaining: 0, pendingPlayers: 0 };
     }
 
-    const remaining =
-        typeof data === 'number'
-        ? data
-        : (data?.remaining ?? data?.seats ?? 0);
+    const remaining = typeof data === 'number' ? data : 0;
 
     return {
         remaining: Math.max(remaining, 0),

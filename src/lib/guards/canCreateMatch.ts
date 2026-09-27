@@ -1,26 +1,20 @@
 // lib/guards/canCreateMatch.ts
-import { createClient } from '@supabase/supabase-js';
-
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 /**
- * Devuelve true si el jugador tiene acceso activo.
- * Usa Service Role porque consulta por user_id desde el servidor.
+ * Devuelve true si el jugador tiene acceso activo (fila en vista player_active_access).
  */
 export async function canCreateMatch(userId: string, playerId: string) {
-  const admin = createClient(url, serviceRole, { auth: { persistSession: false } });
+  const admin = getSupabaseAdmin();
   const { data, error } = await admin
     .from('player_active_access')
-    .select('is_active')
+    .select('player_id')
     .eq('user_id', userId)
     .eq('player_id', playerId)
-    .order('is_active', { ascending: false })
-    .limit(1);
+    .maybeSingle();
 
   if (error) {
-    // si algo peta, mejor pecar de prudente
     return false;
   }
-  return Boolean(data?.[0]?.is_active);
+  return Boolean(data?.player_id);
 }

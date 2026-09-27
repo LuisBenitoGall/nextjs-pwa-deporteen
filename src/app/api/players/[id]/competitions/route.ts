@@ -83,7 +83,7 @@ export async function POST(
         club_id: club.id,
         team_id: team.id,
         category_id: body.categoryId ?? null,
-        name: (body.competitionName ?? '').trim() || null,
+        name: (body.competitionName ?? '').trim() || 'Competición',
       })
       .select('id')
       .single();

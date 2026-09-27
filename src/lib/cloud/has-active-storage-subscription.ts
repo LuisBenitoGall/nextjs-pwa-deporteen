@@ -1,10 +1,10 @@
 import 'server-only';
 
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { AppSupabaseClient } from '@/lib/supabase/types';
 import { getActiveCloudPlanGb } from '@/lib/cloud/usage';
 
 export async function hasActiveStorageSubscription(
-  supabase: SupabaseClient,
+  supabase: AppSupabaseClient,
   userId: string
 ): Promise<boolean> {
   const planGb = await getActiveCloudPlanGb(supabase, userId);

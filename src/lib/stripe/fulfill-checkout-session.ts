@@ -1,11 +1,13 @@
 import type Stripe from 'stripe';
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { AppSupabaseClient } from '@/lib/supabase/types';
+import type { Database } from '@/lib/database.types';
 
 export type FulfillCheckoutResult =
   | { ok: true; subscriptionId: string | null; alreadyFulfilled: boolean; skipped?: 'storage' | 'unpaid' }
   | { ok: false; error: string; retryable?: boolean };
 
-type AdminClient = SupabaseClient;
+type AdminClient = AppSupabaseClient;
+type PaymentInsert = Database['public']['Tables']['payments']['Insert'];
 
 async function resolveUserId(
   full: Stripe.Checkout.Session,
@@ -39,7 +41,7 @@ async function resolveUserId(
 
 async function recordPaymentOnce(
   admin: AdminClient,
-  payload: Record<string, unknown>
+  payload: PaymentInsert
 ): Promise<void> {
   const pi = payload.stripe_payment_intent_id as string | null | undefined;
   if (pi) {
@@ -165,7 +167,7 @@ export async function fulfillCheckoutSession(
     stripe_payment_intent_id: paymentIntentId,
     stripe_invoice_id: null,
     receipt_url: full.url || null,
-    amount_cents: full.amount_total ?? null,
+    amount_cents: full.amount_total ?? 0,
     currency: (full.currency || 'EUR').toUpperCase(),
     description: `Checkout ${full.id}`,
     status: 'succeeded',

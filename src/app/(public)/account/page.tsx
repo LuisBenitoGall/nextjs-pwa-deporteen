@@ -252,7 +252,7 @@ export default async function AccountPage() {
         // 1) Desactivar por boolean (si la columna es booleana)
         const { data: updUser, error: uErr } = await admin
             .from('users')
-            .update({ deleted_at: nowIso, status: false })
+            .update({ status: false, updated_at: nowIso })
             .eq('id', user_id)
             .select('id, status')
             .maybeSingle();
@@ -282,17 +282,7 @@ export default async function AccountPage() {
             console.error('deleteAccount: fallback string status failed', e);
         }
 
-        // 3) Opcional: si existe columna 'active' (boolean), intenta marcarla a false en llamada separada
-        try {
-            const { error: uActiveErr } = await admin
-                .from('users')
-                .update({ active: false as any })
-                .eq('id', user_id);
-            if (uActiveErr) {
-                // Puede fallar si la columna no existe; lo ignoramos.
-                console.warn('deleteAccount: users active=false optional update error (ignorable)', uActiveErr?.message || uActiveErr);
-            }
-        } catch {}
+        // 3) Columna `active` no existe en public.users (eliminado tras alinear tipos con BD).
 
         const { deactivateUserPlayers } = await import('@/lib/account/deactivateUserPlayers');
         const { error: pErr } = await deactivateUserPlayers(admin, user_id, nowIso);

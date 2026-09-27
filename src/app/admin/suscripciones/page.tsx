@@ -2,6 +2,7 @@ import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import SubscriptionsTable from '@/components/admin/suscripciones/SubscriptionsTable';
 import type { AdminSubscription } from '@/components/admin/suscripciones/SubscriptionsTable';
 import { detectAdminSubscriptionsSource } from '@/lib/admin/subscriptionsAdminSource';
+import { fetchLegacyProfilesByUserIds, legacyProfileMap } from '@/lib/admin/appUsers';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,11 +44,8 @@ export default async function AdminSuscripcionesPage() {
         ).data;
 
   const userIds = [...new Set(subsData?.map((s) => s.user_id) ?? [])];
-  const { data: profiles } = userIds.length
-    ? await supabase.from('users').select('id, name, surname, email').in('id', userIds)
-    : { data: [] };
-
-  const profileMap = new Map(profiles?.map((p) => [p.id, p]) ?? []);
+  const profiles = await fetchLegacyProfilesByUserIds(supabase, userIds);
+  const profileMap = legacyProfileMap(profiles);
 
   const subscriptions: AdminSubscription[] =
     source === 'storage'

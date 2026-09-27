@@ -1,7 +1,7 @@
 // /api/stripe/confirm-storage-session
 import Stripe from 'stripe';
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import { LOCAL_STORAGE_PLANS } from '@/lib/storage-plans';
 
 export const runtime = 'nodejs';
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     if (!session_id) return NextResponse.json({ ok: false, error: 'Missing session_id' }, { status: 400 });
 
     const stripe   = new Stripe(stripeSecret, { apiVersion: '2025-08-27.basil' });
-    const supabase = createClient(supabaseUrl, serviceKey);
+    const supabase = getSupabaseAdmin();
 
     const session = await stripe.checkout.sessions.retrieve(session_id, {
         expand: ['line_items.data.price'],

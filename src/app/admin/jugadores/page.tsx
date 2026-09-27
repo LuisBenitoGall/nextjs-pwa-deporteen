@@ -1,6 +1,7 @@
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import PlayersTable from '@/components/admin/jugadores/PlayersTable';
 import type { AdminPlayer } from '@/components/admin/jugadores/PlayersTable';
+import { fetchLegacyProfilesByUserIds, legacyProfileMap } from '@/lib/admin/appUsers';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,11 +16,8 @@ export default async function AdminJugadoresPage() {
     .order('created_at', { ascending: false });
 
   const userIds = [...new Set(playersData?.map((p) => p.user_id) ?? [])];
-  const { data: profiles } = userIds.length
-    ? await supabase.from('profiles').select('id, username, full_name').in('id', userIds)
-    : { data: [] };
-
-  const profileMap = new Map(profiles?.map((p) => [p.id, p]) ?? []);
+  const profiles = await fetchLegacyProfilesByUserIds(supabase, userIds);
+  const profileMap = legacyProfileMap(profiles);
 
   const players: AdminPlayer[] = (playersData ?? []).map((p) => ({
     ...p,

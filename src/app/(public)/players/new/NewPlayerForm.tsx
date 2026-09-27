@@ -62,7 +62,7 @@ export default function NewPlayerForm({
     async function refreshSeats(userId: string): Promise<number | null> {
         const { data, error } = await supabase.rpc('seats_remaining', { p_user_id: userId });
         if (error) return null;
-        const n = typeof data === 'number' ? data : (data?.remaining ?? data?.seats ?? null);
+        const n = typeof data === 'number' ? data : null;
         if (typeof n === 'number') {
         setSeatsRemaining(n);
         return n;
@@ -250,9 +250,8 @@ export default function NewPlayerForm({
 
         let { data: rows, error: rpcErr } = await supabase.rpc('create_player_link_subscription', {
             p_full_name: name.trim(),
-            p_birthday: null, // si no capturas fecha en el formulario
             p_status: true,
-            p_code_text: codeToUse,
+            ...(codeToUse ? { p_code_text: codeToUse } : {}),
             p_season_id: seasonId,
             p_memberships: membershipsPayload,
         });
@@ -263,9 +262,7 @@ export default function NewPlayerForm({
             if (typeof refreshedSeats === 'number' && refreshedSeats > 0) {
             const retry = await supabase.rpc('create_player_link_subscription', {
                 p_full_name: name.trim(),
-                p_birthday: null,
                 p_status: true,
-                p_code_text: null,
                 p_season_id: seasonId,
                 p_memberships: membershipsPayload,
             });

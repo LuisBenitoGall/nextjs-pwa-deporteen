@@ -19,7 +19,7 @@ async function getStats() {
     { count: totalMedia },
     { data: subsData },
   ] = await Promise.all([
-    supabase.from('profiles').select('*', { count: 'exact', head: true }),
+    supabase.from('users').select('*', { count: 'exact', head: true }),
     supabase.from('players').select('*', { count: 'exact', head: true }),
     supabase.from('matches').select('*', { count: 'exact', head: true }),
     supabase.from('competitions').select('*', { count: 'exact', head: true }),

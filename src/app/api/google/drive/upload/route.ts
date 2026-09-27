@@ -40,13 +40,21 @@ export async function POST(req: Request) {
   }
 
   const admin = getSupabaseAdmin();
-  const { data: ownedMatch } = await admin
+  const { data: match } = await admin
     .from('matches')
-    .select('id')
+    .select('id, player_id')
     .eq('id', matchId)
+    .maybeSingle();
+  if (!match?.player_id) {
+    return NextResponse.json({ error: 'No autorizado para este partido' }, { status: 403 });
+  }
+  const { data: ownedPlayer } = await admin
+    .from('players')
+    .select('id')
+    .eq('id', match.player_id)
     .eq('user_id', user.id)
     .maybeSingle();
-  if (!ownedMatch) {
+  if (!ownedPlayer) {
     return NextResponse.json({ error: 'No autorizado para este partido' }, { status: 403 });
   }
 

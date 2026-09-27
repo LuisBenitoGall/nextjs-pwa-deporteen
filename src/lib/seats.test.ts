@@ -38,7 +38,7 @@ describe('seats', () => {
       expect(mockRpc).toHaveBeenCalledWith('seats_remaining', { p_user_id: 'user-123' });
     });
 
-    it('should return seat status when RPC returns an object with remaining', async () => {
+    it('should return zero when RPC returns legacy object shape (not a number)', async () => {
       mockAuth.getUser.mockResolvedValue({
         data: { user: { id: 'user-123' } },
         error: null,
@@ -47,10 +47,10 @@ describe('seats', () => {
 
       const result = await getSeatStatus();
 
-      expect(result).toEqual({ remaining: 3, pendingPlayers: 3 });
+      expect(result).toEqual({ remaining: 0, pendingPlayers: 0 });
     });
 
-    it('should return seat status when RPC returns an object with seats', async () => {
+    it('should return zero when RPC returns legacy object with seats', async () => {
       mockAuth.getUser.mockResolvedValue({
         data: { user: { id: 'user-123' } },
         error: null,
@@ -59,7 +59,7 @@ describe('seats', () => {
 
       const result = await getSeatStatus();
 
-      expect(result).toEqual({ remaining: 7, pendingPlayers: 7 });
+      expect(result).toEqual({ remaining: 0, pendingPlayers: 0 });
     });
 
     it('should return zero when RPC returns null or undefined', async () => {
@@ -147,7 +147,7 @@ describe('seats', () => {
       expect(result).toEqual({ remaining: 999999, pendingPlayers: 999999 });
     });
 
-    it('should handle edge case: RPC returns object with both remaining and seats', async () => {
+    it('should treat non-numeric RPC payloads as zero seats', async () => {
       mockAuth.getUser.mockResolvedValue({
         data: { user: { id: 'user-123' } },
         error: null,
@@ -156,8 +156,7 @@ describe('seats', () => {
 
       const result = await getSeatStatus();
 
-      // Debe priorizar 'remaining' sobre 'seats'
-      expect(result).toEqual({ remaining: 5, pendingPlayers: 5 });
+      expect(result).toEqual({ remaining: 0, pendingPlayers: 0 });
     });
   });
 });

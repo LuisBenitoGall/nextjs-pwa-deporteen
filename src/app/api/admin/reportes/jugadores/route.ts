@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth/adminGuard';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { fetchLegacyProfilesByUserIds, legacyProfileMap } from '@/lib/admin/appUsers';
 
 function toCSV(rows: Record<string, unknown>[]): string {
   if (rows.length === 0) return '';
@@ -25,21 +26,18 @@ export async function GET() {
     .order('created_at', { ascending: false });
 
   const userIds = [...new Set(players?.map((p) => p.user_id) ?? [])];
-  const { data: profiles } = userIds.length
-    ? await supabase.from('profiles').select('id, full_name, username').in('id', userIds)
-    : { data: [] };
-
-  const profileMap = new Map(profiles?.map((p) => [p.id, p]) ?? []);
+  const profiles = await fetchLegacyProfilesByUserIds(supabase, userIds);
+  const profileMap = legacyProfileMap(profiles);
 
   const rows = (players ?? []).map((p) => {
     const profile = profileMap.get(p.user_id);
     return {
       id: p.id,
-      name: p.name,
+      full_name: p.full_name,
       user_id: p.user_id,
       owner_name: profile?.full_name ?? '',
       owner_username: profile?.username ?? '',
-      season_id: p.season_id,
+      status: p.status ? 'activo' : 'inactivo',
       created_at: p.created_at,
     };
   });

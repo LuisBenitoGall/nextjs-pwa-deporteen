@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
+import { supabaseBrowser } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { useT } from '@/i18n/I18nProvider';
 import TitleH1 from '@/components/TitleH1';
@@ -118,14 +118,7 @@ function PlanCard({
 export default function StorageSubscriptionPage() {
     const t = useT();
 
-    const supabase = useMemo(
-        () =>
-            createBrowserClient(
-                process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-            ),
-        []
-    );
+    const supabase = supabaseBrowser();
 
     const [plans, setPlans] = useState<StoragePlanChoice[]>([]);
     const [selectedPlanId, setSelectedPlanId] = useState<string>('');

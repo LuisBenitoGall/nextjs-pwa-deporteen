@@ -1,9 +1,9 @@
 import 'server-only';
 
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { AppSupabaseClient } from '@/lib/supabase/types';
 import { BYTES_PER_GB } from '@/lib/cloud/guardrails';
 import { sumBillableRemoteBytes } from '@/lib/cloud/usage-helpers';
-type AppSupabase = SupabaseClient;
+type AppSupabase = AppSupabaseClient;
 
 export type CloudUsageSnapshot = {
   bytes_used: number;

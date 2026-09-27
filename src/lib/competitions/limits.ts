@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { AppSupabaseClient } from '@/lib/supabase/types';
 import { LIMITS } from '@/config/constants';
 import { isSubscriptionActive } from '@/lib/subscriptions/shared';
 
@@ -7,7 +7,7 @@ export type CompetitionCreateGate =
   | { ok: false; reason: 'unauthenticated' | 'forbidden' | 'no_subscription' | 'limit_reached' };
 
 export async function assertCanCreateCompetition(
-  supabase: SupabaseClient,
+  supabase: AppSupabaseClient,
   userId: string,
   playerId: string,
   seasonId: string

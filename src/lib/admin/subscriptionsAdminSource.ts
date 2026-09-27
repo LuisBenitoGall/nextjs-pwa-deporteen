@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { AppSupabaseClient } from '@/lib/supabase/types';
 
 export type AdminSubscriptionsSource = 'storage' | 'legacy';
 
@@ -15,7 +15,7 @@ function relationMissing(error: unknown, relation: string): boolean {
  * existencia de la tabla, el listado queda vacío. Por eso usamos conteos.
  */
 export async function detectAdminSubscriptionsSource(
-  supabase: SupabaseClient
+  supabase: AppSupabaseClient
 ): Promise<AdminSubscriptionsSource> {
   const storageProbe = await supabase
     .from('storage_subscriptions')

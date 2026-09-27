@@ -1,6 +1,6 @@
 import 'server-only';
 
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { AppSupabaseClient } from '@/lib/supabase/types';
 import {
   getMaxVideoDurationSeconds,
   isVideoDurationAllowed,
@@ -13,7 +13,7 @@ import { runWithKeyLock } from '@/lib/cloud/upload-lock';
 import { guessExt } from '@/lib/uploadMatchMedia';
 
 export type ProcessRemoteMatchMediaUploadInput = {
-  supabase: SupabaseClient;
+  supabase: AppSupabaseClient;
   userId: string;
   file: File;
   matchId: string;

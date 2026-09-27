@@ -1,6 +1,7 @@
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import UsersTable from '@/components/admin/usuarios/UsersTable';
 import type { AdminUser } from '@/components/admin/usuarios/UsersTable';
+import { fetchAllLegacyProfiles, legacyProfileMap } from '@/lib/admin/appUsers';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,11 +11,8 @@ export default async function AdminUsuariosPage() {
   const supabase = getSupabaseAdmin();
 
   const { data: authData } = await supabase.auth.admin.listUsers({ perPage: 1000 });
-  const { data: profiles } = await supabase
-    .from('profiles')
-    .select('id, username, full_name, avatar_url');
-
-  const profileMap = new Map(profiles?.map((p) => [p.id, p]) ?? []);
+  const profiles = await fetchAllLegacyProfiles(supabase);
+  const profileMap = legacyProfileMap(profiles);
 
   const users: AdminUser[] = (authData?.users ?? []).map((u) => {
     const profile = profileMap.get(u.id);

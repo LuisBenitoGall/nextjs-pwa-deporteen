@@ -63,7 +63,7 @@ export default function EditPlayerDialog({
           <div className="rounded-lg border border-slate-700 p-3 text-xs text-slate-400 space-y-1">
             <div><span className="text-slate-500">ID:</span> {player.id}</div>
             <div><span className="text-slate-500">Propietario:</span> {player.profile?.full_name || player.user_id}</div>
-            <div><span className="text-slate-500">Temporada:</span> {player.season_id}</div>
+            <div><span className="text-slate-500">Estado:</span> {player.status ? 'Activo' : 'Inactivo'}</div>
           </div>
         </div>
         <DialogFooter className="gap-2">

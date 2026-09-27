@@ -1,11 +1,11 @@
 'use client';
 
 import { createBrowserClient } from '@supabase/ssr';
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { AppSupabaseClient } from '@/lib/supabase/types';
 
-let _client: SupabaseClient | null = null;
+let _client: AppSupabaseClient | null = null;
 
-function createClient(): SupabaseClient {
+function createClient(): AppSupabaseClient {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -52,13 +52,13 @@ function createClient(): SupabaseClient {
         }
       },
     },
-  });
+  }) as AppSupabaseClient;
 }
 
 /**
  * Cliente Supabase para el navegador (singleton). No se instancia hasta el primer uso.
  */
-export function supabaseBrowser(): SupabaseClient {
+export function supabaseBrowser(): AppSupabaseClient {
   if (!_client) _client = createClient();
   return _client;
 }
@@ -66,7 +66,7 @@ export function supabaseBrowser(): SupabaseClient {
 /**
  * Compatibilidad: acceso perezoso para no exigir env al importar el módulo (CRIT-12 / BAJO-13).
  */
-export const supabase: SupabaseClient = new Proxy({} as SupabaseClient, {
+export const supabase: AppSupabaseClient = new Proxy({} as AppSupabaseClient, {
   get(_target, prop, receiver) {
     const client = supabaseBrowser();
     const value = Reflect.get(client as object, prop, receiver);
@@ -74,4 +74,4 @@ export const supabase: SupabaseClient = new Proxy({} as SupabaseClient, {
   },
 });
 
-export type { SupabaseClient };
+export type { AppSupabaseClient };

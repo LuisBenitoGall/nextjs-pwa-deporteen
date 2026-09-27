@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getServerAnon } from '@/lib/supabase/server';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 // 5 signup attempts per IP per 15 minutes
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: 'Missing Supabase env vars' }, { status: 500 });
   }
 
-  const supabase = createClient(url, anon);
+  const supabase = getServerAnon();
   const { data, error } = await supabase.auth.signUp({ email, password });
   if (error) {
     return NextResponse.json({ code: error.name, message: error.message }, { status: 400 });

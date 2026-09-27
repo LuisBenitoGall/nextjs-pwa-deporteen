@@ -1,17 +1,28 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
+import { useEffect, useState } from 'react';
+import { supabaseBrowser } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 
 type Player = { id: string; name: string; is_active: boolean; ends_at: string | null };
 
+/** Respuesta JSON de RPCs canje (CLI las tipa como Json). */
+type RedeemRpcPayload = {
+  ok?: boolean;
+  message?: string;
+  ends_at?: string;
+  subscription_id?: string;
+};
+
+function asRedeemPayload(data: unknown): RedeemRpcPayload | null {
+  if (data == null) return null;
+  const row = Array.isArray(data) ? data[0] : data;
+  return row && typeof row === 'object' ? (row as RedeemRpcPayload) : null;
+}
+
 export default function CodeRedeemBanner() {
   const router = useRouter();
-  const supabase = useMemo(() => createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  ), []);
+  const supabase = supabaseBrowser();
 
   const [code, setCode] = useState<string | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -36,20 +47,22 @@ export default function CodeRedeemBanner() {
       // jugadores del usuario
       const { data: rawPlayers } = await supabase
         .from('players')
-        .select('id,name')
-        .order('name', { ascending: true });
+        .select('id, full_name')
+        .eq('user_id', user.id)
+        .order('full_name', { ascending: true });
 
-      // estado de acceso
       const { data: access } = await supabase
         .from('player_active_access')
-        .select('player_id, is_active, ends_at')
+        .select('player_id')
         .eq('user_id', user.id);
 
-      const map = new Map(access?.map(a => [a.player_id, a]) ?? []);
-      const merged: Player[] = (rawPlayers ?? []).map(p => {
-        const a = map.get(p.id);
-        return { id: p.id, name: p.name, is_active: !!a?.is_active, ends_at: a?.ends_at ?? null };
-      });
+      const activeIds = new Set((access ?? []).map((a) => a.player_id).filter(Boolean));
+      const merged: Player[] = (rawPlayers ?? []).map((p) => ({
+        id: p.id,
+        name: p.full_name,
+        is_active: activeIds.has(p.id),
+        ends_at: null,
+      }));
 
       // por UX: jugadores caducados primero
       merged.sort((a, b) => (a.is_active === b.is_active ? a.name.localeCompare(b.name) : a.is_active ? 1 : -1));
@@ -75,11 +88,12 @@ export default function CodeRedeemBanner() {
       });
       if (error) throw error;
 
-      if (!data?.ok) {
-        setErr(data?.message || 'No se pudo canjear el código.');
-      } else {
+      const payload = asRedeemPayload(data);
+      if (!payload?.ok) {
+        setErr(payload?.message || 'No se pudo canjear el código.');
+      } else if (payload.ends_at) {
         localStorage.removeItem('pending_access_code');
-        setMsg(`Código aplicado. Vigente hasta ${new Date(data.ends_at).toLocaleDateString()}.`);
+        setMsg(`Código aplicado. Vigente hasta ${new Date(payload.ends_at).toLocaleDateString()}.`);
         // refresca la lista brevemente
         setTimeout(() => router.refresh(), 800);
       }

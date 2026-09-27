@@ -44,7 +44,7 @@ export async function createMatchMediaRecord(opts: {
     storage_path: opts.path,
     mime_type: opts.mimeType ?? null,
     size_bytes: opts.sizeBytes ?? null,
-    taken_at: opts.takenAt ?? null,
+    taken_at: opts.takenAt?.toISOString() ?? null,
   });
 
   if (error) throw error;

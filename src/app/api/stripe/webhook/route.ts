@@ -117,16 +117,18 @@ export async function POST(req: Request) {
     }
 
     try {
-      await supabaseAdmin.from('payments').insert({
-        user_id: userId || null,
-        provider: 'stripe',
-        stripe_payment_intent_id: pi.id,
-        amount_cents: pi.amount || null,
-        currency: (pi.currency || 'EUR').toUpperCase(),
-        description: 'Payment failed',
-        status: 'failed',
-        paid_at: new Date().toISOString(),
-      });
+      if (userId) {
+        await supabaseAdmin.from('payments').insert({
+          user_id: userId,
+          provider: 'stripe',
+          stripe_payment_intent_id: pi.id,
+          amount_cents: pi.amount || 0,
+          currency: (pi.currency || 'EUR').toUpperCase(),
+          description: 'Payment failed',
+          status: 'failed',
+          paid_at: new Date().toISOString(),
+        });
+      }
     } catch {
       /* ignore */
     }

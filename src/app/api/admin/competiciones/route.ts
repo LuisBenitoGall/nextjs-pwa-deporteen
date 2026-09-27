@@ -15,17 +15,20 @@ export async function GET() {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   // Enrich with player info
-  const playerIds = [...new Set(data?.map((c) => c.player_id) ?? [])];
-  const { data: players } = await supabase
-    .from('players')
-    .select('id, name, user_id')
-    .in('id', playerIds);
+  const playerIds = [
+    ...new Set(
+      (data?.map((c) => c.player_id).filter((id): id is string => Boolean(id)) ?? []),
+    ),
+  ];
+  const { data: players } = playerIds.length
+    ? await supabase.from('players').select('id, full_name, user_id').in('id', playerIds)
+    : { data: [] };
 
   const playerMap = new Map(players?.map((p) => [p.id, p]) ?? []);
 
   const competitions = (data ?? []).map((c) => ({
     ...c,
-    player: playerMap.get(c.player_id) ?? null,
+    player: c.player_id ? playerMap.get(c.player_id) ?? null : null,
   }));
 
   return NextResponse.json({ competitions });

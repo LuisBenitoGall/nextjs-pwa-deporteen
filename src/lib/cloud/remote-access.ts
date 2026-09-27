@@ -1,6 +1,6 @@
 import 'server-only';
 
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { AppSupabaseClient } from '@/lib/supabase/types';
 import { hasQuotaForUpload } from '@/lib/cloud/guardrails';
 import { getCloudUsage, type CloudUsageSnapshot } from '@/lib/cloud/usage';
 
@@ -48,7 +48,7 @@ export function userMessageForRemoteAccess(code: RemoteAccessDenyCode): string {
  * La cuota es por usuario (todos sus jugadores); ver getCloudBytesUsed.
  */
 export async function assertRemoteStorageUploadAllowed(
-  supabase: SupabaseClient,
+  supabase: AppSupabaseClient,
   userId: string | null | undefined,
   fileSize: number
 ): Promise<RemoteAccessResult> {
