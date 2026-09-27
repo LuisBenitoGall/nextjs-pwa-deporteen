@@ -9,7 +9,7 @@ export const maxDuration = 60;
 export async function GET(req: NextRequest) {
   if (!isCronAuthorized(req)) return cronAuthFailureResponse();
 
-  const result = await runDailyMaintenanceCron();
+  const result = await runDailyMaintenanceCron(new Date(), req);
   const status = result.ok ? 200 : 207;
   return NextResponse.json(result, { status });
 }

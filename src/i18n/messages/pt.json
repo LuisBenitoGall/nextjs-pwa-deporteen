@@ -341,6 +341,10 @@
         {
           "title": "4. Como alterar ou retirar o consentimento",
           "html": "<p>Você pode reabrir o painel de preferências no link “Cookies” no rodapé ou excluir cookies nas configurações do navegador.</p>"
+        },
+        {
+          "title": "5. Conservação do registo no servidor",
+          "html": "<p>Para comprovar o consentimento, guardamos na base de dados uma cópia das suas escolhas (sem endereço IP). Esses registos são conservados no máximo <b>24 meses</b> desde a data de cada decisão e são eliminados automaticamente ao fim desse prazo.</p>"
         }
       ]
     },

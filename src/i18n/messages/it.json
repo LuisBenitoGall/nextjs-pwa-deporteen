@@ -341,6 +341,10 @@
         {
           "title": "4. Gestione del consenso",
           "html": "<p>Puoi revocare il consenso dal banner cookie o dalle impostazioni del browser.</p>"
+        },
+        {
+          "title": "5. Conservazione del registro sul server",
+          "html": "<p>Per documentare le scelte, conserviamo in database una copia delle preferenze (senza indirizzo IP). Tali registri sono conservati per al massimo <b>24 mesi</b> dalla data di ogni decisione e vengono eliminati automaticamente alla scadenza.</p>"
         }
       ]
     },

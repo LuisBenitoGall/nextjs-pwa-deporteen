@@ -91,4 +91,28 @@ describe('pickSubscriptionExpiryEmailCandidate', () => {
       ),
     ).toBeNull();
   });
+
+  it('returns null for lifetime plan (para siempre)', () => {
+    const end = endAfter(10);
+    expect(
+      pickSubscriptionExpiryEmailCandidate(
+        {
+          userId: 'u1',
+          email: 'a@example.com',
+          locale: 'es',
+          name: null,
+          subs: [
+            {
+              id: 'sub-1',
+              status: 'active',
+              current_period_end: end,
+              plan_days: 50_000,
+            },
+          ],
+        },
+        now,
+        thresholds,
+      ),
+    ).toBeNull();
+  });
 });

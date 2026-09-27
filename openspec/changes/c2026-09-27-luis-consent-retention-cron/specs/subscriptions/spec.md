@@ -31,3 +31,21 @@ Un cron diario MUST invocar `GET|POST /api/cron/daily` con secreto `CRON_SECRET`
 - **WHEN** faltan `RESEND_API_KEY` o `RESEND_FROM`
 - **THEN** la purga puede completarse
 - **AND** la respuesta JSON indica `notConfigured` sin romper la aplicación
+
+### Requirement: Activación segura de correos (anti-avalancha)
+
+El cron MUST soportar:
+
+- **Modo prueba (`dry_run`)**: calcular candidatos y devolver vista previa (email, umbral, días) **sin** enviar correos ni actualizar `notified_expiry_email`. En este modo la purga de cookies SHOULD omitirse para no mezclar efectos.
+- **Tope por ejecución**: en modo `live`, MUST limitar envíos por pasada (`SUBSCRIPTION_EXPIRY_EMAIL_MAX_PER_RUN`, default 25).
+- **Backfill**: modo `backfill` MUST marcar el umbral vigente como notificado sin enviar correo, para alinear histórico antes del primer envío real.
+
+#### Scenario: Procedimiento recomendado
+
+- **WHEN** se activa correo por primera vez en producción
+- **THEN** operación MUST documentar: (1) `dry_run` y revisión de recuentos, (2) `backfill` opcional, (3) `live` con tope bajo, (4) cron diario normal
+
+### Requirement: Exclusión plan para siempre
+
+Suscripciones con plan vitalicio (`plan_days >= 50000` o periodo equivalente en lógica de avisos) MUST NOT generar avisos de caducidad por correo ni entrar en la selección de candidatos del cron.
+

@@ -44,8 +44,29 @@ Sobre la base ya mergeada (#54, `cookie_consents`, `POST /api/cookies/consent`, 
 
 Opcional: `NEXT_PUBLIC_SUBSCRIPTION_EXPIRY_NOTICE_DAYS` (default `30,15,7,1`).
 
+| Variable | Uso |
+|----------|-----|
+| `SUBSCRIPTION_EXPIRY_EMAIL_DRY_RUN=true` | Cron en **modo prueba**: cuenta candidatos y devuelve `preview` sin enviar ni purgar cookies |
+| `SUBSCRIPTION_EXPIRY_EMAIL_MAX_PER_RUN` | Tope de envíos (o marcas backfill) por ejecución (default **25**) |
+| `SUBSCRIPTION_EXPIRY_EMAIL_PREVIEW_LIMIT` | Máximo de filas en `preview` JSON (default **100**) |
+
+Query manual (mismo `CRON_SECRET`): `?mode=dry_run`, `?mode=backfill`, `?mode=live`.
+
+## Procedimiento recomendado de activación (correos)
+
+1. **Prueba en seco:** `GET /api/cron/daily?mode=dry_run` con Bearer. Revisar `expiryEmails.candidates` y `expiryEmails.preview` (email, umbral, días restantes).
+2. **Backfill histórico (opcional):** `GET /api/cron/daily?mode=backfill` — marca el umbral actual como ya notificado **sin enviar** (evita avalancha por avisos “atrasados”). Repetir hasta `backfilled=0` o acotar con `MAX_PER_RUN`.
+3. **Envío real gradual:** quitar `SUBSCRIPTION_EXPIRY_EMAIL_DRY_RUN`, mantener `MAX_PER_RUN` bajo (p. ej. 10) las primeras semanas; `?mode=live` o cron programado.
+4. **Operación normal:** cron diario en `live` con tope acorde al volumen.
+
+En `dry_run` la purga de `cookie_consents` **no** se ejecuta (solo preview de correos).
+
+## Plan «para siempre»
+
+Los avisos (in-app y email) **excluyen** planes con `plan_days >= 50_000` (misma regla que `isLifetime` / `getSubscriptionExpiryNotice`) y suscripciones cuyo fin está fuera de la ventana de 30 días. **No deben generarse correos de caducidad** para acceso vitalicio.
+
 ## Riesgos
 
 - Sin `CRON_SECRET`, la ruta responde 403 (correcto).
-- Sin Resend, no hay correos pero la purga sigue si hay service role.
-- Primera ejecución tras deploy puede enviar muchos correos si hay suscripciones en ventana y columna vacía (comportamiento esperado por umbral).
+- Sin Resend, no hay correos pero la purga sigue si hay service role (modo `live`).
+- Sin backfill + live directo, la primera pasada puede enviar a muchos usuarios en ventana (mitigado con dry_run, backfill y `MAX_PER_RUN`).

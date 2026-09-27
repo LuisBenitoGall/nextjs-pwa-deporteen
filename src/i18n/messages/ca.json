@@ -341,6 +341,10 @@
         {
           "title": "4. Cómo cambiar o retirar el consentimiento",
           "html": "<p>Puedes reabrir el panel de preferencias desde el enlace “Cookies” del pie de página, o borrar cookies desde la configuración del navegador.</p>"
+        },
+        {
+          "title": "5. Conservación del registro en servidor",
+          "html": "<p>Per acreditar el consentiment, guardem a la base de dades una còpia de les teves eleccions (sense adreça IP). Aquests registres es conserven com a màxim <b>24 mesos</b> des de la data de cada decisió i s'eliminen automàticament en vencer aquest termini.</p>"
         }
       ]
     },

@@ -341,6 +341,10 @@
         {
           "title": "4. Nola aldatu edo atzera bota onarpena",
           "html": "<p>Hobespen panela berriro ireki dezakezu orri-oinaren “Cookieak” estekatik, edo nabigatzailearen ezarpenetatik cookieak ezabatu.</p>"
+        },
+        {
+          "title": "5. Zerbitzarian gordetako erregistroaren atxikitzea",
+          "html": "<p>Onarpena egiaztatzeko, zure aukeren kopia gordetzen dugu datu-basean (IP helbiderik gabe). Erregistro horiek gehienez <b>24 hilabete</b> gordetzen dira erabakiaren datatik eta automatikoki ezabatzen dira epe hori amaitzean.</p>"
         }
       ]
     },
