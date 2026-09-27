@@ -8,3 +8,5 @@
 ## MODIFIED
 
 - Las consultas a datos de usuario en panel admin SHALL usar la tabla `public.users`, no una tabla `profiles` inexistente.
+- **`public.users.status`** es **boolean NOT NULL** (default `true`); la baja de cuenta SHALL usar `status = false`. No existe columna `deleted_at` ni valores texto tipo `inactive` en el esquema desplegado.
+- **`public.players.status`** (boolean): borrado blando de jugadores SHALL usar `status = false` (mismo criterio operativo ya acordado).

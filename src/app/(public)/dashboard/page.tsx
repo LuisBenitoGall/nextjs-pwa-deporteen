@@ -41,11 +41,7 @@ export default async function DashboardPage() {
     .eq('id', userId)
     .maybeSingle();
 
-    // Seguridad: si está desactivado, fuera
-    const statusVal = (me as any)?.status;
-    const normalized = typeof statusVal === 'string' ? statusVal.toLowerCase() : statusVal;
-    const isDisabled = normalized === false || normalized === 'inactive' || normalized === 'false';
-    if (me && isDisabled) redirect('/logout');
+    if (me && me.status === false) redirect('/logout');
 
     const { t, locale: appLocale } = await tServer(me?.locale || undefined);
     const intlLocale = intlLocaleTag(appLocale);
