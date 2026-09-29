@@ -6,6 +6,8 @@
 
 `I18nProvider` MUST inicializar su diccionario con los mensajes de `DEFAULT_LOCALE` importados de forma estática, de modo que el render de servidor y el primer render de cliente ya contengan texto.
 
+Nota: la inicialización estática llegó con #57 (`c2026-09-29-legaldoc-ssr-sanitize`); aquí se formaliza como contrato y se añaden el fallback de clave y el comportamiento ante fallo de carga.
+
 Ninguna vista MUST renderizarse con cadenas vacías mientras se resuelve el diccionario del locale del usuario.
 
 #### Scenario: Visitante con navegador en castellano

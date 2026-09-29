@@ -53,7 +53,7 @@ Los textos legales (`LegalDoc`, rutas `/legal/*`) MUST renderizarse con HTTP 200
 - `t(key)` MUST resolver contra el locale activo y, si falta la clave, contra el locale por defecto antes de devolver cadena vacía
 - Un fallo al cargar el diccionario del locale MUST conservar los mensajes del locale por defecto, nunca vaciar el diccionario
 - Para locales distintos de `es` el primer pintado muestra el locale por defecto y se sustituye al resolver el diccionario; en ningún momento se muestra texto vacío
-- Contrapartida aceptada: `es.json` viaja en el grafo inicial del bundle (≈ +14 kB de *First Load JS*) a cambio de HTML indexable y sin parpadeo de contenido vacío
+- Contrapartida aceptada: `es.json` viaja en el grafo inicial del bundle (≈ +14 kB de *First Load JS* en la home) a cambio de HTML indexable y sin parpadeo de contenido vacío. Los demás locales siguen cargándose con `import()` diferido, así que el coste no se multiplica por locale
 
 **Motivo**: mientras el diccionario arrancaba vacío, la home de producción se servía sin una sola cadena visible (solo iconos), con perjuicio de SEO y de percepción de carga.
 

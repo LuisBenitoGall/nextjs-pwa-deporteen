@@ -12,7 +12,7 @@
 
 ## 3. Aplicación
 
-- [x] 3.1 `I18nProvider`: `dict` inicial con el locale por defecto y fallback de `t()`
+- [x] 3.1 `I18nProvider`: fallback de `t()` al locale por defecto y sin vaciar el diccionario al fallar (el sembrado estático ya venía de #57)
 - [x] 3.2 `HeroSection`: `key` estables (slug / id) y `FeatureCard` fuera del render
 - [x] 3.3 `src/lib/sports`: `i18nKey` en `SPORTS` y helper `isSportActive()`
 - [x] 3.4 Filtrar `active` en `NewMatchEmbedded` y `CompetitionEditForm`; unificar helper en `NewPlayerForm` y `CompetitionNewForm`
@@ -26,3 +26,5 @@
 
 - [x] 5.1 `pnpm lint`, `pnpm types`, `pnpm test:run`, `pnpm build`
 - [x] 5.2 Verificar HTML del build local (textos presentes, un icono por deporte)
+- [x] 5.3 Rebase sobre `master` tras #55/#56/#57 conservando el sembrado de `es.json` y el campo `messages` del contexto
+- [x] 5.4 Medir *First Load JS* de la home frente a `master`: 193 kB en ambos, sin coste añadido
