@@ -1,22 +1,16 @@
 import { normalizeToAppLocale, type Locale, DEFAULT_LOCALE, intlLocaleTag } from '@/i18n/config';
-import es from '@/i18n/messages/es.json';
-import en from '@/i18n/messages/en.json';
-import ca from '@/i18n/messages/ca.json';
-import it from '@/i18n/messages/it.json';
-import pt from '@/i18n/messages/pt.json';
-import eu from '@/i18n/messages/eu.json';
-import gl from '@/i18n/messages/gl.json';
+import { loadFullLocaleMessages } from '@/i18n/load-full-locale';
 
 type FlatMessages = Record<string, string>;
 
 const MESSAGES: Record<Locale, FlatMessages> = {
-  es: es as unknown as FlatMessages,
-  en: en as unknown as FlatMessages,
-  ca: ca as unknown as FlatMessages,
-  it: it as unknown as FlatMessages,
-  pt: pt as unknown as FlatMessages,
-  eu: eu as unknown as FlatMessages,
-  gl: gl as unknown as FlatMessages,
+  es: loadFullLocaleMessages('es') as FlatMessages,
+  en: loadFullLocaleMessages('en') as FlatMessages,
+  ca: loadFullLocaleMessages('ca') as FlatMessages,
+  it: loadFullLocaleMessages('it') as FlatMessages,
+  pt: loadFullLocaleMessages('pt') as FlatMessages,
+  eu: loadFullLocaleMessages('eu') as FlatMessages,
+  gl: loadFullLocaleMessages('gl') as FlatMessages,
 };
 
 function t(locale: Locale, key: string): string {

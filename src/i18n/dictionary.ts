@@ -1,20 +1,39 @@
 // src/i18n/dictionary.ts
 import { DEFAULT_LOCALE, Locale, normalizeToAppLocale } from './config';
+import {
+  type I18nLazyChunk,
+  importCoreMessages,
+  importLazyChunk,
+  mergeLocaleMessages,
+} from './chunks';
 
 type Dict = Record<string, any>;
 
-export async function getDictionary(locale?: string): Promise<{ locale: Locale; dict: Dict }> {
-  const lc = normalizeToAppLocale(locale) ?? DEFAULT_LOCALE;
-  switch (lc) {
-    case 'en': return { locale: lc, dict: (await import('./messages/en.json')).default };
-    case 'ca': return { locale: lc, dict: (await import('./messages/ca.json')).default };
-    case 'it': return { locale: lc, dict: (await import('./messages/it.json')).default };
-    case 'eu': return { locale: lc, dict: (await import('./messages/eu.json')).default };
-    case 'gl': return { locale: lc, dict: (await import('./messages/gl.json')).default };
-    case 'pt': return { locale: lc, dict: (await import('./messages/pt.json')).default };
-    case 'es':
-    default:   return { locale: 'es', dict: (await import('./messages/es.json')).default };
+export type GetDictionaryOptions = {
+  chunks?: I18nLazyChunk[];
+};
+
+async function loadChunks(locale: Locale, chunks: I18nLazyChunk[]): Promise<Dict> {
+  const parts: Partial<Record<I18nLazyChunk, Dict>> = {};
+  for (const chunk of chunks) {
+    parts[chunk] = await importLazyChunk(locale, chunk);
   }
+  const core = await importCoreMessages(locale);
+  return mergeLocaleMessages(core, parts) as Dict;
+}
+
+export async function getDictionary(
+  locale?: string,
+  options?: GetDictionaryOptions
+): Promise<{ locale: Locale; dict: Dict }> {
+  const lc = normalizeToAppLocale(locale) ?? DEFAULT_LOCALE;
+  const chunks = options?.chunks ?? [];
+  if (chunks.length === 0) {
+    const dict = await importCoreMessages(lc);
+    return { locale: lc, dict };
+  }
+  const dict = await loadChunks(lc, [...new Set(chunks)]);
+  return { locale: lc, dict };
 }
 
 // Admite marcadores en mayúsculas ({DAYS}) y en minúsculas ({n}); ambos conviven en los

@@ -20,7 +20,8 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest --watch",
-    "i18n:sync": "tsx scripts/sync-i18n.ts"
+    "i18n:sync": "tsx scripts/sync-i18n.ts",
+    "i18n:split": "tsx scripts/split-i18n-chunks.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1024.0",

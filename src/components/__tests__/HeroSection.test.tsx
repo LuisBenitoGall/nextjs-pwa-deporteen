@@ -4,7 +4,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import HeroSection from '../HeroSection';
 import { I18nProvider } from '@/i18n/I18nProvider';
 import { SPORTS } from '@/lib/sports';
-import esMessages from '@/i18n/messages/es.json';
+import esMessages from '@/i18n/messages/es/core.json';
 
 vi.mock('@/lib/supabase/client', () => ({
   supabase: {

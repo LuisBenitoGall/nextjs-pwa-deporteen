@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'fs';
-import { join } from 'path';
-import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from '../config';
-
-const MESSAGES_DIR = join(process.cwd(), 'src/i18n/messages');
+import { DEFAULT_LOCALE, SUPPORTED_LOCALES, type Locale } from '../config';
+import { loadFullLocaleMessages } from '../load-full-locale';
 
 /**
  * Aplana el diccionario a pares clave→valor. Los elementos de array llevan índice
@@ -32,7 +29,7 @@ function placeholders(value: unknown): string[] {
 }
 
 function load(locale: string) {
-  return flatten(JSON.parse(readFileSync(join(MESSAGES_DIR, `${locale}.json`), 'utf8')));
+  return flatten(loadFullLocaleMessages(locale as Locale));
 }
 
 const base = load(DEFAULT_LOCALE);
