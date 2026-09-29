@@ -4,13 +4,63 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useT } from '@/i18n/I18nProvider';
 import { supabase } from '@/lib/supabase/client';
-import { getSportIconPath } from '@/lib/sports';
+import { SPORTS } from '@/lib/sports';
 
 import type { Session } from '@supabase/supabase-js';
 
 //Componentes
 import LogoScatter from '@/components/LogoScatter';
 import { BALL_ICONS } from '@/components/ball-icons';
+
+/**
+ * Identificadores estables de las características. Las `key` de React nunca deben
+ * derivarse de textos traducidos: si el diccionario aún no está cargado todas
+ * valdrían lo mismo y React deja nodos huérfanos en el DOM al reconciliar.
+ */
+const FEATURE_IDS = ['feature1', 'feature2', 'feature3', 'feature4', 'feature5', 'feature6'] as const;
+
+const FEATURE_ICONS: Record<(typeof FEATURE_IDS)[number], string> = {
+    feature1: '/icons/athlete.svg',
+    feature2: '/icons/sports.svg',
+    feature3: '/icons/stats.svg',
+    feature4: '/icons/media.svg',
+    feature5: '/icons/offline.svg',
+    feature6: '/icons/mobile.svg',
+};
+
+function FeatureCard({
+    title,
+    desc,
+    icon, // ruta a svg/png
+}: {
+    title: string;
+    desc: string;
+    icon: string;
+}) {
+    return (
+        <div className="h-full flex flex-col rounded-xl bg-white p-4 md:p-5 ring-1 ring-gray-200 shadow-sm hover:shadow-md hover:ring-green-200 transition">
+            {/* Layout interno estable: header + body */}
+            <div className="grid gap-y-1">
+                {/* HEADER: icono + título en una sola fila, siempre alineados */}
+                <div className="col-span-2 flex items-center gap-3 md:gap-4">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-green-600">
+                        <Image src={icon} alt="" width={20} height={20} className="invert" />
+                    </div>
+                    <h3 className="m-0 text-[16px] md:text-[17px] font-semibold leading-6 text-gray-900">
+                        {title}
+                    </h3>
+                </div>
+
+                {/* BODY: descripción ocupa todo el ancho del card */}
+                <div className="col-span-2">
+                    <p className="mt-1 text-sm leading-6 text-gray-600">
+                        {desc}
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 export default function HeroSection() {
     const t = useT();
@@ -37,84 +87,20 @@ export default function HeroSection() {
         };
     }, []);
 
-    // Lista en el orden indicado en tu comentario
-    const SPORT_NAMES: readonly { name: string; icon: string }[] = [
-        { name: t('baloncesto'), icon: 'baloncesto' },
-        { name: t('futbol'), icon: 'futbol' },
-        { name: t('futbol_sala'), icon: 'futbol-sala' },
-        { name: t('balonmano'), icon: 'balonmano' },
-        { name: t('rugby'), icon: 'rugby' },
-        { name: t('voleibol'), icon: 'voleibol' },
-        { name: t('waterpolo'), icon: 'waterpolo' },
-        { name: t('hockey_hierba'), icon: 'hockey-hierba' },
-        { name: t('hockey_patines'), icon: 'hockey-patines' }
-    ];
+    // Catálogo cerrado de deportes (src/lib/sports): el slug es el identificador estable
+    // y el nombre visible sale del diccionario i18n.
+    const sports = SPORTS.map(sport => ({
+        slug: sport.slug,
+        icon: sport.icon,
+        name: t(sport.i18nKey) || sport.name,
+    }));
 
-    const FEATURES = [
-        {   title: t('home_feature1_title'),
-            desc: t('home_feature1_text'),
-            icon: '/icons/athlete.svg',
-        },
-        {
-            title: t('home_feature2_title'),
-            desc: t('home_feature2_text'),
-            icon: '/icons/sports.svg',
-        },
-        {
-            title: t('home_feature3_title'),
-            desc: t('home_feature3_text'),
-            icon: '/icons/stats.svg',
-        },
-        {
-            title: t('home_feature4_title'),
-            desc: t('home_feature4_text'),
-            icon: '/icons/media.svg',
-        },
-        {
-            title: t('home_feature5_title'),
-            desc: t('home_feature5_text'),
-            icon: '/icons/offline.svg',
-        },
-        {
-            title: t('home_feature6_title'),
-            desc: t('home_feature6_text'),
-            icon: '/icons/mobile.svg',
-        }
-    ];
-
-    function FeatureCard({
-        title,
-        desc,
-        icon, // ruta a svg/png
-    }: {
-        title: string;
-        desc: string;
-        icon: string;
-    }) {
-        return (
-            <div className="h-full flex flex-col rounded-xl bg-white p-4 md:p-5 ring-1 ring-gray-200 shadow-sm hover:shadow-md hover:ring-green-200 transition">
-                {/* Layout interno estable: header + body */}
-                <div className="grid gap-y-1">
-                    {/* HEADER: icono + título en una sola fila, siempre alineados */}
-                    <div className="col-span-2 flex items-center gap-3 md:gap-4">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-green-600">
-                        <Image src={icon} alt="" width={20} height={20} className="invert" />
-                    </div>
-                    <h3 className="m-0 text-[16px] md:text-[17px] font-semibold leading-6 text-gray-900">
-                        {title}
-                    </h3>
-                    </div>
-
-                    {/* BODY: descripción ocupa todo el ancho del card */}
-                    <div className="col-span-2">
-                    <p className="mt-1 text-sm leading-6 text-gray-600">
-                        {desc}
-                    </p>
-                    </div>
-                </div>
-            </div>
-        );
-    }
+    const features = FEATURE_IDS.map(id => ({
+        id,
+        title: t(`home_${id}_title`),
+        desc: t(`home_${id}_text`),
+        icon: FEATURE_ICONS[id],
+    }));
 
     return (
         <section className="px-0 pb-20 pt-8 home_">
@@ -184,30 +170,23 @@ export default function HeroSection() {
                 <p className="text-center m-0 font-bold text-gray-500">{t('home_deportes_texto')}</p>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-6 mt-8">
-                    {SPORT_NAMES.map((sport) => {
-                        const icon = getSportIconPath(sport.icon);
-                        return (
-                            <div key={sport.name} aria-label={sport.name} className="group">
-                                <div className="relative flex flex-col items-center gap-3 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-200 transition hover:-translate-y-0.5 hover:shadow-md hover:ring-green-200">
-                                    <div className="flex items-center justify-center w-16 h-16 rounded-full bg-green-50 ring-1 ring-green-100">
-                                    {icon ? (
-                                        <Image
-                                        src={icon}
+                    {sports.map((sport) => (
+                        <div key={sport.slug} aria-label={sport.name} className="group">
+                            <div className="relative flex flex-col items-center gap-3 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-200 transition hover:-translate-y-0.5 hover:shadow-md hover:ring-green-200">
+                                <div className="flex items-center justify-center w-16 h-16 rounded-full bg-green-50 ring-1 ring-green-100">
+                                    <Image
+                                        src={sport.icon}
                                         alt={sport.name}
                                         width={80}
                                         height={80}
                                         className="h-[80px] w-[80px] object-contain transition group-hover:scale-[1.03]"
-                                        />
-                                    ) : (
-                                        <div className="h-[80px] w-[80px]" />
-                                    )}
-                                    </div>
-                                    <span className="text-sm font-semibold text-gray-800 text-center">{sport.name}</span>
-                                    <div className="mt-1 h-px w-10 bg-gray-200" />
+                                    />
                                 </div>
+                                <span className="text-sm font-semibold text-gray-800 text-center">{sport.name}</span>
+                                <div className="mt-1 h-px w-10 bg-gray-200" />
                             </div>
-                        );
-                    })}
+                        </div>
+                    ))}
                 </div>
 
                 <p className="text-center mt-7 font-bold text-gray-500">
@@ -217,8 +196,8 @@ export default function HeroSection() {
 
             {/* Bloque características */}
             <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 md:gap-6 items-stretch rounded-xl bg-gray-100 my-8 py-8 px-6">
-                {FEATURES.map((f) => (
-                    <FeatureCard key={f.title} {...f} />
+                {features.map(({ id, ...f }) => (
+                    <FeatureCard key={id} {...f} />
                 ))}
             </div>
         </section>
