@@ -23,6 +23,10 @@ Sistema de internacionalización que soporta múltiples idiomas para toda la int
 3. Toda la UI se actualiza
 4. Preferencia se guarda
 
+### RF-2b: Páginas legales en SSR
+
+Los textos legales (`LegalDoc`, rutas `/legal/*`) MUST renderizarse con HTTP 200 en servidor usando saneado HTML apto para Node (p. ej. `sanitize-html`), sin `isomorphic-dompurify`/jsdom que provoque error 500 en producción.
+
 ### RF-2: Traducción de Contenido
 
 **Descripción**: Todo el contenido visible está traducido.

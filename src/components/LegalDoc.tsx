@@ -1,9 +1,9 @@
 'use client';
 
-import DOMPurify from 'isomorphic-dompurify';
 import { useMemo } from 'react';
 import { useT } from '@/i18n/I18nProvider';
 import { LEGAL_CONSTANTS } from '@/config/constants';
+import { sanitizeLegalHtml } from '@/lib/sanitize-legal-html';
 
 type DocId =
   | 'legal_notice'
@@ -29,12 +29,9 @@ function applyPlaceholders(text: string, vars: PlaceholderMap) {
   });
 }
 
-/** Limpia HTML con DOMPurify. */
+/** Limpia HTML de textos legales (SSR-safe, sin jsdom). */
 function sanitize(html: string) {
-  return DOMPurify.sanitize(html, {
-    USE_PROFILES: { html: true },
-    ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'id'],
-  });
+  return sanitizeLegalHtml(html);
 }
 
 /** Detecta si t(key) ha fallado (muchas libs devuelven la propia key cuando falta). */
