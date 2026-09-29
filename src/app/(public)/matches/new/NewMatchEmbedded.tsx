@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useT } from '@/i18n/I18nProvider';
+import { isSportActive } from '@/lib/sports';
 
 // Components de tu proyecto
 import Input from '@/components/Input';
@@ -14,6 +15,7 @@ import TitleH1 from '@/components/TitleH1';
 type Sport = {
     id: string;
     name?: string | null;
+    active?: boolean | null;
     stats?: any;
 };
 
@@ -111,7 +113,7 @@ export default function NewMatchEmbedded({ playerId }: Props) {
             setPlayer(playerRow || null);
 
             const [{ data: sportsData }, { data: comps }] = await Promise.all([
-                supabase.from('sports').select('id, name, stats').order('name', { ascending: true }),
+                supabase.from('sports').select('id, name, active, stats').order('name', { ascending: true }),
                 supabase.from('competitions').select('id, name, sport_id, season_id').order('name', { ascending: true }),
             ]);
             if (!mounted) return;
@@ -135,6 +137,10 @@ export default function NewMatchEmbedded({ playerId }: Props) {
     }, [supabase, preCompetition, playerId, t]);
 
     const compOptions = competitions.map(c => ({ value: c.id, label: c.name }));
+
+    // Solo deportes activos del catálogo; se conserva el derivado de la competición
+    // aunque esté desactivado para no vaciar el selector.
+    const sportOptions = sports.filter(s => isSportActive(s) || s.id === sportId);
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -251,7 +257,7 @@ export default function NewMatchEmbedded({ playerId }: Props) {
                             onChange={(e) => setSportId(e.target.value)}
                         >
                             <option value="">{t('seleccionar') || 'Selecciona…'}</option>
-                            {sports.map(s => (
+                            {sportOptions.map(s => (
                                 <option key={s.id} value={s.id}>{s.name ?? s.id}</option>
                             ))}
                         </select>

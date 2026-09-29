@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { useT } from '@/i18n/I18nProvider';
+import { isSportActive } from '@/lib/sports';
 
 import Input from '@/components/Input';
 import Select from '@/components/Select';
@@ -42,7 +43,7 @@ export default function CompetitionNewForm({ playerId, seasonIdFromQuery }: Prop
         .select('id, name, slug, active')
         .order('name', { ascending: true });
       if (e1) { setErr(e1.message); return; }
-      setSports((sportsRaw || []).filter(s => (typeof s.active === 'boolean' ? s.active : true)));
+      setSports((sportsRaw || []).filter(isSportActive));
 
       const { data: cats, error: e2 } = await supabase
         .from('sport_categories')
