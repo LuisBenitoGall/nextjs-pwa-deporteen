@@ -17,6 +17,7 @@ openspec/
 │   ├── admin/             # Panel de administración
 │   ├── pwa/               # Funcionalidades PWA
 │   ├── internationalization/  # Internacionalización
+│   ├── media/             # Almacenamiento remoto, cuota y guardrails
 │   └── statistics/        # Estadísticas y visualización
 └── changes/               # Propuestas de cambios futuros
     └── archive/           # Cambios completados
