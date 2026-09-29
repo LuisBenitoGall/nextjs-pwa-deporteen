@@ -1,0 +1,168 @@
+{
+  "legal": {
+    "legal_notice": {
+      "sections": [
+        {
+          "title": "1. Identificación do titular",
+          "html": "<p>Este sitio e a aplicación <b>{{product.app_name}}</b> ({{product.domain}}) son titularidade de <b>{{company.name}}</b>, con NIF {{company.nif}}, domicilio en {{company.address}}, {{company.country}}. Email de contacto: <a href=\"mailto:{{company.email}}\">{{company.email}}</a>.</p><p>Inscrición rexistral: {{company.reg_merc}}</p>"
+        },
+        {
+          "title": "2. Obxecto e aceptación",
+          "html": "<p>O presente Aviso Legal regula o acceso e uso de {{product.app_name}}. O acceso implica a aceptación destas condicións e, cando corresponda, dos <a href=\"/legal/terminos\" target=\"_blank\" rel=\"noopener\">Termos de Uso</a>.</p>"
+        },
+        {
+          "title": "3. Usuarios e menores",
+          "html": "<p>A plataforma está dirixida a persoas adultas. <b>Os menores de 16 anos non poden crear conta</b>. Os adultos poden rexistrar información deportiva de terceiros, incluídos menores de idade, conforme á <a href=\"/legal/contenidos\" target=\"_blank\" rel=\"noopener\">Política de Contidos e Dereitos de Imaxe</a>.</p>"
+        },
+        {
+          "title": "4. Propiedade intelectual",
+          "html": "<p>O software, deseño e interface de {{product.app_name}} pertencen a {{company.name}} ou aos seus licenciantes. O uso non supón cesión de ningún dereito de propiedade intelectual.</p>"
+        },
+        {
+          "title": "5. Responsabilidade",
+          "html": "<p>{{company.name}} non se fai responsable dos datos, imaxes ou vídeos que suba o usuario ao dispositivo, nin dos danos derivados dun uso indebido da aplicación.</p>"
+        },
+        {
+          "title": "6. Ligazóns e servizos de terceiros",
+          "html": "<p>A app integra servizos de terceiros (p. ex., <b>Supabase</b> en {{providers.supabase_region}} para a base de datos, <b>Stripe</b> en {{providers.stripe_region}} para pagos, <b>{{providers.hosting}}</b> para aloxamento e <b>{{providers.analytics}}</b> para analítica). Véxase a <a href=\"/legal/privacidad\">Política de Privacidade</a>.</p>"
+        },
+        {
+          "title": "7. Lei aplicable e xurisdición",
+          "html": "<p>Aplicarase a lexislación de {{legal.jurisdiction}} e, salvo norma imperativa, os xulgados do domicilio do usuario consumidor.</p>"
+        }
+      ]
+    },
+    "privacy": {
+      "sections": [
+        {
+          "title": "1. Responsable do tratamento",
+          "html": "<p>Responsable: <b>{{company.name}}</b> ({{company.email}}). Polo momento non se designou Delegado de Protección de Datos.</p>"
+        },
+        {
+          "title": "2. Datos tratados",
+          "html": "<ul><li><b>Conta</b>: nome, apelidos, email e teléfono (opcional).</li><li><b>Uso do servizo</b>: estatísticas deportivas creadas polo usuario sobre terceiros.</li><li><b>Medios</b>: imaxes e vídeos <b>almacenados localmente no dispositivo</b>, non na nube.</li><li><b>Pagos</b>: identificación da transacción xestionada por Stripe.</li><li><b>Analítica</b>: medicións con {{providers.analytics}}.</li></ul>"
+        },
+        {
+          "title": "3. Finalidades e bases xurídicas",
+          "html": "<ul><li><b>Prestación do servizo e subscrición</b> (execución do contrato).</li><li><b>Analítica de uso</b> (consentimento; véxase a <a href=\"/legal/cookies\">Política de Cookies</a>).</li><li><b>Notificacións de renovación</b> (consentimento).</li><li><b>Seguridade e prevención da fraude</b> (interese lexítimo).</li></ul>"
+        },
+        {
+          "title": "4. Orixe e veracidade",
+          "html": "<p>Os datos proceden do propio usuario. Se rexistra información sobre terceiros, garante contar con lexitimación suficiente (p. ex., consentimento dos titulares de imaxe no caso de menores).</p>"
+        },
+        {
+          "title": "5. Conservación",
+          "html": "<ul><li>Conta e rexistros: mentres exista a conta. Datos de facturación: <b>6 anos</b>.</li><li>Rexistros de seguridade: <b>12 meses</b> salvo incidencias.</li><li>Analítica (con consentimento) e rexistros de consentimento de cookies: <b>24 meses</b> desde a data do consentimento, con supresión automática ao vencer ese prazo.</li></ul>"
+        },
+        {
+          "title": "6. Destinatarios e encargados",
+          "html": "<ul><li><b>Supabase</b> (UE/Irlanda) como provedor de base de datos.</li><li><b>Stripe</b> para pagos.</li><li><b>{{providers.hosting}}</b> para aloxamento.</li><li><b>{{providers.analytics}}</b> (configurado segundo o consentimento).</li></ul><p>Non se realizan transferencias internacionais fóra do EEE salvo as inherentes a estes provedores e amparadas polos seus mecanismos de cumprimento.</p>"
+        },
+        {
+          "title": "7. Dereitos",
+          "html": "<p>Podes exercer acceso, rectificación, supresión, oposición, limitación e portabilidade escribindo a <a href=\"mailto:{{legal.data_subject_email}}\">{{legal.data_subject_email}}</a>. Prazo de resposta: 1 mes.</p>"
+        },
+        {
+          "title": "8. Medidas de seguridade",
+          "html": "<p>Cifrado en tránsito (TLS) e en repouso nos servizos de base de datos, control de accesos, copias de seguridade no provedor e boas prácticas de minimización. Os medios (fotos/vídeos) gárdanse no <b>almacenamento local do dispositivo</b> que controla o usuario.</p>"
+        },
+        {
+          "title": "9. Menores",
+          "html": "<p>Os menores de 16 anos non poden crear conta. Os adultos que rexistren datos ou imaxes de menores declaran ter lexitimación suficiente e respectar a <a href=\"/legal/contenidos\">Política de Contidos e Dereitos de Imaxe</a>.</p>"
+        }
+      ]
+    },
+    "cookies": {
+      "sections": [
+        {
+          "title": "1. Que son as cookies?",
+          "html": "<p>Utilizamos cookies e tecnoloxías semellantes para que a web funcione e, se o aceptas, para medir o uso con {{providers.analytics}}.</p>"
+        },
+        {
+          "title": "2. Configuración",
+          "html": "<p>Podes personalizar as túas preferencias no banner de <i>Preferencias de cookies</i>. As categorías usadas son:</p><ul><li><b>Necesarias</b>: imprescindibles para o funcionamento (login, seguridade).</li><li><b>Analítica</b>: medición de uso con {{providers.analytics}} (require consentimento salvo modo exento da AEPD).</li><li><b>Funcionais</b>: melloras non esenciais.</li><li><b>Márketing</b>: actualmente non utilizamos.</li></ul>"
+        },
+        {
+          "title": "3. Cookies que utilizamos",
+          "html": "<p><b>Necesarias</b></p><ul><li>Sesión de Supabase: {{cookies.session}}.</li><li>Stripe (checkout): {{cookies.stripe}}.</li></ul><p><b>Analítica</b></p><ul><li>Google Analytics 4: {{cookies.ga4}}.</li></ul><p>Ademais, podemos usar almacenamento local (IndexedDB/localStorage) para contido e preferencias.</p>"
+        },
+        {
+          "title": "4. Como cambiar ou retirar o consentimento",
+          "html": "<p>Podes reabrir o panel de preferencias desde a ligazón “Cookies” do pé de páxina, ou borrar cookies desde a configuración do navegador.</p>"
+        },
+        {
+          "title": "5. Conservación do rexistro no servidor",
+          "html": "<p>Para acreditar o consentimento, gardamos na base de datos unha copia das túas eleccións (sen enderezo IP). Esos rexistros consérvense como máximo <b>24 meses</b> desde a data de cada decisión e elimínanse automaticamente ao vencer ese prazo.</p>"
+        }
+      ]
+    },
+    "terms": {
+      "sections": [
+        {
+          "title": "1. Obxecto",
+          "html": "<p>Estes Termos regulan o uso de {{product.app_name}}.</p>"
+        },
+        {
+          "title": "2. Conta e acceso",
+          "html": "<p>A conta é persoal e para maiores de 16 anos. Un adulto pode rexistrar deportistas terceiros.</p>"
+        },
+        {
+          "title": "3. Plans e pagos",
+          "html": "<p>Os pagos procésanse con Stripe. A factura emítea Stripe.</p>"
+        },
+        {
+          "title": "4. Desistencia e reembolsos",
+          "html": "<p>Dispós de <b>14 días</b> desde a compra para solicitar reembolso se non consumiches prestacións que o impidan legalmente.</p>"
+        },
+        {
+          "title": "5. Contidos do usuario",
+          "html": "<p>Responsabilízaste dos datos e imaxes que almacenes. Debes cumprir a lexislación vixente e a nosa <a href=\"/legal/contenidos\">Política de Contidos</a>.</p>"
+        },
+        {
+          "title": "6. Limitación de responsabilidade",
+          "html": "<p>O servizo préstase “tal cal” dentro dunha dilixencia razoable.</p>"
+        }
+      ]
+    },
+    "subscription": {
+      "sections": [
+        {
+          "title": "1. Proceso de compra",
+          "html": "<p>A subscrición xestiónase mediante Stripe. Unha vez confirmado o pago actívase o acceso.</p>"
+        },
+        {
+          "title": "2. Renovacións e avisos",
+          "html": "<p>Podemos enviarche avisos de renovación se o consentes.</p>"
+        },
+        {
+          "title": "3. Facturación",
+          "html": "<p>A factura é a xerada por Stripe e estará dispoñible no teu recibo de pago.</p>"
+        },
+        {
+          "title": "4. Desistencia",
+          "html": "<p>14 días de desistencia conforme á normativa de consumo, coas excepcións legais aplicables.</p>"
+        }
+      ]
+    },
+    "content_policy": {
+      "sections": [
+        {
+          "title": "1. Ámbito",
+          "html": "<p>Regula o uso de imaxes e vídeos e o rexistro de datos de terceiros, incluídos menores.</p>"
+        },
+        {
+          "title": "2. Dereitos de imaxe",
+          "html": "<p>Se almacenas imaxes ou vídeos de terceiros, debes contar co seu consentimento. No caso de menores, o consentimento debe outorgalo o seu representante legal.</p>"
+        },
+        {
+          "title": "3. Prohibicións",
+          "html": "<p>Queda prohibido subir ou conservar contidos ilícitos, difamatorios ou que vulneren dereitos de terceiros.</p>"
+        },
+        {
+          "title": "4. Retirada de contidos",
+          "html": "<p>Poderemos requirirche a retirada de contidos que vulneren esta política ou a lei. Podes contactar en <a href=\"mailto:{{legal.data_subject_email}}\">{{legal.data_subject_email}}</a>.</p>"
+        }
+      ]
+    }
+  }
+}

@@ -74,4 +74,15 @@ describe('getDictionary', () => {
     const { locale } = await getDictionary()
     expect(locale).toBe('es')
   })
+
+  it('núcleo sin bloque legal no incluye legal.*', async () => {
+    const { dict } = await getDictionary('es')
+    expect(dict.legal).toBeUndefined()
+  })
+
+  it('carga el bloque legal bajo demanda', async () => {
+    const { dict } = await getDictionary('es', { chunks: ['legal'] })
+    expect(dict.legal).toBeDefined()
+    expect(Array.isArray(dict.legal?.privacy?.sections)).toBe(true)
+  })
 })

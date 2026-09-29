@@ -1,0 +1,168 @@
+{
+  "legal": {
+    "legal_notice": {
+      "sections": [
+        {
+          "title": "1. Titularraren identifikazioa",
+          "html": "<p>Webgune hau eta <b>{{product.app_name}}</b> aplikazioa ({{product.domain}}) <b>{{company.name}}</b> enpresaren jabetzakoa dira, NIF {{company.nif}}, helbidea {{company.address}}, {{company.country}}. Harremanetarako posta elektronikoa: <a href=\"mailto:{{company.email}}\">{{company.email}}</a>.</p><p>Erregistro inskripzioa: {{company.reg_merc}}</p>"
+        },
+        {
+          "title": "2. Xedea eta onarpena",
+          "html": "<p>Lege-ohar honek {{product.app_name}} aplikaziorako sarbidea eta erabilera arautzen ditu. Sarbideak baldintza hauek onartzea dakar, eta dagokionez, <a href=\"/legal/terminos\" target=\"_blank\" rel=\"noopener\">Erabileraren baldintzak</a>.</p>"
+        },
+        {
+          "title": "3. Erabiltzaileak eta adingabeak",
+          "html": "<p>Plataforma helduei zuzenduta dago. <b>16 urtetik beherakoek ezin dute konturik sortu</b>. Helduek hirugarrenen kirol informazioa erregistra dezakete, adingabeak barne, <a href=\"/legal/contenidos\" target=\"_blank\" rel=\"noopener\">Eduki eta irudi eskubideen politika</a>ri jarraituz.</p>"
+        },
+        {
+          "title": "4. Jabetza intelektuala",
+          "html": "<p>{{product.app_name}} aplikazioaren softwarea, diseinua eta interfazea {{company.name}} edo haren lizentzia-emaileen jabetzakoa dira. Erabilerak ez du eskubiderik transferitzen.</p>"
+        },
+        {
+          "title": "5. Erantzukizuna",
+          "html": "<p>{{company.name}} ez da erantzule gailuan erabiltzaileak igotzen dituen datu, irudi edo bideoengatik, ezta aplikazioaren erabilera okerragatik sortutako kalteengatik ere.</p>"
+        },
+        {
+          "title": "6. Hirugarrenen estekak eta zerbitzuak",
+          "html": "<p>Aplikazioak hirugarrenen zerbitzuak integratzen ditu (adib., datu-basea <b>Supabase</b> {{providers.supabase_region}} eremuan, ordainketak <b>Stripe</b> {{providers.stripe_region}} eremuan, ostatua <b>{{providers.hosting}}</b>, analitika <b>{{providers.analytics}}</b>). Ikusi <a href=\"/legal/privacidad\">Pribatutasun politika</a>.</p>"
+        },
+        {
+          "title": "7. Lege aplagarria eta jurisdikzioa",
+          "html": "<p>{{legal.jurisdiction}} legeriak aplikatuko da, eta arau derrigorrezkoak salbu, kontsumitzailearen bizilekuko epaitegiek.</p>"
+        }
+      ]
+    },
+    "privacy": {
+      "sections": [
+        {
+          "title": "1. Tratamenduaren arduraduna",
+          "html": "<p>Arduraduna: <b>{{company.name}}</b> ({{company.email}}). Une honetan ez da Datuen Babeserako ordezkaria izendatu.</p>"
+        },
+        {
+          "title": "2. Tratatutako datuak",
+          "html": "<ul><li><b>Kontua</b>: izena, abizenak, posta elektronikoa eta telefonoa (aukerakoa).</li><li><b>Zerbitzuaren erabilera</b>: erabiltzaileak hirugarrenei buruz sortutako kirol estatistikak.</li><li><b>Euskarriak</b>: irudi eta bideoak <b>gailuan lokalki gordeta</b>, hodeian ez.</li><li><b>Ordainketak</b>: Stripe-k kudeatutako transakzioaren identifikazioa.</li><li><b>Analitika</b>: {{providers.analytics}} erabiliz neurketak.</li></ul>"
+        },
+        {
+          "title": "3. Helburuak eta oinarri juridikoak",
+          "html": "<ul><li><b>Zerbitzuaren eta harpidetzaren eskaintza</b> (kontratuaren exekuzioa).</li><li><b>Erabileraren analitika</b> (baimena; ikusi <a href=\"/legal/cookies\">Cookie politika</a>).</li><li><b>Berrikuntza jakinarazpenak</b> (baimena).</li><li><b>Segurtasuna eta iruzurren prebentzioa</b> (legitimo interesa).</li></ul>"
+        },
+        {
+          "title": "4. Jatorria eta egiazkotasuna",
+          "html": "<p>Datuak erabiltzaile berarenak dira. Hirugarrenei buruzko informazioa erregistratzen badu, legitimazio nahikoa duela bermatzen du (adib., adingabeen kasuan irudi titularren baimena).</p>"
+        },
+        {
+          "title": "5. Kontserbazioa",
+          "html": "<ul><li>Kontua eta erregistroak: kontua dagoen bitartean. Fakturazio datuak: <b>6 urte</b>.</li><li>Segurtasun erregistroak: <b>12 hilabete</b> gertakariak salbu.</li><li>Analitika (baimenarekin) eta cookie baimen erregistroak: <b>24 hilabete</b> baimen dataztik, epe hori amaitzean automatikoki ezabatzen dira.</li></ul>"
+        },
+        {
+          "title": "6. Hartzaileak eta tratamendu-egileak",
+          "html": "<ul><li><b>Supabase</b> (EB/Irlanda) datu-base hornitzaile gisa.</li><li><b>Stripe</b> ordainketetarako.</li><li><b>{{providers.hosting}}</b> ostaturako.</li><li><b>{{providers.analytics}}</b> (baimenaren arabera konfiguratuta).</li></ul><p>EBEz kanpoko nazioarteko transferentziarik ez da egiten, hornitzaile hauenak izan ezik, haien betetze mekanismoek babestuta.</p>"
+        },
+        {
+          "title": "7. Eskubideak",
+          "html": "<p>Sarbidea, zuzenketa, ezabatzea, aurka egitea, mugatzea eta eramangarritasuna erabili ditzakezu <a href=\"mailto:{{legal.data_subject_email}}\">{{legal.data_subject_email}}</a> helbidean idatziz. Erantzun epea: hilabetea.</p>"
+        },
+        {
+          "title": "8. Segurtasun neurriak",
+          "html": "<p>Zifratzea transitoan (TLS) eta atsedenean datu-base zerbitzuetan, sarbide kontrola, hornitzailearen babeskopiak eta minimizazio praktika onak. Euskarriak (argazki/bideoak) erabiltzaileak kontrolatzen duen <b>gailuaren biltegi lokalean</b> gordetzen dira.</p>"
+        },
+        {
+          "title": "9. Adingabeak",
+          "html": "<p>16 urtetik beherakoek ezin dute konturik sortu. Adingabeen datu edo irudiak erregistratzen dituzten helduek legitimazio nahikoa dutela adierazten dute eta <a href=\"/legal/contenidos\">Eduki eta irudi eskubideen politika</a> errespetatuko dutela.</p>"
+        }
+      ]
+    },
+    "cookies": {
+      "sections": [
+        {
+          "title": "1. Zer dira cookieak?",
+          "html": "<p>Cookieak eta antzeko teknologiak erabiltzen ditugu webak funtziona dadin, eta onartzen baduzu, {{providers.analytics}} erabiliz erabilera neurtzeko.</p>"
+        },
+        {
+          "title": "2. Konfigurazioa",
+          "html": "<p><i>Cookie hobespenak</i> bannerrean pertsonaliza ditzakezu hobespenak. Erabilitako kategoriak hauek dira:</p><ul><li><b>Beharrezkoak</b>: funtzionamendurako ezinbestekoak (saioa, segurtasuna).</li><li><b>Analitika</b>: {{providers.analytics}} erabiliz erabileraren neurketa (baimena behar du, AEPD-ko salbuetsitik salbu).</li><li><b>Funtzionalak</b>: hobekuntza ez beharrezkoak.</li><li><b>Marketina</b>: une honetan ez dugu erabiltzen.</li></ul>"
+        },
+        {
+          "title": "3. Erabiltzen ditugun cookieak",
+          "html": "<p><b>Beharrezkoak</b></p><ul><li>Supabase saioa: {{cookies.session}}.</li><li>Stripe (checkout): {{cookies.stripe}}.</li></ul><p><b>Analitika</b></p><ul><li>Google Analytics 4: {{cookies.ga4}}.</li></ul><p>Gainera, biltegi lokal (IndexedDB/localStorage) erabil dezakegu edukirako eta hobespenetarako.</p>"
+        },
+        {
+          "title": "4. Nola aldatu edo atzera bota onarpena",
+          "html": "<p>Hobespen panela berriro ireki dezakezu orri-oinaren “Cookieak” estekatik, edo nabigatzailearen ezarpenetatik cookieak ezabatu.</p>"
+        },
+        {
+          "title": "5. Zerbitzarian gordetako erregistroaren atxikitzea",
+          "html": "<p>Onarpena egiaztatzeko, zure aukeren kopia gordetzen dugu datu-basean (IP helbiderik gabe). Erregistro horiek gehienez <b>24 hilabete</b> gordetzen dira erabakiaren datatik eta automatikoki ezabatzen dira epe hori amaitzean.</p>"
+        }
+      ]
+    },
+    "terms": {
+      "sections": [
+        {
+          "title": "1. Xedea",
+          "html": "<p>Baldintza hauek {{product.app_name}} aplikazioaren erabilera arautzen dute.</p>"
+        },
+        {
+          "title": "2. Kontua eta sarbidea",
+          "html": "<p>Kontua pertsonala da eta 16 urtetik gorakoentzat. Helduek hirugarrenen kirolariak erregistra ditzakete.</p>"
+        },
+        {
+          "title": "3. Planak eta ordainketak",
+          "html": "<p>Ordainketak Stripe bidez prozesatzen dira. Faktura Stripe-k jaulkitzen du.</p>"
+        },
+        {
+          "title": "4. Uko egitea eta itzulketak",
+          "html": "<p><b>14 egun</b> dituzu erosketatik itzulketa eskatzeko, legez debekatzen ez badu kudeatu dituzun zerbitzuek.</p>"
+        },
+        {
+          "title": "5. Erabiltzailearen edukiak",
+          "html": "<p>Gordetzen dituzun datu eta irudien erantzukizuna zurea da. Indarrean dagoen legeriari eta gure <a href=\"/legal/contenidos\">Eduki politika</a>ri jarraitu behar diozu.</p>"
+        },
+        {
+          "title": "6. Erantzukizunaren mugaketa",
+          "html": "<p>Zerbitzua arrazoizko zentzumenaren barruan “bere horretan” eskaintzen da.</p>"
+        }
+      ]
+    },
+    "subscription": {
+      "sections": [
+        {
+          "title": "1. Erosketa prozesua",
+          "html": "<p>Harpidetza Stripe bidez kudeatzen da. Ordainketa baieztatu ondoren aktibatzen da sarbidea.</p>"
+        },
+        {
+          "title": "2. Berrikuntzak eta jakinarazpenak",
+          "html": "<p>Berrikuntza jakinarazpenak bidal ditzakegu onartzen baduzu.</p>"
+        },
+        {
+          "title": "3. Fakturazioa",
+          "html": "<p>Faktura Stripe-k sortutakoa da eta zure ordainketa-agirian eskuragarri egongo da.</p>"
+        },
+        {
+          "title": "4. Uko egitea",
+          "html": "<p>14 eguneko uko egitea kontsumo araudira egokituta, legezko salbuespenekin.</p>"
+        }
+      ]
+    },
+    "content_policy": {
+      "sections": [
+        {
+          "title": "1. Eremua",
+          "html": "<p>Hirugarrenen irudi eta bideoen erabilera eta datuen erregistroa arautzen ditu, adingabeak barne.</p>"
+        },
+        {
+          "title": "2. Irudi eskubideak",
+          "html": "<p>Hirugarrenen irudi edo bideoak gordetzen badituzu, haien baimena behar duzu. Adingabeen kasuan, ordezkari legalak eman behar du baimena.</p>"
+        },
+        {
+          "title": "3. Debekuak",
+          "html": "<p>Legez kanpoko, difamatorioak edo hirugarrenen eskubideak urratzen dituzten edukiak igotzea edo gordetzea debekatuta dago.</p>"
+        },
+        {
+          "title": "4. Edukiak kentzea",
+          "html": "<p>Politika edo legea urratzen duten edukiak kentzeko eskatu ahal dizugu. Harremanetarako: <a href=\"mailto:{{legal.data_subject_email}}\">{{legal.data_subject_email}}</a>.</p>"
+        }
+      ]
+    }
+  }
+}

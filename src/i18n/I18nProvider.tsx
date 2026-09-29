@@ -11,8 +11,10 @@ import {
   isSupportedLocale,
   type Locale,
 } from './config';
+import { usePathname } from 'next/navigation';
 import { getDictionary, makeT } from './dictionary';
-import esDict from './messages/es.json';
+import { lazyChunksForPathname } from './chunks';
+import esCoreDict from './messages/es/core.json';
 
 const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 ano
 
@@ -33,8 +35,8 @@ function readLocaleCookie(): string {
 
 type Messages = Record<string, any>;
 
-/** Traductor del locale por defecto: red de seguridad cuando un locale no tiene la clave. */
-const defaultT = makeT(esDict as Record<string, any>);
+/** Traductor del locale por defecto (núcleo): red de seguridad cuando un locale no tiene la clave. */
+const defaultT = makeT(esCoreDict as Record<string, any>);
 
 type I18nCtx = {
   locale: Locale;
@@ -45,7 +47,7 @@ type I18nCtx = {
   locales: { code: Locale; label: string; disabled?: boolean }[];
 };
 
-const I18nContext = createContext<I18nCtx>({
+export const I18nContext = createContext<I18nCtx>({
   locale: DEFAULT_LOCALE,
   setLocale: () => {},
   t: (k: string, vars?: Record<string, any>) => defaultT(k, { ...I18N_DEFAULTS, ...vars }) ?? k,
@@ -55,8 +57,9 @@ const I18nContext = createContext<I18nCtx>({
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE);
-  const [dict, setDict] = useState<Messages>(esDict as Messages); // SSR/primer paint (es) hasta async locale
+  const [dict, setDict] = useState<Messages>(esCoreDict as Messages); // SSR/primer paint (núcleo es)
   const didInitialRefresh = useRef(false);
 
   // Locale inicial: localStorage -> navegador -> default
@@ -85,22 +88,23 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     }
   }, [router]);
 
-  // Carga del diccionario cuando cambia el locale
+  // Carga del núcleo (+ bloques lazy de la ruta actual) cuando cambia locale o pathname
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const { dict } = await getDictionary(locale);
-        if (!cancelled) setDict(dict);
+        const chunks = lazyChunksForPathname(pathname ?? '/');
+        const { dict: loaded } = await getDictionary(locale, { chunks });
+        if (!cancelled) setDict(loaded);
       } catch {
         // Nunca vaciamos el diccionario: preferimos el locale por defecto a una UI sin texto.
-        if (!cancelled) setDict(esDict as Messages);
+        if (!cancelled) setDict(esCoreDict as Messages);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [locale]);
+  }, [locale, pathname]);
 
   const setLocale = (newLocale: Locale) => {
     if (!isSupportedLocale(newLocale)) return;

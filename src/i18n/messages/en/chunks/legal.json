@@ -1,0 +1,168 @@
+{
+  "legal": {
+    "legal_notice": {
+      "sections": [
+        {
+          "title": "1. Owner details",
+          "html": "<p>The website and the <b>{{product.app_name}}</b> app ({{product.domain}}) are owned by <b>{{company.name}}</b>, VAT {{company.nif}}, {{company.address}}, {{company.country}}. Contact: <a href=\"mailto:{{company.email}}\">{{company.email}}</a>.</p><p>Trade registry: {{company.reg_merc}}</p>"
+        },
+        {
+          "title": "2. Purpose and acceptance",
+          "html": "<p>Accessing {{product.app_name}} implies acceptance of this Legal Notice and, where applicable, the <a href=\"/legal/terminos\" target=\"_blank\" rel=\"noopener\">Terms of Use</a>.</p>"
+        },
+        {
+          "title": "3. Users and minors",
+          "html": "<p>The service is for adults. <b>Children under 16 cannot create an account</b>. Adults may record sports data of third parties pursuant to the <a href=\"/legal/contenidos\">Content & Image Policy</a>.</p>"
+        },
+        {
+          "title": "4. IP rights",
+          "html": "<p>Software and design belong to {{company.name}} or its licensors.</p>"
+        },
+        {
+          "title": "5. Liability",
+          "html": "<p>{{company.name}} is not liable for user-stored data, images or videos on the device, nor for misuse of the app.</p>"
+        },
+        {
+          "title": "6. Third-party services",
+          "html": "<p>We integrate <b>Supabase</b> (EU/Ireland), <b>Stripe</b> (payments), <b>{{providers.hosting}}</b> (hosting) and <b>{{providers.analytics}}</b> (analytics). See the <a href=\"/legal/privacidad\">Privacy Policy</a>.</p>"
+        },
+        {
+          "title": "7. Governing law",
+          "html": "<p>Spanish law applies. Consumer jurisdiction rules prevail.</p>"
+        }
+      ]
+    },
+    "privacy": {
+      "sections": [
+        {
+          "title": "1. Controller",
+          "html": "<p>Controller: <b>{{company.name}}</b> ({{company.email}}). No DPO appointed for now.</p>"
+        },
+        {
+          "title": "2. Data we process",
+          "html": "<ul><li><b>Account</b>: name, surname, email, optional phone.</li><li><b>Service use</b>: sports stats created by the user about third parties.</li><li><b>Media</b>: images/videos stored <b>locally</b>, not in cloud.</li><li><b>Payments</b>: handled by Stripe.</li><li><b>Analytics</b>: {{providers.analytics}}.</li></ul>"
+        },
+        {
+          "title": "3. Purposes & legal bases",
+          "html": "<ul><li><b>Service & subscription</b> (contract).</li><li><b>Analytics</b> (consent).</li><li><b>Renewal notifications</b> (consent).</li><li><b>Security/fraud</b> (legitimate interest).</li></ul>"
+        },
+        {
+          "title": "4. Retention",
+          "html": "<ul><li>Account and records while account exists. Billing data: <b>6 years</b>.</li><li>Security logs: <b>12 months</b>.</li></ul>"
+        },
+        {
+          "title": "5. Recipients",
+          "html": "<ul><li>Supabase (EU/Ireland)</li><li>Stripe</li><li>{{providers.hosting}}</li><li>{{providers.analytics}}</li></ul>"
+        },
+        {
+          "title": "6. Rights",
+          "html": "<p>Contact <a href=\"mailto:{{legal.data_subject_email}}\">{{legal.data_subject_email}}</a> to exercise GDPR rights. Response within one month.</p>"
+        },
+        {
+          "title": "7. Minors",
+          "html": "<p>Under-16s cannot create an account. Adults must ensure consent to process minors' images/data.</p>"
+        },
+        {
+          "title": "8. Security measures",
+          "html": "<p>Encryption in transit (TLS) and at rest in database services, access control, backup copies at the provider and good minimization practices. Media (photos/videos) are saved to the <b>local storage of the device</b> controlled by the user.</p>"
+        },
+        {
+          "title": "9. Minors",
+          "html": "<p>Those under 16 cannot create an account. Adults who register data or images of minors declare that they have sufficient legitimacy and respect the <a href=\"/legal/contents\">Content and Image Rights Policy</a>.</p>"
+        }
+      ]
+    },
+    "cookies": {
+      "sections": [
+        {
+          "title": "1. What cookies we use",
+          "html": "<p>Only necessary cookies and, if consented, analytics ({{providers.analytics}}).</p>"
+        },
+        {
+          "title": "2. Categories",
+          "html": "<ul><li><b>Necessary</b>: login, security.</li><li><b>Analytics</b>: usage measurement (consent-based).</li><li><b>Functional</b>: non-essential improvements.</li><li><b>Marketing</b>: currently unused.</li></ul>"
+        },
+        {
+          "title": "3. List",
+          "html": "<p><b>Necessary</b></p><ul><li>Supabase session: {{cookies.session}}</li><li>Stripe: {{cookies.stripe}}</li></ul><p><b>Analytics</b></p><ul><li>GA4: {{cookies.ga4}}</li></ul>"
+        },
+        {
+          "title": "4. Manage consent",
+          "html": "<p>Use the cookie banner or your browser settings to withdraw consent.</p>"
+        },
+        {
+          "title": "5. Server-side record retention",
+          "html": "<p>To evidence your consent, we store a copy of your choices in our database (without your IP address). Those records are kept for a maximum of <b>24 months</b> from the date of each decision and are deleted automatically once that period expires. The local cookie may remain on your device until you delete it.</p>"
+        }
+      ]
+    },
+    "terms": {
+      "sections": [
+        {
+          "title": "1. Purpose",
+          "html": "<p>Terms for using {{product.app_name}}.</p>"
+        },
+        {
+          "title": "2. Account and access",
+          "html": "<p>The account is personal and for people over 16. An adult can register third-party athletes.</p>"
+        },
+        {
+          "title": "3. Plans and payments",
+          "html": "<p>Payments are processed with Stripe. The invoice is issued by Stripe.</p>"
+        },
+        {
+          "title": "4. Withdrawal and refunds",
+          "html": "<p>You have <b>14 days</b> from the purchase to request a refund if you have not consumed benefits that legally prevent it.</p>"
+        },
+        {
+          "title": "5. User content",
+          "html": "<p>You are responsible for the data and images you store. You must comply with current legislation and our <a href=\"/legal/contenidos\">Content Policy</a>.</p>"
+        },
+        {
+          "title": "6. Limitation of liability",
+          "html": "<p>The service is provided “as is” within reasonable diligence.</p>"
+        }
+      ]
+    },
+    "subscription": {
+      "sections": [
+        {
+          "title": "1. Purchase",
+          "html": "<p>Payments via Stripe. 14-day withdrawal right as applicable.</p>"
+        },
+        {
+          "title": "2. Renewals and notices",
+          "html": "<p>We may send you renewal notices if you consent.</p>"
+        },
+        {
+          "title": "3. Billing",
+          "html": "<p>The invoice is the one generated by Stripe and will be available on your payment receipt.</p>"
+        },
+        {
+          "title": "4. Withdrawal",
+          "html": "<p>14 days of withdrawal in accordance with consumer regulations, with applicable legal exceptions.</p>"
+        }
+      ]
+    },
+    "content_policy": {
+      "sections": [
+        {
+          "title": "1. Scope",
+          "html": "<p>Rules for user content and image rights.</p>"
+        },
+        {
+          "title": "2. Image rights",
+          "html": "<p>If you store images or videos from third parties, you must have their consent. In the case of minors, consent must be granted by their legal representative.</p>"
+        },
+        {
+          "title": "3. Prohibitions",
+          "html": "<p>It is prohibited to upload or retain content that is illegal, defamatory or violates the rights of third parties.</p>"
+        },
+        {
+          "title": "4. Removal of content",
+          "html": "<p>We may require you to remove content that violates this policy or the law. You can contact at <a href=\"mailto:{{legal.data_subject_email}}\">{{legal.data_subject_email}}</a>.</p>"
+        }
+      ]
+    }
+  }
+}

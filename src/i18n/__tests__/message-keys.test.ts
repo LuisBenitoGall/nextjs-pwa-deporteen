@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
-import es from '../messages/es.json';
+import { loadFullLocaleMessages } from '../load-full-locale';
+
+const es = loadFullLocaleMessages('es');
 
 function flattenKeys(obj: Record<string, unknown>, prefix = ''): string[] {
   const out: string[] = [];

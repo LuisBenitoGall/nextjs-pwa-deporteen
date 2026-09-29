@@ -8,8 +8,10 @@
  * Uso: pnpm i18n:sync
  */
 
-import { readFileSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
+import { splitLocaleMessages } from '../src/i18n/chunks';
+import { loadFullLocaleMessages } from '../src/i18n/load-full-locale';
 import { translate } from '@vitalets/google-translate-api';
 import { SUPPORTED_LOCALES, DEFAULT_LOCALE, type Locale } from '../src/i18n/config';
 
@@ -73,12 +75,38 @@ function parseOnlyLocalesArg(): Locale[] | undefined {
 function readTranslationFile(locale: Locale): Record<string, any> {
   const filePath = join(MESSAGES_DIR, `${locale}.json`);
   try {
-    const content = readFileSync(filePath, 'utf-8');
-    return JSON.parse(content);
+    if (existsSync(filePath)) {
+      const content = readFileSync(filePath, 'utf-8');
+      return JSON.parse(content);
+    }
+    return loadFullLocaleMessages(locale);
   } catch (error) {
-    console.error(`Error leyendo ${filePath}:`, error);
+    console.error(`Error leyendo traducciones de ${locale}:`, error);
     return {};
   }
+}
+
+function writeChunkedFiles(locale: Locale, data: Record<string, any>): void {
+  const { core, chunks } = splitLocaleMessages(data);
+  const localeDir = join(MESSAGES_DIR, locale);
+  const chunksDir = join(localeDir, 'chunks');
+  mkdirSync(chunksDir, { recursive: true });
+  const sortTop = (obj: Record<string, any>) => sortTopLevelKeys(obj);
+  writeFileSync(
+    join(localeDir, 'core.json'),
+    `${JSON.stringify(sortTop(core), null, 2)}\n`,
+    'utf-8'
+  );
+  writeFileSync(
+    join(chunksDir, 'legal.json'),
+    `${JSON.stringify(sortTop(chunks.legal), null, 2)}\n`,
+    'utf-8'
+  );
+  writeFileSync(
+    join(chunksDir, 'admin.json'),
+    `${JSON.stringify(sortTop(chunks.admin), null, 2)}\n`,
+    'utf-8'
+  );
 }
 
 /**
@@ -100,7 +128,8 @@ function writeTranslationFile(locale: Locale, data: Record<string, any>): void {
   const payload = sortTopLevelKeys(data);
   const content = JSON.stringify(payload, null, 2) + '\n';
   writeFileSync(filePath, content, 'utf-8');
-  console.log(`✓ Actualizado: ${locale}.json`);
+  writeChunkedFiles(locale, payload);
+  console.log(`✓ Actualizado: ${locale}.json (+ núcleo/bloques)`);
 }
 
 /**
@@ -277,6 +306,8 @@ async function syncTranslations(): Promise<void> {
     // Escribir archivo actualizado
     writeTranslationFile(locale, syncedTranslations);
   }
+
+  writeChunkedFiles(BASE_LOCALE, baseTranslations);
 
   console.log('\n✅ Sincronización completada!');
   console.log('\n📝 Nota: Si la API falló en parte, algunos textos pueden seguir en castellano hasta el próximo sync.');

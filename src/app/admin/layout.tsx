@@ -5,6 +5,20 @@ import { createSupabaseServerClientReadOnly, getServerUser } from '@/lib/supabas
 import { userCanAccessAdminPanel } from '@/lib/auth/adminAccess';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import { ArrowLeft } from 'lucide-react';
+import { I18nSubProvider } from '@/i18n/I18nSubProvider';
+import {
+  DEFAULT_LOCALE,
+  LOCALE_COOKIE_NAME,
+  normalizeToAppLocale,
+  type Locale,
+} from '@/i18n/config';
+import { importLazyChunk } from '@/i18n/chunks';
+import { cookies } from 'next/headers';
+
+async function requestLocale(): Promise<Locale> {
+  const jar = await cookies();
+  return normalizeToAppLocale(jar.get(LOCALE_COOKIE_NAME)?.value ?? undefined) ?? DEFAULT_LOCALE;
+}
 
 export const metadata = {
   title: 'Administración — DeporTeen',
@@ -53,9 +67,15 @@ export default async function AdminLayout({ children }: { children: ReactNode })
           </Link>
         </header>
         <main className="flex-1 overflow-y-auto p-6 lg:p-8">
-          {children}
+          <AdminI18nChunk>{children}</AdminI18nChunk>
         </main>
       </div>
     </div>
   );
+}
+
+async function AdminI18nChunk({ children }: { children: ReactNode }) {
+  const locale = await requestLocale();
+  const admin = await importLazyChunk(locale, 'admin');
+  return <I18nSubProvider merge={admin}>{children}</I18nSubProvider>;
 }

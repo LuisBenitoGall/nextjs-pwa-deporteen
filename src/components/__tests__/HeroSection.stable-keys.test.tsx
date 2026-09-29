@@ -3,7 +3,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { act, render } from '@testing-library/react';
 import HeroSection from '../HeroSection';
 import { SPORTS } from '@/lib/sports';
-import esMessages from '@/i18n/messages/es.json';
+import esMessages from '@/i18n/messages/es/core.json';
 
 const messages = esMessages as unknown as Record<string, string>;
 
