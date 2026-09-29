@@ -1,5 +1,7 @@
 # Propuesta: bloqueo de almacenamiento remoto sin suscripción y cuota por usuario
 
+> **Spec canónica (2026-09-29):** `openspec/specs/media/spec.md` — incluye RF-REM de este change más guardrails de vídeo y umbrales de UI. El delta bajo `specs/media/` aquí es histórico.
+
 ## Contexto
 
 Decisión de Luis (26/09/2026): el almacenamiento remoto de Deporteen queda **bloqueado** sin suscripción vigente y cuando se **supera la cuota** contratada. Hay que cerrar todas las vías de escape y preparar un **enchufe** para el proveedor definitivo. La **cuota es por usuario** (suma de todos sus jugadores), no por jugador.
