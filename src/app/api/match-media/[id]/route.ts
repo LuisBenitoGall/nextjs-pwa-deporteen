@@ -3,6 +3,7 @@ import { createSupabaseServerClient, getServerUser } from '@/lib/supabase/server
 import { getR2Bucket, getR2Client } from '@/lib/r2/client';
 import { DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { decryptToken, getDriveConnection, refreshGoogleAccessToken } from '@/lib/googleDrive/server';
+import { fetchGoogleWithRetry } from '@/lib/googleDrive/http';
 
 export async function DELETE(_req: Request, context: { params: Promise<{ id: string }> }) {
   try {
@@ -17,7 +18,7 @@ export async function DELETE(_req: Request, context: { params: Promise<{ id: str
     const supabase = await createSupabaseServerClient();
     const { data: mediaRow } = await supabase
       .from('match_media')
-      .select('storage_path')
+      .select('storage_path, google_drive_file_id')
       .eq('id', mediaId)
       .eq('user_id', user.id)
       .maybeSingle();
@@ -27,6 +28,9 @@ export async function DELETE(_req: Request, context: { params: Promise<{ id: str
     }
 
     const storagePath = mediaRow.storage_path as string | null;
+    const driveFileId =
+      (mediaRow.google_drive_file_id as string | null) ??
+      (storagePath?.startsWith('drive:') ? storagePath.slice(6) : null);
 
     // Delete from R2
     if (storagePath?.startsWith('r2:')) {
@@ -57,18 +61,39 @@ export async function DELETE(_req: Request, context: { params: Promise<{ id: str
       }
     }
 
-    if (storagePath?.startsWith('drive:')) {
+    if (driveFileId) {
       try {
         const conn = await getDriveConnection(user.id);
-        if (conn?.refresh_token_encrypted) {
-          const access = await refreshGoogleAccessToken(decryptToken(conn.refresh_token_encrypted));
-          await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(storagePath.slice(6))}`, {
-            method: 'DELETE',
-            headers: { Authorization: `Bearer ${access.access_token}` },
-          });
+        if (!conn?.refresh_token_encrypted) {
+          return NextResponse.json(
+            { error: 'Drive requiere reconexión para eliminar este archivo', code: 'reconnect-required' },
+            { status: 409 },
+          );
+        }
+        const access = await refreshGoogleAccessToken(decryptToken(conn.refresh_token_encrypted));
+        const driveDeleteRes = await fetchGoogleWithRetry(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(driveFileId)}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${access.access_token}` },
+        }, { retries: 3 });
+        // 204 = deleted, 404 = already deleted.
+        if (![204, 404].includes(driveDeleteRes.status)) {
+          if (driveDeleteRes.status === 401 || driveDeleteRes.status === 403) {
+            return NextResponse.json(
+              { error: 'Drive requiere reconexión para eliminar este archivo', code: 'reconnect-required' },
+              { status: 409 },
+            );
+          }
+          return NextResponse.json(
+            { error: 'No se pudo confirmar el borrado en Drive. Vuelve a intentarlo.', code: 'drive-delete-pending' },
+            { status: 409 },
+          );
         }
       } catch (err) {
         console.error('[Delete Drive] Error:', err);
+        return NextResponse.json(
+          { error: 'No se pudo completar el borrado en Drive. Vuelve a intentarlo.', code: 'drive-delete-pending' },
+          { status: 409 },
+        );
       }
     }
 

@@ -113,8 +113,6 @@ export function useGooglePicker({
       scope: scope.join(' '),
       callback: (tokenResponse: google.accounts.oauth2.TokenResponse) => {
         if (tokenResponse && tokenResponse.access_token) {
-          // Persist token so useStorageProvider can detect Drive availability
-          try { sessionStorage.setItem('google_access_token', tokenResponse.access_token); } catch {}
           createPicker(tokenResponse.access_token);
         }
       },
@@ -142,7 +140,7 @@ export async function fetchGoogleDriveFile(file: PickerFile): Promise<Blob> {
 }
 
 /**
- * Requests a Google OAuth token with drive.file scope and saves it to sessionStorage.
+ * Requests a Google OAuth token with drive.file scope.
  * Does NOT open the picker — use this to "connect" Drive from account settings.
  */
 export function connectGoogleDrive(clientId: string, onSuccess?: () => void): void {
@@ -154,10 +152,6 @@ export function connectGoogleDrive(clientId: string, onSuccess?: () => void): vo
             scope: 'https://www.googleapis.com/auth/drive.file',
             callback: (tokenResponse: google.accounts.oauth2.TokenResponse) => {
                 if (tokenResponse?.access_token) {
-                    try {
-                        sessionStorage.setItem('google_access_token', tokenResponse.access_token);
-                        localStorage.setItem('google_drive_connected_at', new Date().toISOString());
-                    } catch {}
                     onSuccess?.();
                 }
             },

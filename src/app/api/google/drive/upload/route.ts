@@ -6,6 +6,7 @@ import {
   getDriveConnection,
   refreshGoogleAccessToken,
 } from '@/lib/googleDrive/server';
+import { fetchGoogleWithRetry, isRetryableDriveStatus } from '@/lib/googleDrive/http';
 import { getServerUser } from '@/lib/supabase/server';
 
 const ALLOWED = ['image/', 'video/'];
@@ -76,7 +77,7 @@ export async function POST(req: Request) {
     uploadBody.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
     uploadBody.append('file', file);
 
-    const uploadRes = await fetch(
+    const uploadRes = await fetchGoogleWithRetry(
       'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',
       {
         method: 'POST',
@@ -98,7 +99,7 @@ export async function POST(req: Request) {
           .eq('user_id', user.id);
         return NextResponse.json({ error: 'Drive requiere reconexión', code: 'reconnect-required' }, { status: 409 });
       }
-      throw new Error(text);
+      throw new Error(`drive-upload:${uploadRes.status}:${text}`);
     }
 
     const { id: driveFileId } = (await uploadRes.json()) as { id?: string };
@@ -121,7 +122,17 @@ export async function POST(req: Request) {
       synced_at: now,
       taken_at: now,
     });
-    if (insertError) throw insertError;
+    if (insertError) {
+      await fetchGoogleWithRetry(
+        `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(driveFileId)}`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${accessToken}` },
+        },
+        { retries: 2 }
+      ).catch(() => null);
+      throw insertError;
+    }
 
     await admin
       .from('google_drive_connections')
@@ -135,6 +146,25 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true, mediaId, driveFileId });
   } catch (error: any) {
+    const message = String(error?.message ?? 'Drive upload failed');
+    const isTransient = /drive-upload:(408|409|429|500|502|503|504):/.test(message);
+    if (isTransient) {
+      await admin
+        .from('google_drive_connections')
+        .update({
+          last_error: 'upload:transient-error',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', user.id);
+      return NextResponse.json({ error: 'Error temporal al subir a Drive. Reintenta.' }, { status: 503 });
+    }
+
+    const driveStatusMatch = message.match(/drive-upload:(\d+):/);
+    const providerStatus = driveStatusMatch ? Number(driveStatusMatch[1]) : null;
+    if (providerStatus && isRetryableDriveStatus(providerStatus)) {
+      return NextResponse.json({ error: 'Drive temporalmente no disponible' }, { status: 503 });
+    }
+
     return NextResponse.json({ error: error?.message ?? 'Drive upload failed' }, { status: 500 });
   }
 }

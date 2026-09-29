@@ -25,6 +25,7 @@ type MediaRow = {
   id: string;
   kind: 'image' | 'video';
   storage_path: string | null;
+  google_drive_file_id: string | null;
   device_uri: string | null;
   mime_type: string | null;
   taken_at: string | null;
@@ -76,7 +77,7 @@ export default function MyGalleryPage() {
     const matchIds = nextBatch.map(m => m.id);
     const { data: mediaRows, error: mediaErr } = await supabase
       .from('match_media')
-      .select('id, kind, storage_path, device_uri, mime_type, taken_at, created_at, match_id')
+      .select('id, kind, storage_path, google_drive_file_id, device_uri, mime_type, taken_at, created_at, match_id')
       .in('match_id', matchIds)
       .eq('user_id', userId)
       .order('taken_at', { ascending: false, nullsFirst: false })
@@ -165,7 +166,8 @@ export default function MyGalleryPage() {
       for (const m of newMedia) {
         resolvedIdsRef.current.add(m.id);
         try {
-          const isDrive = m.storage_path?.startsWith('drive:');
+          const driveFileId = m.google_drive_file_id ?? (m.storage_path?.startsWith('drive:') ? m.storage_path.slice(6) : null);
+          const isDrive = !!driveFileId;
           if (!isDrive && m.device_uri) {
             const blob = await idbGet(m.device_uri);
             if (blob) {
@@ -178,9 +180,8 @@ export default function MyGalleryPage() {
           if (m.storage_path?.startsWith('r2:')) {
             const base = process.env.NEXT_PUBLIC_R2_PUBLIC_URL?.replace(/\/$/, '');
             if (base) out[m.id] = `${base}/${m.storage_path.slice(3)}`;
-          } else if (isDrive) {
-            const fileId = m.storage_path!.slice(6);
-            const result = await resolveDriveMediaSource(fileId);
+          } else if (isDrive && driveFileId) {
+            const result = await resolveDriveMediaSource(driveFileId);
             if (result.available) {
               out[m.id] = result.src;
             } else {

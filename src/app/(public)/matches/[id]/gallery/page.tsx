@@ -28,6 +28,7 @@ type MediaRow = {
   id: string;
   kind: 'image' | 'video';
   storage_path: string | null;
+  google_drive_file_id: string | null;
   device_uri: string | null;
   mime_type: string | null;
   taken_at: string | null;
@@ -95,7 +96,7 @@ export default function MatchGalleryPage() {
 
       const { data: mediaRows, error: mediaError } = await supabase
         .from('match_media')
-        .select('id, kind, storage_path, device_uri, mime_type, taken_at, created_at')
+        .select('id, kind, storage_path, google_drive_file_id, device_uri, mime_type, taken_at, created_at')
         .eq('match_id', matchId)
         .order('taken_at', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: false });
@@ -133,7 +134,8 @@ export default function MatchGalleryPage() {
     for (const m of media) {
       try {
         let resolvedSource = 'none';
-        const isDrive = m.storage_path?.startsWith('drive:');
+        const driveFileId = m.google_drive_file_id ?? (m.storage_path?.startsWith('drive:') ? m.storage_path.slice(6) : null);
+        const isDrive = !!driveFileId;
         if (!isDrive && m.device_uri) {
           const blob = await idbGet(m.device_uri);
           if (blob) {
@@ -151,9 +153,8 @@ export default function MatchGalleryPage() {
             out[m.id] = `${base}/${m.storage_path.slice(3)}`;
             resolvedSource = 'r2_public_url';
           }
-        } else if (isDrive) {
-          const fileId = m.storage_path!.slice(6);
-          const result = await resolveDriveMediaSource(fileId);
+        } else if (isDrive && driveFileId) {
+          const result = await resolveDriveMediaSource(driveFileId);
           if (result.available) {
             out[m.id] = result.src;
             resolvedSource = 'drive_proxy_url';
