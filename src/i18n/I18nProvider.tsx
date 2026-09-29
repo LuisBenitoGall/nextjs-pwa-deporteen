@@ -12,6 +12,7 @@ import {
   type Locale,
 } from './config';
 import { getDictionary, makeT } from './dictionary';
+import esDict from './messages/es.json';
 
 const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 ano
 
@@ -36,6 +37,8 @@ type I18nCtx = {
   locale: Locale;
   setLocale: (locale: Locale) => void;
   t: (key: string, vars?: Record<string, any>) => string;
+  /** Diccionario cargado (para `LegalDoc` y claves anidadas). */
+  messages: Messages;
   locales: { code: Locale; label: string; disabled?: boolean }[];
 };
 
@@ -43,13 +46,14 @@ const I18nContext = createContext<I18nCtx>({
   locale: DEFAULT_LOCALE,
   setLocale: () => {},
   t: (k: string) => k,
+  messages: {},
   locales: SUPPORTED_LOCALES.map(code => ({ code, label: LOCALE_LABELS[code] })),
 });
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE);
-  const [dict, setDict] = useState<Messages>({}); // se carga perezosamente
+  const [dict, setDict] = useState<Messages>(esDict as Messages); // SSR/primer paint (es) hasta async locale
   const didInitialRefresh = useRef(false);
 
   // Locale inicial: localStorage -> navegador -> default
@@ -122,7 +126,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <I18nContext.Provider value={{ locale, setLocale, t, locales }}>
+    <I18nContext.Provider value={{ locale, setLocale, t, messages: dict, locales }}>
       {children}
     </I18nContext.Provider>
   );
