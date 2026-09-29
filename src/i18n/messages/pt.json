@@ -304,7 +304,7 @@
         },
         {
           "title": "5. Conservação",
-          "html": "<ul><li>Conta e registros: enquanto a conta existir. Informações de cobrança: <b>6 anos</b>.</li><li>Registros de segurança: <b>12 meses</b> exceto incidentes.</li><li>Análises e consentimentos: até revogação.</li></ul>"
+          "html": "<ul><li>Conta e registros: enquanto a conta existir. Informações de cobrança: <b>6 anos</b>.</li><li>Registros de segurança: <b>12 meses</b> exceto incidentes.</li><li>Análises (com consentimento) e registos de consentimento de cookies: <b>24 meses</b> desde a data do consentimento, com eliminação automática ao fim desse prazo.</li></ul>"
         },
         {
           "title": "6. Destinatários e gestores",
@@ -341,6 +341,10 @@
         {
           "title": "4. Como alterar ou retirar o consentimento",
           "html": "<p>Você pode reabrir o painel de preferências no link “Cookies” no rodapé ou excluir cookies nas configurações do navegador.</p>"
+        },
+        {
+          "title": "5. Conservação do registo no servidor",
+          "html": "<p>Para comprovar o consentimento, guardamos na base de dados uma cópia das suas escolhas (sem endereço IP). Esses registos são conservados no máximo <b>24 meses</b> desde a data de cada decisão e são eliminados automaticamente ao fim desse prazo.</p>"
         }
       ]
     },
@@ -850,6 +854,8 @@
   "suscripcion_sin_recibos": "Sin recibos todavía.",
   "suscripcion_aviso_caducidad_cuerpo": "O seu acesso por lugar termina em {DAYS} dias ({DATE}). Não há cobrança automática: renove manualmente para manter o acesso.",
   "suscripcion_aviso_caducidad_titulo": "Seu acesso está perto do fim",
+  "email_suscripcion_caducidad_asunto": "DeporTeen: renove o seu acesso ({DAYS} dias restantes)",
+  "email_suscripcion_caducidad_cuerpo": "<p>Olá{NAME},</p><p>O seu acesso ao DeporTeen terminará em <strong>{DATE}</strong> (cerca de {DAYS} dias).</p><p><strong>Não há renovação automática.</strong> Renove manualmente para manter o acesso.</p><p><a href=\"{RENEW_URL}\">Renovar acesso</a></p><p>— DeporTeen</p>",
   "suscripcion_stripe": "Assine com Stripe",
   "suscripcion_texto1": "Primeiro indique o número de jogadores que deseja registrar.",
   "suscripcion_texto2": "Você pode registrar até um jogador com um código de acesso válido. Se precisar de mais vagas, assine um de nossos planos.",

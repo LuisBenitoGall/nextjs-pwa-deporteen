@@ -14,8 +14,34 @@ export type SubscriptionExpiryNotice = {
   urgency: 'info' | 'warning' | 'critical';
 };
 
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
+export const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const LIFETIME_PLAN_DAYS = 50_000;
+
+function normalizeNoticeThresholds(noticeDays: readonly number[]): number[] {
+  return [...new Set(noticeDays.map((d) => Math.floor(d)).filter((d) => d > 0))].sort(
+    (a, b) => a - b,
+  );
+}
+
+/** Días naturales hasta `end` (techo), coherente con avisos in-app. */
+export function computeDaysLeftUntilEnd(end: Date, now: Date = new Date()): number {
+  return Math.ceil((end.getTime() - now.getTime()) / MS_PER_DAY);
+}
+
+/**
+ * Umbral de aviso (30, 15, 7, 1…) para un número de días restantes; null si fuera de ventana.
+ * Única definición compartida entre banner in-app y correos programados.
+ */
+export function resolveNoticeThresholdDays(
+  daysLeft: number,
+  noticeDays: readonly number[] = SUBSCRIPTION_EXPIRY_NOTICE_DAYS,
+): number | null {
+  const thresholds = normalizeNoticeThresholds(noticeDays);
+  if (!thresholds.length) return null;
+  const maxWindow = thresholds[thresholds.length - 1];
+  if (daysLeft > maxWindow) return null;
+  return thresholds.find((d) => daysLeft <= d) ?? thresholds[thresholds.length - 1];
+}
 
 function isLifetimePeriod(row: SubscriptionExpiryRow, end: Date, now: Date): boolean {
   if (row.plan_days != null && row.plan_days >= LIFETIME_PLAN_DAYS) return true;
@@ -41,12 +67,8 @@ export function getSubscriptionExpiryNotice(
 ): SubscriptionExpiryNotice | null {
   if (!rows?.length || !noticeDays.length) return null;
 
-  const thresholds = [...new Set(noticeDays.map((d) => Math.floor(d)).filter((d) => d > 0))].sort(
-    (a, b) => a - b,
-  );
+  const thresholds = normalizeNoticeThresholds(noticeDays);
   if (!thresholds.length) return null;
-
-  const maxWindow = thresholds[thresholds.length - 1];
 
   const endDates: Date[] = [];
   for (const row of rows) {
@@ -61,12 +83,9 @@ export function getSubscriptionExpiryNotice(
   if (!endDates.length) return null;
 
   const nearestEnd = endDates.reduce((a, b) => (a.getTime() < b.getTime() ? a : b));
-  const daysLeft = Math.ceil((nearestEnd.getTime() - now.getTime()) / MS_PER_DAY);
-
-  if (daysLeft > maxWindow) return null;
-
-  const noticeThresholdDays =
-    thresholds.find((d) => daysLeft <= d) ?? thresholds[thresholds.length - 1];
+  const daysLeft = computeDaysLeftUntilEnd(nearestEnd, now);
+  const noticeThresholdDays = resolveNoticeThresholdDays(daysLeft, thresholds);
+  if (noticeThresholdDays == null) return null;
 
   return {
     daysLeft: Math.max(daysLeft, 0),

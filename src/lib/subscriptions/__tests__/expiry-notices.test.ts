@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { getSubscriptionExpiryNotice } from '../expiry-notices';
+import {
+  getSubscriptionExpiryNotice,
+  resolveNoticeThresholdDays,
+} from '../expiry-notices';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -75,5 +78,20 @@ describe('getSubscriptionExpiryNotice', () => {
         thresholds,
       ),
     ).toBeNull();
+  });
+});
+
+describe('resolveNoticeThresholdDays', () => {
+  const noticeThresholds = [30, 15, 7, 1];
+
+  it('returns null beyond max window', () => {
+    expect(resolveNoticeThresholdDays(45, noticeThresholds)).toBeNull();
+  });
+
+  it('steps through 30, 15, 7, 1', () => {
+    expect(resolveNoticeThresholdDays(25, noticeThresholds)).toBe(30);
+    expect(resolveNoticeThresholdDays(10, noticeThresholds)).toBe(15);
+    expect(resolveNoticeThresholdDays(3, noticeThresholds)).toBe(7);
+    expect(resolveNoticeThresholdDays(0, noticeThresholds)).toBe(1);
   });
 });

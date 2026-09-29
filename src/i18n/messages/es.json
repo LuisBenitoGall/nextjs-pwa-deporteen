@@ -311,7 +311,7 @@
         },
         {
           "title": "5. Conservación",
-          "html": "<ul><li>Cuenta y registros: mientras exista la cuenta. Datos de facturación: <b>6 años</b>.</li><li>Logs de seguridad: <b>12 meses</b> salvo incidencias.</li><li>Analítica y consentimientos: hasta su revocación.</li></ul>"
+          "html": "<ul><li>Cuenta y registros: mientras exista la cuenta. Datos de facturación: <b>6 años</b>.</li><li>Logs de seguridad: <b>12 meses</b> salvo incidencias.</li><li>Analítica (con consentimiento) y registros de consentimiento de cookies: <b>24 meses</b> desde la fecha del consentimiento, con supresión automática al vencer ese plazo.</li></ul>"
         },
         {
           "title": "6. Destinatarios y encargados",
@@ -348,6 +348,10 @@
         {
           "title": "4. Cómo cambiar o retirar el consentimiento",
           "html": "<p>Puedes reabrir el panel de preferencias desde el enlace “Cookies” del pie de página, o borrar cookies desde la configuración del navegador.</p>"
+        },
+        {
+          "title": "5. Conservación del registro en servidor",
+          "html": "<p>Para acreditar el consentimiento, guardamos en base de datos una copia de tus elecciones (sin dirección IP). Esos registros se conservan como máximo <b>24 meses</b> desde la fecha de cada decisión y se eliminan automáticamente al vencer ese plazo. La cookie local puede seguir en tu dispositivo hasta que la borres.</p>"
         }
       ]
     },
@@ -868,6 +872,8 @@
   "suscripcion_sin_recibos": "Sin recibos todavía.",
   "suscripcion_aviso_caducidad_cuerpo": "Tu periodo de asiento vence en {DAYS} días ({DATE}). No hay cobro automático: renueva manualmente para mantener el acceso.",
   "suscripcion_aviso_caducidad_titulo": "Próximo vencimiento de tu acceso",
+  "email_suscripcion_caducidad_asunto": "DeporTeen: renueva tu acceso ({DAYS} días restantes)",
+  "email_suscripcion_caducidad_cuerpo": "<p>Hola{NAME},</p><p>Tu acceso a DeporTeen finalizará el <strong>{DATE}</strong> (aprox. {DAYS} días).</p><p><strong>No hay renovación automática.</strong> Renueva manualmente para mantener el acceso.</p><p><a href=\"{RENEW_URL}\">Renovar acceso</a></p><p>— DeporTeen</p>",
   "suscripcion_stripe": "Suscríbete con Stripe",
   "suscripcion_texto1": "Indica en primer lugar el número de jugadores que quieres dar de alta.",
   "suscripcion_texto2": "Puedes registrar hasta un jugador con un código válido de acceso. Si necesitas más plazas, suscríbete a uno de nuestros planes.",

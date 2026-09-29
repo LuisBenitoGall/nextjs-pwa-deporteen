@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildCookieConsentRow,
+  cookieConsentRetentionCutoff,
+  cookieConsentRetentionCutoffIso,
   parseCookieConsentPayload,
   parseConsentChoices,
   truncateUserAgent,
@@ -66,5 +68,16 @@ describe('truncateUserAgent', () => {
   it('truncates long strings', () => {
     const long = 'x'.repeat(600);
     expect(truncateUserAgent(long)?.length).toBe(512);
+  });
+});
+
+describe('cookieConsentRetentionCutoff', () => {
+  it('is 24 months before reference date', () => {
+    const now = new Date('2026-09-27T12:00:00.000Z');
+    const cutoff = cookieConsentRetentionCutoff(now);
+    const approxDays = (now.getTime() - cutoff.getTime()) / (24 * 60 * 60 * 1000);
+    expect(approxDays).toBeGreaterThan(730);
+    expect(approxDays).toBeLessThan(732);
+    expect(cookieConsentRetentionCutoffIso(now)).toBe(cutoff.toISOString());
   });
 });

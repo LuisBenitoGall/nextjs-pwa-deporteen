@@ -300,7 +300,7 @@
         },
         {
           "title": "4. Conservazione",
-          "html": "<ul><li>Account e registri: finché l'account esiste. Dati di fatturazione: <b>6 anni</b>.</li><li>Log di sicurezza: <b>12 mesi</b>.</li></ul>"
+          "html": "<ul><li>Account e registri: finché l'account esiste. Dati di fatturazione: <b>6 anni</b>.</li><li>Log di sicurezza: <b>12 mesi</b> salvo incidenti.</li><li>Analitica (con consenso) e registri di consenso cookie: <b>24 mesi</b> dalla data del consenso, con cancellazione automatica alla scadenza.</li></ul>"
         },
         {
           "title": "5. Destinatari",
@@ -341,6 +341,10 @@
         {
           "title": "4. Gestione del consenso",
           "html": "<p>Puoi revocare il consenso dal banner cookie o dalle impostazioni del browser.</p>"
+        },
+        {
+          "title": "5. Conservazione del registro sul server",
+          "html": "<p>Per documentare le scelte, conserviamo in database una copia delle preferenze (senza indirizzo IP). Tali registri sono conservati per al massimo <b>24 mesi</b> dalla data di ogni decisione e vengono eliminati automaticamente alla scadenza.</p>"
         }
       ]
     },
@@ -850,6 +854,8 @@
   "suscripcion_sin_recibos": "Sin recibos todavía.",
   "suscripcion_aviso_caducidad_cuerpo": "Il tuo accesso per posto scade in {DAYS} giorni ({DATE}). Nessun addebito automatico: rinnova manualmente per mantenere l'accesso.",
   "suscripcion_aviso_caducidad_titulo": "Scadenza imminente del tuo accesso",
+  "email_suscripcion_caducidad_asunto": "DeporTeen: rinnova il tuo accesso ({DAYS} giorni rimanenti)",
+  "email_suscripcion_caducidad_cuerpo": "<p>Ciao{NAME},</p><p>Il tuo accesso a DeporTeen terminerà il <strong>{DATE}</strong> (circa {DAYS} giorni).</p><p><strong>Non c'è rinnovo automatico.</strong> Rinnova manualmente per mantenere l'accesso.</p><p><a href=\"{RENEW_URL}\">Rinnova accesso</a></p><p>— DeporTeen</p>",
   "suscripcion_stripe": "Abbonati con Stripe",
   "suscripcion_texto1": "Registra un atleta se hai un codice di accesso gratuito valido. Se vuoi registrare più di un atleta, indicalo nel modulo.",
   "suscripcion_texto2": "Puoi registrare <b>1</b> atleta con un <b>codice di accesso</b>. Per aggiungerne altri completa il pagamento tramite Stripe. Puoi crearne uno ora con il codice e aggiungerne altri dopo con Stripe.",
