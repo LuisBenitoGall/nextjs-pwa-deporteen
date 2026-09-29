@@ -35,8 +35,10 @@ export default function StorageSettingsSection({ locale }: Props) {
             ? { type: 'error', message: t('storage_settings_drive_no_refresh_token') || 'Google no devolvió un token de acceso duradero. Intenta desconectar y volver a conectar.' }
             : driveParam === 'csrf-error'
             ? { type: 'error', message: t('storage_settings_drive_csrf_error') || 'Error de seguridad en el proceso de conexión. Inténtalo de nuevo.' }
+            : driveParam === 'oauth-failed'
+            ? { type: 'error', message: t('storage_settings_drive_generic_error') || 'Error al conectar Google Drive.' }
             : driveParam === 'error'
-            ? { type: 'error', message: searchParams.get('msg') || t('storage_settings_drive_generic_error') || 'Error al conectar Google Drive.' }
+            ? { type: 'error', message: t('storage_settings_drive_generic_error') || 'Error al conectar Google Drive.' }
             : null;
 
     useEffect(() => {

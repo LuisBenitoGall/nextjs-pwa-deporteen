@@ -50,8 +50,7 @@ export async function GET(req: Request) {
 
     return NextResponse.redirect(new URL('/account?drive=connected', req.url));
   } catch (error: any) {
-    return NextResponse.redirect(
-      new URL(`/account?drive=error&msg=${encodeURIComponent(error?.message ?? 'oauth-error')}`, req.url)
-    );
+    console.error('[Drive OAuth callback] Error', error);
+    return NextResponse.redirect(new URL('/account?drive=oauth-failed', req.url));
   }
 }

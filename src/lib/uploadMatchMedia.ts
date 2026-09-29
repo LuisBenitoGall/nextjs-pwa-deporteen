@@ -152,17 +152,6 @@ export async function uploadMatchMedia(params: {
     if (!driveFileId) throw new Error('Google Drive no devolvió identificador de archivo.');
     capturedDriveFileId = driveFileId;
 
-    await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}/permissions`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ role: 'reader', type: 'anyone' }),
-    }).catch(() => {
-      // La galería puede seguir usando la caché local aunque no se pueda publicar el enlace.
-    });
-
     storagePath = `drive:${driveFileId}`;
     syncedAt = new Date().toISOString();
 

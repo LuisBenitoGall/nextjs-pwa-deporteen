@@ -1,4 +1,4 @@
-import { idbGet } from './mediaLocal';
+import { idbDelete, idbGet } from './mediaLocal';
 import { supabaseBrowser } from './supabase/client';
 
 type PendingItem = {
@@ -45,14 +45,13 @@ export async function trySyncAll(): Promise<number> {
 
     // Actualiza BD con storage_path + synced_at
     const { error: upDbErr } = await supabase
-      .from('media')
+      .from('match_media')
       .update({ storage_path: path, synced_at: new Date().toISOString() })
       .eq('id', it.id);
 
     if (!upDbErr) {
       uploaded++;
-      // Podrías borrar el blob local si quieres ahorrar espacio:
-      // await idbDelete(it.key);
+      await idbDelete(it.key);
       dequeue(it.id);
     }
   }

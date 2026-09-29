@@ -3,28 +3,24 @@ import 'server-only';
 import crypto from 'crypto';
 import { cookies } from 'next/headers';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { getServerEnv } from '@/lib/env/server';
 
 export type DriveConnectionStatus = 'connected' | 'reconnect-required' | 'disconnected';
 export type StorageProvider = 'local' | 'drive' | 'r2' | 'supabase';
 
 const STATE_COOKIE = 'google_drive_oauth_state';
 
-function requiredEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) throw new Error(`Missing env var ${name}`);
-  return value;
-}
-
 export function getGoogleOAuthConfig() {
+  const env = getServerEnv();
   return {
-    clientId: requiredEnv('GOOGLE_CLIENT_ID'),
-    clientSecret: requiredEnv('GOOGLE_CLIENT_SECRET'),
-    redirectUri: requiredEnv('GOOGLE_DRIVE_REDIRECT_URI'),
+    clientId: env.GOOGLE_CLIENT_ID,
+    clientSecret: env.GOOGLE_CLIENT_SECRET,
+    redirectUri: env.GOOGLE_DRIVE_REDIRECT_URI,
   };
 }
 
 function getTokenSecret(): Buffer {
-  const raw = requiredEnv('GOOGLE_DRIVE_TOKEN_SECRET');
+  const raw = getServerEnv().GOOGLE_DRIVE_TOKEN_SECRET;
   return crypto.createHash('sha256').update(raw).digest();
 }
 

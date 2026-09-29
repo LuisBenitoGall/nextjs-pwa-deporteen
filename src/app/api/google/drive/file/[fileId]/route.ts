@@ -5,6 +5,7 @@ import {
   getDriveConnection,
   refreshGoogleAccessToken,
 } from '@/lib/googleDrive/server';
+import { fetchGoogleWithRetry } from '@/lib/googleDrive/http';
 import { getServerUser } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
@@ -28,7 +29,7 @@ export async function GET(req: Request, context: { params: Promise<{ fileId: str
     const token = access.access_token;
 
     if (checkOnly) {
-      const checkRes = await fetch(
+      const checkRes = await fetchGoogleWithRetry(
         `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?fields=id`,
         { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' }
       );
@@ -41,7 +42,7 @@ export async function GET(req: Request, context: { params: Promise<{ fileId: str
       return NextResponse.json({ available: true });
     }
 
-    const driveRes = await fetch(
+    const driveRes = await fetchGoogleWithRetry(
       `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media`,
       { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' }
     );

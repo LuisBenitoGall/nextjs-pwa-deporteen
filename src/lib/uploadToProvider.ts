@@ -89,19 +89,9 @@ async function uploadDrive(file: File, accessToken: string): Promise<UploadResul
     }
     const { id: fileId } = await uploadRes.json();
 
-    // 2. Hacer el archivo público (anyoneWithLink → reader)
-    await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions`, {
-        method: 'POST',
-        headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ role: 'reader', type: 'anyone' }),
-    });
-
     return {
         storage_provider: 'drive',
-        storage_path: null,
+        storage_path: `drive:${fileId}`,
         device_uri: null,
         google_drive_file_id: fileId,
     };
@@ -164,7 +154,7 @@ export function getMediaDisplayUrl(row: {
         case 'drive': {
             const fileId = row.google_drive_file_id
                 || (row.storage_path?.startsWith('drive:') ? row.storage_path.slice(6) : null);
-            return fileId ? `https://drive.google.com/uc?id=${fileId}&export=view` : null;
+            return fileId ? `/api/google/drive/file/${encodeURIComponent(fileId)}` : null;
         }
         case 'r2': {
             const base = process.env.NEXT_PUBLIC_R2_PUBLIC_URL?.replace(/\/$/, '');
