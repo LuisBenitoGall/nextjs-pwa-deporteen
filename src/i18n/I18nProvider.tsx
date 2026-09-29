@@ -33,6 +33,9 @@ function readLocaleCookie(): string {
 
 type Messages = Record<string, any>;
 
+/** Traductor del locale por defecto: red de seguridad cuando un locale no tiene la clave. */
+const defaultT = makeT(esDict as Record<string, any>);
+
 type I18nCtx = {
   locale: Locale;
   setLocale: (locale: Locale) => void;
@@ -45,7 +48,7 @@ type I18nCtx = {
 const I18nContext = createContext<I18nCtx>({
   locale: DEFAULT_LOCALE,
   setLocale: () => {},
-  t: (k: string) => k,
+  t: (k: string, vars?: Record<string, any>) => defaultT(k, { ...I18N_DEFAULTS, ...vars }) ?? k,
   messages: {},
   locales: SUPPORTED_LOCALES.map(code => ({ code, label: LOCALE_LABELS[code] })),
 });
@@ -90,7 +93,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
         const { dict } = await getDictionary(locale);
         if (!cancelled) setDict(dict);
       } catch {
-        if (!cancelled) setDict({});
+        // Nunca vaciamos el diccionario: preferimos el locale por defecto a una UI sin texto.
+        if (!cancelled) setDict(esDict as Messages);
       }
     })();
     return () => {
@@ -116,8 +120,10 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   const t = useMemo(() => {
     const base = makeT(dict);
-    return (key: string, vars?: Record<string, any>) =>
-      base(key, { ...I18N_DEFAULTS, ...vars }) ?? '';
+    return (key: string, vars?: Record<string, any>) => {
+      const opts = { ...I18N_DEFAULTS, ...vars };
+      return base(key, opts) ?? defaultT(key, opts) ?? '';
+    };
   }, [dict]);
 
   const locales = useMemo(
