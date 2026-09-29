@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, ChangeEvent } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { LIMITS } from '@/config/constants';
 import { useT } from '@/i18n/I18nProvider';
+import { isSportActive } from '@/lib/sports';
 import { uploadAvatar } from '@/lib/uploadAvatar';
 
 import Input from '@/components/Input';
@@ -87,10 +88,7 @@ export default function NewPlayerForm({
             .select('id, name, slug, active')
             .order('name', { ascending: true });
         if (!e1) {
-            const activeOnly = (sportsRaw || []).filter((s: any) =>
-            typeof s.active === 'boolean' ? s.active : true
-            );
-            setSports(activeOnly as Sport[]);
+            setSports((sportsRaw || []).filter(isSportActive) as Sport[]);
         } else {
             setErr(e1.message);
         }

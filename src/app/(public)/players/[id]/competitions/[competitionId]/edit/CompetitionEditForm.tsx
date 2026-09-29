@@ -4,11 +4,12 @@ import { useEffect, useState, ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { useT } from '@/i18n/I18nProvider';
+import { isSportActive } from '@/lib/sports';
 import Input from '@/components/Input';
 import Select from '@/components/Select';
 import Submit from '@/components/Submit';
 
-type Sport = { id: string; name: string };
+type Sport = { id: string; name: string; active: boolean | null };
 
 type Props = {
   playerId: string;
@@ -34,10 +35,14 @@ export default function CompetitionEditForm({ playerId, competitionId, initial }
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from('sports').select('id, name').order('name');
+      const { data } = await supabase.from('sports').select('id, name, active').order('name');
       setSports(data ?? []);
     })();
   }, []);
+
+  // Solo deportes activos del catálogo; se conserva el ya asignado aunque esté desactivado
+  // para no perder la selección al editar.
+  const sportOptions = sports.filter(s => isSportActive(s) || s.id === sportId);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -99,7 +104,7 @@ export default function CompetitionEditForm({ playerId, competitionId, initial }
         name="sport"
         value={sportId}
         onChange={(e: ChangeEvent<HTMLSelectElement>) => setSportId(e.target.value)}
-        options={sports.map((s) => ({ value: s.id, label: s.name }))}
+        options={sportOptions.map((s) => ({ value: s.id, label: s.name }))}
         placeholder={t('deporte_selec')}
         fontSize="sm"
       />

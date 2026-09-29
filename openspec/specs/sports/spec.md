@@ -12,7 +12,15 @@ Lista **cerrada** de deportes de equipo soportados en lanzamiento. Cada deporte 
 - Deportes v1 (9): baloncesto, fútbol, fútbol sala, balonmano, rugby, voleibol, waterpolo, hockey hierba, hockey patines.
 - **Slugs en BD:** kebab-case con **guion** (`futbol-sala`, `hockey-hierba`), alineados con `src/lib/sports/index.ts` y `normalizeSlug()` (espacios → guion, no guion bajo). Las claves i18n (`futbol_sala`) no son slugs de BD.
 - Iconos de UI alineados con `src/lib/sports/index.ts` (slug coherente).
-- Solo filas con `active = true` se ofrecen en formularios de competición/alta.
+- Cada entrada de `SPORTS` MUST llevar `slug` (identificador estable, usado como `key` de React) e `i18nKey` (clave del diccionario del nombre visible).
+- El bloque de deportes de la home MUST derivarse de `SPORTS`, no de `public.sports` ni de una lista duplicada en el componente; se pinta una tarjeta por entrada, siempre con nombre visible.
+
+### RF-1b: Listados de deporte filtran por `active`
+
+- Toda UI que ofrezca deportes a elegir MUST excluir las filas con `sports.active = false` (deportes legacy desactivados en la reconciliación de slugs). `active` nulo o ausente cuenta como activo.
+- El filtro MUST usar el helper compartido `isSportActive()` de `src/lib/sports` en lugar de repetir la condición en cada formulario.
+- Al **editar** un recurso cuyo deporte ya está desactivado, ese deporte MUST seguir visible y seleccionado para no perder el dato; el resto de desactivados no se ofrecen.
+- Cubre `NewPlayerForm`, `CompetitionNewForm`, `CompetitionEditForm` y `NewMatchEmbedded`.
 
 ### RF-2: Estadísticas por deporte
 
@@ -35,7 +43,7 @@ Cuando el negocio apruebe un deporte adicional:
 
 3. **Traducciones**
    - Claves i18n para nombre visible si se muestra fuera del nombre en BD (opcional).
-   - Añadir icono en `public/icons/` y entrada en `src/lib/sports/index.ts`.
+   - Añadir icono en `public/icons/` y entrada en `src/lib/sports/index.ts` con `slug` e `i18nKey`.
 
 4. **Pruebas**
    - Test de migración (smoke) o test unitario que valide slug en catálogo esperado.

@@ -44,6 +44,29 @@ Los textos legales (`LegalDoc`, rutas `/legal/*`) MUST renderizarse con HTTP 200
 3. Sistema busca traducción en locale del usuario
 4. Retorna traducción o valor por defecto
 
+### RF-5: Texto disponible desde el primer render
+
+**Descripción**: Ninguna vista se renderiza con cadenas vacías mientras se resuelve el diccionario del locale del usuario.
+
+**Criterios de Aceptación**:
+- `I18nProvider` MUST inicializar `dict` con los mensajes de `DEFAULT_LOCALE` importados de forma **estática** (no con `{}` ni con un `import()` en `useEffect`), de modo que el HTML de servidor y el primer render de cliente ya contengan texto
+- `t(key)` MUST resolver contra el locale activo y, si falta la clave, contra el locale por defecto antes de devolver cadena vacía
+- Un fallo al cargar el diccionario del locale MUST conservar los mensajes del locale por defecto, nunca vaciar el diccionario
+- Para locales distintos de `es` el primer pintado muestra el locale por defecto y se sustituye al resolver el diccionario; en ningún momento se muestra texto vacío
+- Contrapartida aceptada: `es.json` viaja en el grafo inicial del bundle (≈ +14 kB de *First Load JS* en la home) a cambio de HTML indexable y sin parpadeo de contenido vacío. Los demás locales siguen cargándose con `import()` diferido, así que el coste no se multiplica por locale
+
+**Motivo**: mientras el diccionario arrancaba vacío, la home de producción se servía sin una sola cadena visible (solo iconos), con perjuicio de SEO y de percepción de carga.
+
+### RF-6: Claves de React independientes del texto traducido
+
+**Descripción**: Las listas traducidas usan identificadores estables como `key` de React.
+
+**Criterios de Aceptación**:
+- Las `key` de React MUST derivarse de identificadores estables (slug, id, uuid) y **nunca** de valores devueltos por `t()`
+- Al volver a renderizar una lista traducida con otro diccionario (carga inicial o cambio de idioma), el número de elementos en el DOM MUST ser exactamente el de la colección de origen
+
+**Motivo**: si el diccionario cambia entre renders, varios elementos pueden compartir `key`. La reconciliación de React solo elimina **una** fibra por clave duplicada, así que las restantes quedan huérfanas y sus nodos permanecen en el DOM. Esto duplicaba visualmente los bloques de deportes y características de la home (8 y 5 tarjetas fantasma, sin texto, delante del grupo correcto).
+
 ### RF-3: Formato de Fechas y Números
 
 **Descripción**: Fechas y números se formatean según locale del usuario.
@@ -96,6 +119,8 @@ Usuario cambia idioma → Actualizar users.locale → Recargar traducciones → 
 4. **Sistema muestra fecha en formato local**: RF-3
 5. **Sistema muestra número en formato local**: RF-3
 6. **Desarrollador sincroniza traducciones**: RF-4
+7. **Visitante recibe la home con todos los textos en el HTML**: RF-5
+8. **Lista traducida no duplica tarjetas al cargar el diccionario**: RF-6
 
 ## RF-4: Sincronización Automática de Traducciones
 
