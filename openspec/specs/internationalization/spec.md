@@ -32,7 +32,7 @@ Los textos legales (`LegalDoc`, rutas `/legal/*`) MUST renderizarse con HTTP 200
 **Descripción**: Todo el contenido visible está traducido.
 
 **Criterios de Aceptación**:
-- Archivos de traducción en `src/i18n/messages/{locale}.json`
+- Mensajes por locale en `src/i18n/messages/{locale}/core.json` (núcleo siempre cargado) y bloques lazy en `src/i18n/messages/{locale}/chunks/{legal,admin}.json` bajo demanda; los monolitos `{locale}.json` en `messages/` son artefacto de `pnpm i18n:sync`
 - Uso de `t('clave')` en componentes cliente
 - Uso de `tServer()` en componentes servidor
 - Valores por defecto cuando falta traducción
@@ -53,7 +53,7 @@ Los textos legales (`LegalDoc`, rutas `/legal/*`) MUST renderizarse con HTTP 200
 - `t(key)` MUST resolver contra el locale activo y, si falta la clave, contra el locale por defecto antes de devolver cadena vacía
 - Un fallo al cargar el diccionario del locale MUST conservar los mensajes del locale por defecto, nunca vaciar el diccionario
 - Para locales distintos de `es` el primer pintado muestra el locale por defecto y se sustituye al resolver el diccionario; en ningún momento se muestra texto vacío
-- Contrapartida aceptada: `es.json` viaja en el grafo inicial del bundle (≈ +14 kB de *First Load JS* en la home) a cambio de HTML indexable y sin parpadeo de contenido vacío. Los demás locales siguen cargándose con `import()` diferido, así que el coste no se multiplica por locale
+- Contrapartida aceptada: el **núcleo** de `es` (`messages/es/core.json`, ~29 kB) viaja en el grafo inicial del bundle a cambio de HTML indexable y sin parpadeo; textos legales y panel Stripe/admin se cargan en `/legal/*` y `/admin/*`. Los demás locales cargan el núcleo con `import()` diferido
 
 **Motivo**: mientras el diccionario arrancaba vacío, la home de producción se servía sin una sola cadena visible (solo iconos), con perjuicio de SEO y de percepción de carga.
 
@@ -77,6 +77,17 @@ Los textos legales (`LegalDoc`, rutas `/legal/*`) MUST renderizarse con HTTP 200
 - Cada clave MUST usar en todos los locales los mismos marcadores simples que el base; los marcadores dobles de los textos legales (`{{company.name}}`) quedan fuera, los resuelve `LegalDoc`
 - La comprobación MUST vivir en la suite (`src/i18n/__tests__/locale-parity.test.ts`), no solo en un script manual
 - `interpolate()` MUST reconocer marcadores en mayúsculas y en minúsculas: uno no sustituido se muestra literal al usuario
+
+### RF-9: Diccionarios troceados por área
+
+**Descripción**: Reducir la carga inicial separando el núcleo de mensajes de bloques lazy por ruta.
+
+**Criterios de Aceptación**:
+- El runtime MUST cargar el núcleo en el primer render (semilla estática del locale por defecto en cliente)
+- Los textos legales (`legal`) y el panel Stripe/admin (`admin_*`, `stripe_*` salvo claves usadas en rutas públicas como `stripe_pago_seguro`) MUST residir en bloques lazy importados bajo demanda
+- En `/legal/*` y `/admin/*` los bloques MUST fusionarse antes de renderizar (p. ej. `I18nSubProvider` en layout) de modo que el HTML servido contenga texto traducido
+- `src/i18n/messages/es/core.json` MUST NOT superar `CORE_MESSAGES_MAX_BYTES_ES` (definido en `src/i18n/chunks.ts`); un test en la suite MUST fallar si se supera
+- `getDictionary(locale, { chunks })` y `pnpm i18n:split` MUST mantener paridad estructural vía merge núcleo + bloques
 
 ### RF-8: Calidad de las traducciones
 
@@ -108,7 +119,8 @@ Los textos legales (`LegalDoc`, rutas `/legal/*`) MUST renderizarse con HTTP 200
 ## Modelo de Datos
 
 ### Archivos de Traducción
-- Un fichero por locale en `src/i18n/messages/{locale}.json` para cada entrada de `SUPPORTED_LOCALES` (p. ej. `es.json`, `en.json`, `ca.json`, `it.json`, `pt.json`, `eu.json`, `gl.json`).
+- Por cada locale en `SUPPORTED_LOCALES`: `src/i18n/messages/{locale}/core.json` y, si aplica, `chunks/legal.json` y `chunks/admin.json`.
+- Opcionalmente `{locale}.json` monolítico generado por `pnpm i18n:sync` como referencia de sincronización.
 
 ### Estructura de Claves
 ```json
