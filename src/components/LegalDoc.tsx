@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useT } from '@/i18n/I18nProvider';
+import { useI18n, useT } from '@/i18n/I18nProvider';
 import { LEGAL_CONSTANTS } from '@/config/constants';
 import { sanitizeLegalHtml } from '@/lib/sanitize-legal-html';
 
@@ -43,47 +43,41 @@ function isMissing(key: string, value: unknown) {
 
 export default function LegalDoc({ doc }: { doc: DocId }) {
   const t = useT();
+  const { messages } = useI18n();
   const vars: PlaceholderMap = LEGAL_CONSTANTS as PlaceholderMap;
 
   // Construcción estable de secciones
   const sections = useMemo<Section[]>(() => {
-    // 1) Intento "ideal": pedir el array entero (si la i18n lo soporta)
-    const raw = t(`legal.${doc}.sections`, { returnObjects: true } as any) as unknown;
-
-    let out: Section[] = Array.isArray(raw)
-      ? (raw as Section[])
-      : Array.isArray((raw as any)?.sections)
-      ? ((raw as any).sections as Section[])
-      : [];
-
-    // 2) Plan B: leer secciones indexadas legal.X.sections.0.*, 1.*, ... hasta que falte .html
-    if (!out.length) {
-      const collected: Section[] = [];
-      for (let i = 0; i < 200; i++) {
-        const titleKey = `legal.${doc}.sections.${i}.title`;
-        const htmlKey = `legal.${doc}.sections.${i}.html`;
-        const title = t(titleKey) as unknown as string;
-        const html = t(htmlKey) as unknown as string;
-
-        if (isMissing(htmlKey, html)) break; // sin html, fin de lista
-        collected.push({
-          title: isMissing(titleKey, title) ? undefined : title,
-          html,
-        });
-      }
-      out = collected;
+    const fromDict = (messages as { legal?: Record<string, { sections?: Section[] }> })?.legal?.[doc]
+      ?.sections;
+    if (Array.isArray(fromDict) && fromDict.length) {
+      return fromDict.filter((s) => typeof s?.html === 'string' && s.html.length > 0);
     }
 
-    if (!out.length) {
-      // Aviso para depurar sin romper render
+    // Plan B: claves indexadas (cuando aún no hay dict en memoria)
+    const collected: Section[] = [];
+    for (let i = 0; i < 200; i++) {
+      const titleKey = `legal.${doc}.sections.${i}.title`;
+      const htmlKey = `legal.${doc}.sections.${i}.html`;
+      const title = t(titleKey) as unknown as string;
+      const html = t(htmlKey) as unknown as string;
+
+      if (isMissing(htmlKey, html)) break;
+      collected.push({
+        title: isMissing(titleKey, title) ? undefined : title,
+        html,
+      });
+    }
+
+    if (!collected.length) {
       console.warn(
         `[LegalDoc] No hay secciones para 'legal.${doc}.sections'. ` +
           `Comprueba i18n (array o sections.N.*) y que no devuelva la key literal.`
       );
     }
 
-    return out;
-  }, [t, doc]);
+    return collected;
+  }, [t, doc, messages]);
 
   // Render HTML final (memoizado)
   const content = useMemo(() => {
