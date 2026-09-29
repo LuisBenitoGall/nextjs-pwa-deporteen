@@ -67,6 +67,27 @@ Los textos legales (`LegalDoc`, rutas `/legal/*`) MUST renderizarse con HTTP 200
 
 **Motivo**: si el diccionario cambia entre renders, varios elementos pueden compartir `key`. La reconciliación de React solo elimina **una** fibra por clave duplicada, así que las restantes quedan huérfanas y sus nodos permanecen en el DOM. Esto duplicaba visualmente los bloques de deportes y características de la home (8 y 5 tarjetas fantasma, sin texto, delante del grupo correcto).
 
+### RF-7: Paridad de claves verificada en la suite
+
+**Descripción**: Ningún locale se degrada respecto al base sin que falle una prueba.
+
+**Criterios de Aceptación**:
+- Todos los ficheros de `src/i18n/messages/` MUST tener exactamente el mismo conjunto de claves que el base, incluidos los elementos indexados de arrays (`legal.<doc>.sections[i].title`, `.html`)
+- Ningún valor MUST quedar vacío
+- Cada clave MUST usar en todos los locales los mismos marcadores simples que el base; los marcadores dobles de los textos legales (`{{company.name}}`) quedan fuera, los resuelve `LegalDoc`
+- La comprobación MUST vivir en la suite (`src/i18n/__tests__/locale-parity.test.ts`), no solo en un script manual
+- `interpolate()` MUST reconocer marcadores en mayúsculas y en minúsculas: uno no sustituido se muestra literal al usuario
+
+### RF-8: Calidad de las traducciones
+
+**Descripción**: Criterios para dar una traducción por buena.
+
+**Criterios de Aceptación**:
+- Cada fichero de mensajes MUST mantener una **única variante regional**. `pt.json` es portugués de **Brasil**; cambiar de destino exige convertir el fichero en bloque y ajustar `intlLocaleTag`, no cadena a cadena
+- Un valor idéntico al del base es aceptable solo si es correcto en su idioma (cognado) o un nombre propio (`DeporTeen`, `Google Drive`, `19.99`); nunca como relleno
+- Cuando una cadena no pueda traducirse con confianza razonable, MUST declararse como pendiente de revisión humana en el change, en lugar de rellenarse con el texto base disfrazado
+- Las cadenas construidas concatenando fragmentos en el componente (`t('tienes') + número + t('plural')`) no son traducibles a idiomas con otro orden de palabras; MUST convertirse en una sola clave con marcador
+
 ### RF-3: Formato de Fechas y Números
 
 **Descripción**: Fechas y números se formatean según locale del usuario.
@@ -121,6 +142,8 @@ Usuario cambia idioma → Actualizar users.locale → Recargar traducciones → 
 6. **Desarrollador sincroniza traducciones**: RF-4
 7. **Visitante recibe la home con todos los textos en el HTML**: RF-5
 8. **Lista traducida no duplica tarjetas al cargar el diccionario**: RF-6
+9. **Una clave nueva sin sincronizar rompe la suite**: RF-7
+10. **Una cadena no traducible se declara pendiente en vez de inventarse**: RF-8
 
 ## RF-4: Sincronización Automática de Traducciones
 
