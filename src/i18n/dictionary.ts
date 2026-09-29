@@ -17,9 +17,14 @@ export async function getDictionary(locale?: string): Promise<{ locale: Locale; 
   }
 }
 
+// Admite marcadores en mayúsculas ({DAYS}) y en minúsculas ({n}); ambos conviven en los
+// mensajes. Los {{...}} de los textos legales quedan intactos: el marcador interior no
+// está en `vars`, así que se devuelve tal cual y los consume `LegalDoc.applyPlaceholders`.
+const PLACEHOLDER_RE = /\{([A-Za-z0-9_.\-]+)\}/g;
+
 function interpolate(template: string, vars?: Record<string, any>): string {
   if (!vars) return template;
-  return template.replace(/\{([A-Z0-9_\.\-]+)\}/g, (_, k: string) => {
+  return template.replace(PLACEHOLDER_RE, (_, k: string) => {
     const v = vars[k];
     return v == null ? `{${k}}` : String(v);
   });
