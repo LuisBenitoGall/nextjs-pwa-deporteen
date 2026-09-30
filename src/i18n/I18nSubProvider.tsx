@@ -25,7 +25,7 @@ export function I18nSubProvider({ merge, children }: { merge: Messages; children
       const opts = { ...I18N_DEFAULTS, ...vars };
       return base(key, opts) ?? fallback(key, opts) ?? parent.t(key, vars);
     };
-  }, [messages, parent.messages, parent.t, parent]);
+  }, [messages, parent]);
 
   const value = useMemo(
     () => ({

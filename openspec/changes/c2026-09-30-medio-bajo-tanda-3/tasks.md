@@ -1,0 +1,1 @@
+- [x] Implementación y verificación CI

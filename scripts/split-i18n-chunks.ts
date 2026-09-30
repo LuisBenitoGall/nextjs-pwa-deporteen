@@ -5,7 +5,7 @@
  */
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
-import { SUPPORTED_LOCALES, type Locale } from '../src/i18n/config';
+import { SUPPORTED_LOCALES } from '../src/i18n/config';
 import { splitLocaleMessages } from '../src/i18n/chunks';
 
 const MESSAGES_DIR = join(process.cwd(), 'src/i18n/messages');

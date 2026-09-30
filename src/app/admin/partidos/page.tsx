@@ -20,7 +20,8 @@ export default async function AdminPartidosPage() {
       m.players && typeof m.players === 'object' && 'user_id' in m.players
         ? (m.players as { user_id: string }).user_id
         : null;
-    const { players: _players, ...rest } = m;
+    const { players, ...rest } = m;
+    void players;
     return {
       ...rest,
       user_id: ownerUserId,

@@ -208,8 +208,9 @@ export default function MyGalleryPage() {
 
   // Revoke blob URLs on unmount
   useEffect(() => {
+    const urlsToRevoke = blobUrlsRef.current;
     return () => {
-      for (const u of blobUrlsRef.current) {
+      for (const u of urlsToRevoke) {
         if (u?.startsWith('blob:')) URL.revokeObjectURL(u);
       }
     };
@@ -237,7 +238,6 @@ export default function MyGalleryPage() {
     );
     observer.observe(sentinelRef.current);
     return () => observer.disconnect();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadMoreGroups]);
 
   async function handleDelete(mediaId: string, matchId: string) {

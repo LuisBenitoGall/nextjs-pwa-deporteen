@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { useT } from '@/i18n/I18nProvider';

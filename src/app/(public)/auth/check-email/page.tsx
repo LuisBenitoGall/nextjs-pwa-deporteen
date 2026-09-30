@@ -13,10 +13,10 @@ export default function CheckEmailPage() {
       <p className="text-gray-700">{t('auth_check_email_body')}</p>
       <div className="flex flex-col gap-2 items-center pt-2">
         <Link href="/login" className="underline font-medium text-green-700">
-          {t('auth_check_email_login')}
+          {t('auth_error_cta_login') || t('auth_check_email_login')}
         </Link>
         <Link href="/" className="text-sm text-gray-600 underline">
-          {t('volver_inicio') || 'Volver al inicio'}
+          {t('auth_error_cta_home') || t('volver_inicio') || 'Volver al inicio'}
         </Link>
       </div>
     </main>

@@ -135,7 +135,6 @@ export default function MatchGalleryPage() {
     const created: string[] = [];
     for (const m of media) {
       try {
-        let resolvedSource = 'none';
         const driveFileId = m.google_drive_file_id ?? (m.storage_path?.startsWith('drive:') ? m.storage_path.slice(6) : null);
         const isDrive = !!driveFileId;
         if (!isDrive && m.device_uri) {
@@ -144,7 +143,6 @@ export default function MatchGalleryPage() {
             const u = URL.createObjectURL(blob);
             created.push(u);
             out[m.id] = u;
-            resolvedSource = 'device_uri_blob';
             continue;
           }
         }
@@ -153,13 +151,11 @@ export default function MatchGalleryPage() {
           const base = process.env.NEXT_PUBLIC_R2_PUBLIC_URL?.replace(/\/$/, '');
           if (base) {
             out[m.id] = `${base}/${m.storage_path.slice(3)}`;
-            resolvedSource = 'r2_public_url';
           }
         } else if (isDrive && driveFileId) {
           const result = await resolveDriveMediaSource(driveFileId);
           if (result.available) {
             out[m.id] = result.src;
-            resolvedSource = 'drive_proxy_url';
           } else {
             setUnavailable((prev) => ({ ...prev, [m.id]: t('media_no_disponible') || t('sin_preview') || 'No disponible' }));
           }
@@ -170,7 +166,6 @@ export default function MatchGalleryPage() {
             .createSignedUrl(m.storage_path, 60 * 60); // 1h
           if (!error && data?.signedUrl) {
             out[m.id] = data.signedUrl;
-            resolvedSource = 'supabase_signed_url';
           }
         }
       } catch {/* silencio administrativo */}
@@ -188,7 +183,7 @@ export default function MatchGalleryPage() {
     for (const u of blobUrlsRef.current) if (u?.startsWith('blob:')) URL.revokeObjectURL(u);
     blobUrlsRef.current = [];
   };
-}, [media, supabase]);
+}, [media, supabase, t]);
 
  // Re-genera signed URLs al recuperar foco (por si caducan)
  useEffect(() => {

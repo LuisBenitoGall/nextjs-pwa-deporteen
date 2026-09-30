@@ -242,7 +242,7 @@ export default function LiveMatchPage() {
             if (inputEl) inputEl.value = '';
             setBusyMedia(false);
         }
-    }, [match, provider, uploadMatchMediaToR2]);
+    }, [match, provider, uploadMatchMediaToR2, t]);
 
     // Ref para que el debounce de inputs de marcador capture siempre los valores más recientes
     const latestScoresRef = useRef({ my: myScore, rival: rivalScore });
