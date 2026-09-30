@@ -509,5 +509,21 @@
   "volver_atras": "Itzuli atzera",
   "volver_inicio": "Itzuli hasierara",
   "volver_panel": "Itzuli panelera",
-  "waterpolo": "Waterpoloa"
+  "waterpolo": "Waterpoloa",
+  "account_delete_error": "Ezin izan da kontua ezeztatu. Saiatu berriro.",
+  "auth_error_cta_forgot_password": "Berrezarri pasahitza",
+  "auth_error_cta_home": "Hasiera",
+  "auth_error_cta_login": "Saioa hasi",
+  "auth_error_cta_register": "Kontua sortu",
+  "auth_error_email_not_confirmed": "Baieztatu posta saioa hasi aurretik.",
+  "auth_error_generic": "Ezin izan da osatu.",
+  "auth_error_invalid_credentials": "Posta edo pasahitz okerra.",
+  "auth_error_rate_limited": "Saiakera gehiegi. Itxaron.",
+  "auth_error_session_expired": "Saioa edo esteka iraungi da.",
+  "error_unexpected_body": "Ustekabeko errorea.",
+  "error_unexpected_title": "Zerbait gaizki joan da",
+  "media_delete_error": "Ezin izan da ezabatu.",
+  "media_delete_ok": "Fitxategia ezabatuta.",
+  "reintentar": "Saiatu berriro",
+  "registro_validation_terms": "Onartu baldintzak"
 }

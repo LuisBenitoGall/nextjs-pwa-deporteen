@@ -1,0 +1,2 @@
+- [x] OpenSpec + implementación
+- [x] Verificación pnpm lint/types/test/build

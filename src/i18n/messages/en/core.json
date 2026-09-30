@@ -509,5 +509,21 @@
   "volver_atras": "Go back",
   "volver_inicio": "Back to top",
   "volver_panel": "Back to dashboard",
-  "waterpolo": "Water polo"
+  "waterpolo": "Water polo",
+  "account_delete_error": "We could not cancel your account. Try again or contact support.",
+  "auth_error_cta_forgot_password": "Reset password",
+  "auth_error_cta_home": "Back to home",
+  "auth_error_cta_login": "Go to sign in",
+  "auth_error_cta_register": "Create account",
+  "auth_error_email_not_confirmed": "Confirm your email before signing in.",
+  "auth_error_generic": "Could not complete the action. Try again.",
+  "auth_error_invalid_credentials": "Incorrect email or password.",
+  "auth_error_rate_limited": "Too many attempts. Wait a few minutes.",
+  "auth_error_session_expired": "Session or link expired. Sign in again.",
+  "error_unexpected_body": "An unexpected error occurred. Retry or go home.",
+  "error_unexpected_title": "Something went wrong",
+  "media_delete_error": "Could not delete the file.",
+  "media_delete_ok": "File deleted.",
+  "reintentar": "Retry",
+  "registro_validation_terms": "You must accept the Terms and Privacy Policy"
 }

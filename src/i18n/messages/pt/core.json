@@ -509,5 +509,21 @@
   "volver_atras": "Volte",
   "volver_inicio": "Voltar ao início",
   "volver_panel": "Voltar ao painel",
-  "waterpolo": "Pólo aquático"
+  "waterpolo": "Pólo aquático",
+  "account_delete_error": "Não foi possível cancelar a conta. Tente novamente.",
+  "auth_error_cta_forgot_password": "Recuperar senha",
+  "auth_error_cta_home": "Voltar ao início",
+  "auth_error_cta_login": "Ir para entrar",
+  "auth_error_cta_register": "Criar conta",
+  "auth_error_email_not_confirmed": "Confirme o e-mail antes de entrar.",
+  "auth_error_generic": "Não foi possível concluir.",
+  "auth_error_invalid_credentials": "E-mail ou senha incorretos.",
+  "auth_error_rate_limited": "Muitas tentativas. Aguarde.",
+  "auth_error_session_expired": "Sessão ou link expirados.",
+  "error_unexpected_body": "Erro inesperado. Tente novamente.",
+  "error_unexpected_title": "Algo deu errado",
+  "media_delete_error": "Não foi possível eliminar.",
+  "media_delete_ok": "Arquivo eliminado.",
+  "reintentar": "Tentar novamente",
+  "registro_validation_terms": "Aceite os Termos e a Privacidade"
 }

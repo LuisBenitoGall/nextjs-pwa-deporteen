@@ -509,5 +509,21 @@
   "volver_atras": "Indietro",
   "volver_inicio": "Torna alla home",
   "volver_panel": "Torna al pannello",
-  "waterpolo": "Pallanuoto"
+  "waterpolo": "Pallanuoto",
+  "account_delete_error": "Impossibile annullare l'account. Riprova.",
+  "auth_error_cta_forgot_password": "Recupera password",
+  "auth_error_cta_home": "Torna alla home",
+  "auth_error_cta_login": "Vai al login",
+  "auth_error_cta_register": "Crea account",
+  "auth_error_email_not_confirmed": "Conferma l'email prima di accedere.",
+  "auth_error_generic": "Impossibile completare l'azione.",
+  "auth_error_invalid_credentials": "Email o password errati.",
+  "auth_error_rate_limited": "Troppi tentativi. Attendi.",
+  "auth_error_session_expired": "Sessione o link scaduti.",
+  "error_unexpected_body": "Errore imprevisto. Riprova.",
+  "error_unexpected_title": "Qualcosa è andato storto",
+  "media_delete_error": "Impossibile eliminare il file.",
+  "media_delete_ok": "File eliminato.",
+  "reintentar": "Riprova",
+  "registro_validation_terms": "Devi accettare Termini e Privacy"
 }

@@ -509,5 +509,21 @@
   "volver_atras": "Tornar enrere",
   "volver_inicio": "Torna a l'inici",
   "volver_panel": "Torna al tauler",
-  "waterpolo": "Waterpolo"
+  "waterpolo": "Waterpolo",
+  "account_delete_error": "No s'ha pogut cancel·lar el compte. Torna-ho a provar.",
+  "auth_error_cta_forgot_password": "Recuperar contrasenya",
+  "auth_error_cta_home": "Tornar a l'inici",
+  "auth_error_cta_login": "Anar a iniciar sessió",
+  "auth_error_cta_register": "Crear compte",
+  "auth_error_email_not_confirmed": "Confirma el correu abans d'iniciar sessió.",
+  "auth_error_generic": "No s'ha pogut completar l'acció.",
+  "auth_error_invalid_credentials": "Correu o contrasenya incorrectes.",
+  "auth_error_rate_limited": "Massa intents. Espera uns minuts.",
+  "auth_error_session_expired": "Sessió o enllaç caducat.",
+  "error_unexpected_body": "Error inesperat. Reintenta o torna.",
+  "error_unexpected_title": "Alguna cosa ha anat malament",
+  "media_delete_error": "No s'ha pogut eliminar l'arxiu.",
+  "media_delete_ok": "Arxiu eliminat.",
+  "reintentar": "Reintentar",
+  "registro_validation_terms": "Has d'acceptar els Termes i la Privacitat"
 }

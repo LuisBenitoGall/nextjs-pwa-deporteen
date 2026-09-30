@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import AppErrorScreen from '@/components/AppErrorScreen';
 
-export default function RootError({
+export default function PublicSegmentError({
   error,
   reset,
 }: {
@@ -11,8 +11,10 @@ export default function RootError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('[RootError]', error);
+    console.error('[PublicError]', error);
   }, [error]);
 
-  return <AppErrorScreen error={error} reset={reset} homeHref="/" />;
+  return (
+    <AppErrorScreen error={error} reset={reset} homeHref="/dashboard" homeLabelKey="mi_panel_volver" />
+  );
 }

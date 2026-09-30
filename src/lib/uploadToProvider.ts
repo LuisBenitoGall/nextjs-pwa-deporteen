@@ -23,7 +23,7 @@ type UploadParams = {
 
 // ─── Local (IndexedDB) ───────────────────────────────────────────────────────
 
-async function uploadLocal(file: File, matchId: string): Promise<UploadResult> {
+async function uploadLocal(file: File, _matchId: string): Promise<UploadResult> {
     const mediaId = crypto.randomUUID();
     const deviceKey = `media:${mediaId}`;
     await idbPut(deviceKey, file);

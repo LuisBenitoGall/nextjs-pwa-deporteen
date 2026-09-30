@@ -16,6 +16,7 @@ import { resolveDriveMediaSource } from '@/lib/googleDrive/mediaResolution';
 import ConfirmDeleteButton from '@/components/ConfirmDeleteButton';
 import TitleH1 from '@/components/TitleH1';
 import PageLoadError from '@/components/PageLoadError';
+import InlineFlashBanner from '@/components/InlineFlashBanner';
 import { StorageBadge } from '@/components/StorageIcon';
 
 type MatchRow = {
@@ -46,6 +47,7 @@ export default function MatchGalleryPage() {
   const [match, setMatch] = useState<MatchRow | null>(null);
   const [media, setMedia] = useState<MediaRow[]>([]);
   const [selected, setSelected] = useState<MediaRow | null>(null);
+  const [deleteFeedback, setDeleteFeedback] = useState<{ variant: 'success' | 'error'; message: string } | null>(null);
   const [unavailable, setUnavailable] = useState<Record<string, string>>({});
   //const [deletingId, setDeletingId] = useState<string | null>(null);
     const [urls, setUrls] = useState<Record<string, string>>({}); // id -> src usable
@@ -201,17 +203,23 @@ export default function MatchGalleryPage() {
 
     async function handleDelete(id: string) {
         try {
-            //setDeletingId(id);
             const res = await fetch(`/api/match-media/${id}`, { method: 'DELETE' });
             if (!res.ok) {
                 const { error: errMsg } = await res.json().catch(() => ({ error: 'Error' }));
-                setError(errMsg || t('error_eliminar') || 'No se pudo eliminar');
+                setDeleteFeedback({
+                  variant: 'error',
+                  message: errMsg || t('media_delete_error') || 'No se pudo eliminar el archivo.',
+                });
                 return;
             }
             setMedia(prev => prev.filter(item => item.id !== id));
             if (selected?.id === id) {
                 setSelected(null);
             }
+            setDeleteFeedback({
+              variant: 'success',
+              message: t('media_delete_ok') || 'Archivo eliminado.',
+            });
             window.dispatchEvent(new CustomEvent('cloud-usage-refresh'));
         } finally {
         //setDeletingId(null);
@@ -264,6 +272,14 @@ export default function MatchGalleryPage() {
             <style jsx global>{`footer{display:none !important}`}</style>
 
             <TitleH1>{t('galeria') || 'Galería del partido'}</TitleH1>
+
+            {deleteFeedback && (
+              <InlineFlashBanner
+                variant={deleteFeedback.variant}
+                message={deleteFeedback.message}
+                onDismiss={() => setDeleteFeedback(null)}
+              />
+            )}
 
             <div className="flex flex-wrap items-center gap-2 mb-6">
                 <Link

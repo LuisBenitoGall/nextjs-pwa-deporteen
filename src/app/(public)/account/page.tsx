@@ -252,6 +252,7 @@ export default async function AccountPage() {
             .eq('id', user_id);
         if (uErr) {
             console.error('deleteAccount: users status update error', uErr);
+            redirect('/account?actionError=delete_account');
         }
 
         const { deactivateUserPlayers } = await import('@/lib/account/deactivateUserPlayers');
@@ -288,7 +289,6 @@ export default async function AccountPage() {
         } catch (e) {
             console.error('deleteAccount: signOut error', e);
         }
-        // Redirigir al endpoint de logout para que el servidor borre cookies y redirija a '/'
         redirect('/logout');
     }
 

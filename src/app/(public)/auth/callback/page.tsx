@@ -5,9 +5,12 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useT } from '@/i18n/I18nProvider';
 import { supabase } from '@/lib/supabase/client';
 import { safeNextPath } from '@/lib/auth/safeNextPath';
+import AuthErrorNotice from '@/components/auth/AuthErrorNotice';
+import { presentationFromAuthMessage } from '@/lib/auth/authErrorPresentation';
 
 //Components:
 import TitleH1 from '@/components/TitleH1';
+import Link from 'next/link';
 
 export default function AuthCallbackPage() {
     const t = useT();
@@ -94,7 +97,14 @@ export default function AuthCallbackPage() {
             )}
 
             {mounted && err && (
-                <p className="mt-4 text-sm text-red-600">{err}</p>
+                <>
+                    <AuthErrorNotice presentation={presentationFromAuthMessage(err)} className="mt-4" />
+                    <p className="mt-3 text-center text-sm text-gray-600">
+                        <Link href="/login" className="text-green-700 underline font-medium">
+                            {t('auth_error_cta_login') || 'Ir a iniciar sesión'}
+                        </Link>
+                    </p>
+                </>
             )}
         </div>
     );

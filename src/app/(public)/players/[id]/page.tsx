@@ -164,7 +164,9 @@ export default async function PlayerDetailPage({
     async function deleteCompetitionAction(bound: { compId: string; playerId: string; seasonId: string | null }) {
         'use server';
         const { compId, playerId } = bound || {};
-        if (!compId || !playerId) return;
+        if (!compId || !playerId) {
+            redirect(playerId ? `/players/${playerId}?actionError=delete_competition` : '/dashboard?actionError=delete_competition');
+        }
 
         const supabase = await createSupabaseServerClient();
         const { data: { user } } = await supabase.auth.getUser();

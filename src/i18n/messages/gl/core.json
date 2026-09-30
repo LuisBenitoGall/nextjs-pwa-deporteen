@@ -509,5 +509,21 @@
   "volver_atras": "Volver atrás",
   "volver_inicio": "Volver ao inicio",
   "volver_panel": "Volver ao panel",
-  "waterpolo": "Waterpolo"
+  "waterpolo": "Waterpolo",
+  "account_delete_error": "Non se puido cancelar a conta. Téntao de novo.",
+  "auth_error_cta_forgot_password": "Recuperar contrasinal",
+  "auth_error_cta_home": "Volver ao inicio",
+  "auth_error_cta_login": "Ir a iniciar sesión",
+  "auth_error_cta_register": "Crear conta",
+  "auth_error_email_not_confirmed": "Confirma o correo antes de entrar.",
+  "auth_error_generic": "Non se puido completar.",
+  "auth_error_invalid_credentials": "Correo ou contrasinal incorrectos.",
+  "auth_error_rate_limited": "Demasiados intentos. Agarda.",
+  "auth_error_session_expired": "Sesión ou enlace caducado.",
+  "error_unexpected_body": "Erro inesperado.",
+  "error_unexpected_title": "Algo saíu mal",
+  "media_delete_error": "Non se puido eliminar.",
+  "media_delete_ok": "Arquivo eliminado.",
+  "reintentar": "Reintentar",
+  "registro_validation_terms": "Debes aceptar os Termos"
 }

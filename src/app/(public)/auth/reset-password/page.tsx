@@ -1,14 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { useT } from '@/i18n/I18nProvider';
+import AuthErrorNotice from '@/components/auth/AuthErrorNotice';
+import { presentationFromAuthMessage } from '@/lib/auth/authErrorPresentation';
 import Input from '@/components/Input';
 import Submit from '@/components/Submit';
 import TitleH1 from '@/components/TitleH1';
+import Link from 'next/link';
 
-export default function ResetPasswordPage() {
+function ResetPasswordInner() {
   const t = useT();
   const router = useRouter();
   const search = useSearchParams();
@@ -69,7 +72,9 @@ export default function ResetPasswordPage() {
     <div className="mx-auto max-w-xl">
       <TitleH1>{t('establecer_contrasena') || 'Establecer nueva contraseña'}</TitleH1>
 
-      {mounted && err && <div className="mb-3 rounded border border-red-300 bg-red-50 p-2 text-sm text-red-700">{err}</div>}
+      {mounted && err && (
+        <AuthErrorNotice presentation={presentationFromAuthMessage(err)} />
+      )}
       {mounted && ok &&  <div className="mb-3 rounded border border-green-300 bg-green-50 p-2 text-sm text-green-800">{ok}</div>}
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -97,6 +102,24 @@ export default function ResetPasswordPage() {
           loadingText={t('procesando') || 'Procesando…'}
         />
       </form>
+
+      <p className="mt-6 text-center text-sm">
+        <Link href="/forgot-password" className="text-gray-600 underline hover:text-green-700">
+          {t('auth_error_cta_forgot_password') || 'Recuperar contraseña'}
+        </Link>
+        {' · '}
+        <Link href="/login" className="text-gray-600 underline hover:text-green-700">
+          {t('auth_error_cta_login') || 'Iniciar sesión'}
+        </Link>
+      </p>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={null}>
+      <ResetPasswordInner />
+    </Suspense>
   );
 }
