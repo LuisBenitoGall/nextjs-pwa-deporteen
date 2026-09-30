@@ -64,6 +64,7 @@ Thumbs.db
 *.md
 !docs/
 !docs/CHROME_DEVTOOLS.md
+!docs/versionar-esquema.md
 # Contratos OpenSpec (proposal, tasks, deltas, specs) deben versionarse
 !openspec/
 !openspec/**

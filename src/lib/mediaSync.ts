@@ -118,7 +118,7 @@ export async function trySyncAll(): Promise<MediaSyncResult> {
   const remaining = readQueue().length;
   const result = { uploaded, failed, remaining };
 
-  if (typeof window !== 'undefined' && (failed > 0 || remaining > 0)) {
+  if (typeof window !== 'undefined' && (uploaded > 0 || failed > 0 || remaining > 0)) {
     window.dispatchEvent(new CustomEvent('media-sync-status', { detail: result }));
   }
 

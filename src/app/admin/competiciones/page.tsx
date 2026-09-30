@@ -1,3 +1,4 @@
+import { LIMITS } from '@/config/constants';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import CompetitionsTable from '@/components/admin/competiciones/CompetitionsTable';
 import type { AdminCompetition } from '@/components/admin/competiciones/CompetitionsTable';
@@ -12,7 +13,8 @@ export default async function AdminCompeticionesPage() {
   const { data: compsData, error: compsErr } = await supabase
     .from('competitions')
     .select('*')
-    .order('id', { ascending: false });
+    .order('id', { ascending: false })
+    .limit(LIMITS.ADMIN_LIST_MAX);
 
   if (compsErr) {
     return (
@@ -45,7 +47,12 @@ export default async function AdminCompeticionesPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-100">Competiciones</h1>
-        <p className="mt-1 text-sm text-slate-400">{competitions.length} competiciones registradas</p>
+        <p className="mt-1 text-sm text-slate-400">
+          {competitions.length} competiciones
+          {competitions.length === LIMITS.ADMIN_LIST_MAX
+            ? ` (mostrando las ${LIMITS.ADMIN_LIST_MAX} más recientes)`
+            : ' registradas'}
+        </p>
       </div>
       <CompetitionsTable competitions={competitions} />
     </div>

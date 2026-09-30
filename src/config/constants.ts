@@ -42,8 +42,10 @@ export const LIMITS = {
     PLAYER_NAME_MAX: 60,
     COMPETITION_NAME_MAX: 80,
     COMPETITION_NUM_MAX_BY_SEASON: 5,
-    /** Partidos mostrados por página en listados largos (MED-14). */
+    /** Partidos visibles inicialmente en listado por competición (MED-14); «Cargar más» suma el mismo paso. */
     MATCH_LIST_PAGE_SIZE: 100,
+    /** Tope de filas en listados admin (partidos, jugadores, competiciones). */
+    ADMIN_LIST_MAX: 500,
     CLUB_NAME_MAX: 80,
     TEAM_NAME_MAX: 60,
     CHECKOUT_MAX_UNITS: 100,
