@@ -1,3 +1,4 @@
+import { LIMITS } from '@/config/constants';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import MatchesTable from '@/components/admin/partidos/MatchesTable';
 import type { AdminMatch } from '@/components/admin/partidos/MatchesTable';
@@ -13,7 +14,7 @@ export default async function AdminPartidosPage() {
     .from('matches')
     .select('*, players(user_id)')
     .order('created_at', { ascending: false })
-    .limit(500);
+    .limit(LIMITS.ADMIN_LIST_MAX);
 
   const matches: AdminMatch[] = (data ?? []).map((m) => {
     const ownerUserId =
@@ -33,7 +34,10 @@ export default async function AdminPartidosPage() {
       <div>
         <h1 className="text-2xl font-bold text-slate-100">Partidos</h1>
         <p className="mt-1 text-sm text-slate-400">
-          {matches.length} partidos{matches.length === 500 ? ' (límite 500, usa filtros para más)' : ' registrados'}
+          {matches.length} partidos
+          {matches.length === LIMITS.ADMIN_LIST_MAX
+            ? ` (límite ${LIMITS.ADMIN_LIST_MAX}, usa filtros para más)`
+            : ' registrados'}
         </p>
       </div>
       <MatchesTable matches={matches} />

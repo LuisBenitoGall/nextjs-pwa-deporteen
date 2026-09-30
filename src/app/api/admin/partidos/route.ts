@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { LIMITS } from '@/config/constants';
 import { requireAdmin } from '@/lib/auth/adminGuard';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
@@ -11,7 +12,7 @@ export async function GET() {
     .from('matches')
     .select('*')
     .order('created_at', { ascending: false })
-    .limit(500);
+    .limit(LIMITS.ADMIN_LIST_MAX);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ matches: data ?? [] });

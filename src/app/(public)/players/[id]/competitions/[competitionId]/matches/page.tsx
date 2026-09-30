@@ -47,6 +47,7 @@ export default function MatchesByCompetitionPage() {
     const supabase = useMemo(() => supabaseBrowser(), []);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [visibleCount, setVisibleCount] = useState<number>(LIMITS.MATCH_LIST_PAGE_SIZE);
 
     const [competition, setCompetition] = useState<Competition | null>(null);
     const [matches, setMatches] = useState<MatchRow[]>([]);
@@ -163,14 +164,15 @@ export default function MatchesByCompetitionPage() {
             if (mErr) { setError(mErr.message); setLoading(false); return; }
 
             setMatches((ms as MatchRow[]) || []);
+            setVisibleCount(LIMITS.MATCH_LIST_PAGE_SIZE);
             setLoading(false);
         })();
         return () => { mounted = false; };
     }, [supabase, playerId, competitionId]);
 
     const pageSize = LIMITS.MATCH_LIST_PAGE_SIZE;
-    const visibleMatches = matches.slice(0, pageSize);
-    const listTruncated = matches.length > pageSize;
+    const visibleMatches = matches.slice(0, visibleCount);
+    const listTruncated = matches.length > visibleCount;
 
     if (loading) return <div className="p-6">{t('cargando') || 'Cargando…'}</div>;
     if (error) {
@@ -330,8 +332,8 @@ const otherTeam = Math.max(0, teamTotalForPie - playerScoringTotal);
 
             {listTruncated && (
                 <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-                    {t('match_list_truncated', { n: String(pageSize), total: String(matches.length) })
-                        || `Mostrando los primeros ${pageSize} de ${matches.length} partidos.`}
+                    {t('match_list_truncated', { n: String(visibleMatches.length), total: String(matches.length) })
+                        || `Mostrando los primeros ${visibleMatches.length} de ${matches.length} partidos.`}
                 </p>
             )}
 
@@ -475,6 +477,24 @@ const otherTeam = Math.max(0, teamTotalForPie - playerScoringTotal);
                             </tbody>
                         </table>
                     </div>
+                    {listTruncated && (
+                        <div className="mt-4 flex justify-center">
+                            <button
+                                type="button"
+                                className="rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-800 shadow-sm hover:bg-gray-50"
+                                onClick={() =>
+                                    setVisibleCount((c) =>
+                                        Math.min(c + pageSize, matches.length),
+                                    )
+                                }
+                            >
+                                {t('match_list_load_more', {
+                                    shown: String(visibleMatches.length),
+                                    total: String(matches.length),
+                                })}
+                            </button>
+                        </div>
+                    )}
                 </section>
 
             ) : (
