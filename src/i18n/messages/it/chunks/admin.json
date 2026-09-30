@@ -231,5 +231,7 @@
   "stripe_subscriptions_status_trialing": "Periodo di prova",
   "stripe_subscriptions_status_unpaid": "Non pagata",
   "stripe_subscriptions_title": "Abbonamenti",
-  "stripe_subscriptions_view_dashboard": "Vedi in Stripe"
+  "stripe_subscriptions_view_dashboard": "Vedi in Stripe",
+  "stripe_subscriptions_payment_mode_notice": "DeporTeen vende posti con Checkout in modalità pagamento una tantum, non come abbonamenti Stripe ricorrenti. Questo elenco può essere vuoto anche con utenti attivi.",
+  "stripe_subscriptions_go_app_subscriptions": "Vedi abbonamenti in DeporTeen →"
 }
