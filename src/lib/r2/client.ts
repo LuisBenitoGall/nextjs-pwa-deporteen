@@ -4,7 +4,6 @@ import 'server-only';
 import { S3Client } from '@aws-sdk/client-s3';
 
 declare global {
-    // eslint-disable-next-line no-var
     var __r2_client__: S3Client | undefined;
 }
 

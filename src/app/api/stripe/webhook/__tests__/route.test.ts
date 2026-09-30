@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type Stripe from 'stripe'
 
 const mockConstructEvent = vi.hoisted(() => vi.fn())
 const mockRetrieveSession = vi.hoisted(() => vi.fn())

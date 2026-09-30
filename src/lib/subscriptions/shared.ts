@@ -5,8 +5,9 @@ export type SubscriptionForActiveCheck = {
 };
 
 /**
- * Determines if a subscription is considered active (canonical criterion).
- * Active when: status IN ('active','trialing') AND (current_period_end == null OR current_period_end > now()).
+ * Criterio canónico de suscripción activa (decisión Luis 25/09; ver `openspec/specs/subscriptions`).
+ * Activa si status ∈ {active, trialing} y (sin `current_period_end` o fin en el futuro).
+ * No confundir con filas históricas `cancelled` ni con objetos Stripe Subscription en modo payment.
  */
 export function isSubscriptionActive(sub: SubscriptionForActiveCheck | null | undefined): boolean {
   if (!sub) return false;

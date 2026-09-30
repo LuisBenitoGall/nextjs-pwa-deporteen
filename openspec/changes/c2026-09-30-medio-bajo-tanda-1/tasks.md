@@ -1,0 +1,7 @@
+- [x] OpenSpec proposal + deltas
+- [x] Eliminar duplicado `src/app/players/new` y `NewMatchEmbedded.tsx`
+- [x] MED-08 aviso admin Stripe subscriptions
+- [x] BAJO-14 stacking banners
+- [x] BAJO-07 mojibake competición partidos
+- [x] BAJO-05/12 registro locale + zod i18n
+- [x] `pnpm lint`, `pnpm types`, `pnpm test:run`, `pnpm build`

@@ -9,6 +9,7 @@ import Image from 'next/image';
 import { resolveDriveMediaSource } from '@/lib/googleDrive/mediaResolution';
 import TitleH1 from '@/components/TitleH1';
 import ConfirmDeleteButton from '@/components/ConfirmDeleteButton';
+import InlineFlashBanner from '@/components/InlineFlashBanner';
 import { StorageBadge } from '@/components/StorageIcon';
 
 const MATCHES_PER_PAGE = 5;
@@ -49,6 +50,7 @@ export default function MyGalleryPage() {
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [selected, setSelected] = useState<MediaRow | null>(null);
+  const [deleteFeedback, setDeleteFeedback] = useState<{ variant: 'success' | 'error'; message: string } | null>(null);
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [unavailable, setUnavailable] = useState<Record<string, string>>({});
 
@@ -206,8 +208,9 @@ export default function MyGalleryPage() {
 
   // Revoke blob URLs on unmount
   useEffect(() => {
+    const urlsToRevoke = blobUrlsRef.current;
     return () => {
-      for (const u of blobUrlsRef.current) {
+      for (const u of urlsToRevoke) {
         if (u?.startsWith('blob:')) URL.revokeObjectURL(u);
       }
     };
@@ -235,14 +238,16 @@ export default function MyGalleryPage() {
     );
     observer.observe(sentinelRef.current);
     return () => observer.disconnect();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadMoreGroups]);
 
   async function handleDelete(mediaId: string, matchId: string) {
     const res = await fetch(`/api/match-media/${mediaId}`, { method: 'DELETE' });
     if (!res.ok) {
       const { error: errMsg } = await res.json().catch(() => ({ error: 'Error' }));
-      setError(errMsg || 'No se pudo eliminar');
+      setDeleteFeedback({
+        variant: 'error',
+        message: errMsg || t('media_delete_error') || 'No se pudo eliminar el archivo.',
+      });
       return;
     }
     setGroups(prev =>
@@ -253,6 +258,10 @@ export default function MyGalleryPage() {
       ),
     );
     if (selected?.id === mediaId) setSelected(null);
+    setDeleteFeedback({
+      variant: 'success',
+      message: t('media_delete_ok') || 'Archivo eliminado.',
+    });
     window.dispatchEvent(new CustomEvent('cloud-usage-refresh'));
   }
 
@@ -297,6 +306,14 @@ export default function MyGalleryPage() {
   return (
     <div>
       <TitleH1>{t('mi_galeria') || 'Mi Galería'}</TitleH1>
+
+      {deleteFeedback && (
+        <InlineFlashBanner
+          variant={deleteFeedback.variant}
+          message={deleteFeedback.message}
+          onDismiss={() => setDeleteFeedback(null)}
+        />
+      )}
 
       {allMatches.length === 0 ? (
         <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-8 text-center text-sm text-gray-600">

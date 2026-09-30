@@ -1,10 +1,11 @@
 'use client';
 import { supabase } from '@/lib/supabase/client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useT, useLocale } from '@/i18n/I18nProvider';
 import Link from 'next/link';
+import { isSupportedLocale, type Locale } from '@/i18n/config';
 
 // Components
 import Checkbox from '@/components/Checkbox';
@@ -18,30 +19,47 @@ import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
-const schema = z.object({
-    name: z.string().min(2, 'Mínimo 2 caracteres'),
-    surname: z.string().min(2, 'Mínimo 2 caracteres'),
-    email: z.string().email('Email no válido'),
-    password: z.string().min(8, 'Mínimo 8 caracteres'),
-    confirm_password: z.string().min(8, 'Mínimo 8 caracteres'),
-    locale: z.string().length(2, 'Código de idioma de 2 letras').optional(),
-    accepted_terms: z
-    .boolean()
-    .refine((v) => v === true, { message: 'Debes aceptar los Términos y la Privacidad' }),
-    accepted_marketing: z.boolean().optional()
-}).refine(data => data.password === data.confirm_password, {
-    message: 'Las contraseñas no coinciden',
-    path: ['confirm_password']
-});
-
-type FormData = z.infer<typeof schema>;
+type FormData = {
+    name: string;
+    surname: string;
+    email: string;
+    password: string;
+    confirm_password: string;
+    locale?: string;
+    accepted_terms: boolean;
+    accepted_marketing?: boolean;
+};
 
 export default function RegistroPage() {
     const t = useT();
     const router = useRouter();
     const [submitting, setSubmitting] = useState(false);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
-    const { locales } = useLocale();
+    const { locales, setLocale } = useLocale();
+
+    const schema = useMemo(
+        () =>
+            z
+                .object({
+                    name: z.string().min(2, t('registro_validation_name_min') || 'Mínimo 2 caracteres'),
+                    surname: z.string().min(2, t('registro_validation_surname_min') || 'Mínimo 2 caracteres'),
+                    email: z.string().email(t('registro_validation_email') || 'Email no válido'),
+                    password: z.string().min(8, t('registro_validation_password_min') || 'Mínimo 8 caracteres'),
+                    confirm_password: z
+                        .string()
+                        .min(8, t('registro_validation_password_min') || 'Mínimo 8 caracteres'),
+                    locale: z.string().length(2, 'Código de idioma de 2 letras').optional(),
+                    accepted_terms: z.boolean().refine((v) => v === true, {
+                        message: t('registro_validation_terms') || 'Debes aceptar los Términos y la Privacidad',
+                    }),
+                    accepted_marketing: z.boolean().optional(),
+                })
+                .refine((data) => data.password === data.confirm_password, {
+                    message: t('registro_validation_password_match') || 'Las contraseñas no coinciden',
+                    path: ['confirm_password'],
+                }),
+        [t],
+    );
 
     const {
         register,
@@ -117,6 +135,15 @@ export default function RegistroPage() {
                 }
                 throw new Error(payload.message || 'No se pudo iniciar sesión tras el registro');
             }
+
+            const chosenLocale = (
+                (data.locale && data.locale.trim().slice(0, 2).toLowerCase()) ||
+                (navigator.language || 'es').slice(0, 2).toLowerCase()
+            ) as Locale;
+            if (isSupportedLocale(chosenLocale)) {
+                setLocale(chosenLocale);
+            }
+
             router.refresh();        // <- fuerza a Next a leer cookies nuevas
             // La sync a public.users la hace el trigger; no hace falta upsert manual.
             router.replace('/dashboard');

@@ -159,6 +159,21 @@ export default async function SubscriptionsPage() {
         </Link>
       </div>
 
+      <div
+        className="rounded-lg border border-amber-500/40 bg-amber-950/40 p-4 text-sm text-amber-100"
+        role="status"
+      >
+        <p>
+          {t('stripe_subscriptions_payment_mode_notice') ||
+            'DeporTeen vende asientos con Checkout en modo pago único (payment), no como suscripciones recurrentes de Stripe. Esta lista puede estar vacía aunque haya usuarios activos.'}
+        </p>
+        <p className="mt-2">
+          <Link href="/admin/suscripciones" className="font-medium text-emerald-300 underline hover:text-emerald-200">
+            {t('stripe_subscriptions_go_app_subscriptions') || 'Ver suscripciones en DeporTeen →'}
+          </Link>
+        </p>
+      </div>
+
       <SubscriptionsTable rows={rows} labels={labels} statusOptions={statusOptions} />
     </section>
   );

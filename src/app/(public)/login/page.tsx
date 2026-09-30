@@ -6,6 +6,11 @@ import Image from 'next/image';
 import { supabase } from '@/lib/supabase/client';
 import { useT } from '@/i18n/I18nProvider';
 import { safeNext } from '@/lib/auth/safe-next';
+import AuthErrorNotice from '@/components/auth/AuthErrorNotice';
+import {
+  presentationFromAuthMessage,
+  presentationFromAuthQuery,
+} from '@/lib/auth/authErrorPresentation';
 
 // Components
 import Input from '@/components/Input';
@@ -58,6 +63,9 @@ function LoginPageInner() {
         }
     }
 
+    const queryPresentation = presentationFromAuthQuery(configError);
+    const errPresentation = err ? presentationFromAuthMessage(err) : null;
+
     async function handleGoogle() {
         try {
             // Guarda el idioma preferido actual (o 'es' por defecto) para aplicarlo en /auth/callback
@@ -87,12 +95,8 @@ function LoginPageInner() {
         <div>
             <TitleH1>{t('login')}</TitleH1>
 
-            {(err || configError === 'supabase_config') && (
-                <div className="mb-3 rounded border border-red-300 bg-red-50 p-2 text-sm text-red-700">
-                    {err ||
-                      (t('error_supabase_config') ||
-                        'El servicio no está configurado. Inténtalo más tarde.')}
-                </div>
+            {(queryPresentation || errPresentation) && (
+                <AuthErrorNotice presentation={queryPresentation ?? errPresentation!} />
             )}
 
             <div className="mb-6 text-center text-sm text-gray-500">

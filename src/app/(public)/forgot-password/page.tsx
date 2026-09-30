@@ -1,8 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { useT } from '@/i18n/I18nProvider';
+import AuthErrorNotice from '@/components/auth/AuthErrorNotice';
+import { presentationFromAuthMessage } from '@/lib/auth/authErrorPresentation';
 import Input from '@/components/Input';
 import Submit from '@/components/Submit';
 import TitleH1 from '@/components/TitleH1';
@@ -37,7 +40,7 @@ export default function ForgotPasswordPage() {
       <TitleH1>{t('recuperar_contrasena') || 'Recuperar contraseña'}</TitleH1>
 
       {ok && <div className="mb-3 rounded border border-green-300 bg-green-50 p-2 text-sm text-green-800">{ok}</div>}
-      {err && <div className="mb-3 rounded border border-red-300 bg-red-50 p-2 text-sm text-red-700">{err}</div>}
+      {err && <AuthErrorNotice presentation={presentationFromAuthMessage(err)} />}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
@@ -55,6 +58,12 @@ export default function ForgotPasswordPage() {
           loadingText={t('procesando') || 'Procesando…'}
         />
       </form>
+
+      <p className="mt-6 text-center text-sm">
+        <Link href="/login" className="text-gray-600 underline hover:text-green-700">
+          {t('auth_error_cta_login') || 'Volver a iniciar sesión'}
+        </Link>
+      </p>
     </div>
   );
 }

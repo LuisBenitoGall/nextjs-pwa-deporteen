@@ -16,6 +16,7 @@ import { resolveDriveMediaSource } from '@/lib/googleDrive/mediaResolution';
 import ConfirmDeleteButton from '@/components/ConfirmDeleteButton';
 import TitleH1 from '@/components/TitleH1';
 import PageLoadError from '@/components/PageLoadError';
+import InlineFlashBanner from '@/components/InlineFlashBanner';
 import { StorageBadge } from '@/components/StorageIcon';
 
 type MatchRow = {
@@ -46,6 +47,7 @@ export default function MatchGalleryPage() {
   const [match, setMatch] = useState<MatchRow | null>(null);
   const [media, setMedia] = useState<MediaRow[]>([]);
   const [selected, setSelected] = useState<MediaRow | null>(null);
+  const [deleteFeedback, setDeleteFeedback] = useState<{ variant: 'success' | 'error'; message: string } | null>(null);
   const [unavailable, setUnavailable] = useState<Record<string, string>>({});
   //const [deletingId, setDeletingId] = useState<string | null>(null);
     const [urls, setUrls] = useState<Record<string, string>>({}); // id -> src usable
@@ -133,7 +135,6 @@ export default function MatchGalleryPage() {
     const created: string[] = [];
     for (const m of media) {
       try {
-        let resolvedSource = 'none';
         const driveFileId = m.google_drive_file_id ?? (m.storage_path?.startsWith('drive:') ? m.storage_path.slice(6) : null);
         const isDrive = !!driveFileId;
         if (!isDrive && m.device_uri) {
@@ -142,7 +143,6 @@ export default function MatchGalleryPage() {
             const u = URL.createObjectURL(blob);
             created.push(u);
             out[m.id] = u;
-            resolvedSource = 'device_uri_blob';
             continue;
           }
         }
@@ -151,13 +151,11 @@ export default function MatchGalleryPage() {
           const base = process.env.NEXT_PUBLIC_R2_PUBLIC_URL?.replace(/\/$/, '');
           if (base) {
             out[m.id] = `${base}/${m.storage_path.slice(3)}`;
-            resolvedSource = 'r2_public_url';
           }
         } else if (isDrive && driveFileId) {
           const result = await resolveDriveMediaSource(driveFileId);
           if (result.available) {
             out[m.id] = result.src;
-            resolvedSource = 'drive_proxy_url';
           } else {
             setUnavailable((prev) => ({ ...prev, [m.id]: t('media_no_disponible') || t('sin_preview') || 'No disponible' }));
           }
@@ -168,7 +166,6 @@ export default function MatchGalleryPage() {
             .createSignedUrl(m.storage_path, 60 * 60); // 1h
           if (!error && data?.signedUrl) {
             out[m.id] = data.signedUrl;
-            resolvedSource = 'supabase_signed_url';
           }
         }
       } catch {/* silencio administrativo */}
@@ -186,7 +183,7 @@ export default function MatchGalleryPage() {
     for (const u of blobUrlsRef.current) if (u?.startsWith('blob:')) URL.revokeObjectURL(u);
     blobUrlsRef.current = [];
   };
-}, [media, supabase]);
+}, [media, supabase, t]);
 
  // Re-genera signed URLs al recuperar foco (por si caducan)
  useEffect(() => {
@@ -201,17 +198,23 @@ export default function MatchGalleryPage() {
 
     async function handleDelete(id: string) {
         try {
-            //setDeletingId(id);
             const res = await fetch(`/api/match-media/${id}`, { method: 'DELETE' });
             if (!res.ok) {
                 const { error: errMsg } = await res.json().catch(() => ({ error: 'Error' }));
-                setError(errMsg || t('error_eliminar') || 'No se pudo eliminar');
+                setDeleteFeedback({
+                  variant: 'error',
+                  message: errMsg || t('media_delete_error') || 'No se pudo eliminar el archivo.',
+                });
                 return;
             }
             setMedia(prev => prev.filter(item => item.id !== id));
             if (selected?.id === id) {
                 setSelected(null);
             }
+            setDeleteFeedback({
+              variant: 'success',
+              message: t('media_delete_ok') || 'Archivo eliminado.',
+            });
             window.dispatchEvent(new CustomEvent('cloud-usage-refresh'));
         } finally {
         //setDeletingId(null);
@@ -264,6 +267,14 @@ export default function MatchGalleryPage() {
             <style jsx global>{`footer{display:none !important}`}</style>
 
             <TitleH1>{t('galeria') || 'Galería del partido'}</TitleH1>
+
+            {deleteFeedback && (
+              <InlineFlashBanner
+                variant={deleteFeedback.variant}
+                message={deleteFeedback.message}
+                onDismiss={() => setDeleteFeedback(null)}
+              />
+            )}
 
             <div className="flex flex-wrap items-center gap-2 mb-6">
                 <Link

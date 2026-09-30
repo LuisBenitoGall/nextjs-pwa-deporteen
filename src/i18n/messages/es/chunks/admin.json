@@ -230,6 +230,8 @@
   "stripe_subscriptions_status_paused": "Pausada",
   "stripe_subscriptions_status_trialing": "En prueba",
   "stripe_subscriptions_status_unpaid": "Impagada",
+  "stripe_subscriptions_go_app_subscriptions": "Ver suscripciones en DeporTeen →",
+  "stripe_subscriptions_payment_mode_notice": "DeporTeen vende asientos con Checkout en modo pago único (payment), no como suscripciones recurrentes de Stripe. Esta lista puede estar vacía aunque haya usuarios activos.",
   "stripe_subscriptions_title": "Suscripciones",
   "stripe_subscriptions_view_dashboard": "Ver en Stripe"
 }

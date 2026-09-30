@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+/* eslint-disable @typescript-eslint/no-unused-vars -- mocks RPC/Next en pruebas de formulario */
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import NewPlayerForm from './NewPlayerForm';
 import { supabase } from '@/lib/supabase/client';
 
@@ -124,7 +125,7 @@ describe('NewPlayerForm', () => {
   describe('Detección de errores de RPC', () => {
     it('should detect COALESCE type mismatch error from create_player_link_subscription', async () => {
       // Simular el error específico de COALESCE
-      mockRpc.mockImplementation((funcName: string, params: any) => {
+      mockRpc.mockImplementation((funcName: string, _params: unknown) => {
         if (funcName === 'create_player_link_subscription') {
           return Promise.resolve({
             data: null,
@@ -216,7 +217,7 @@ describe('NewPlayerForm', () => {
       (useRouter as any).mockReturnValue(mockRouter);
 
       // Mock seats_remaining para retornar 0
-      mockRpc.mockImplementation((funcName: string, params: any) => {
+      mockRpc.mockImplementation((funcName: string, _params: unknown) => {
         if (funcName === 'seats_remaining') {
           return Promise.resolve({ data: 0, error: null });
         }
@@ -345,7 +346,7 @@ describe('NewPlayerForm', () => {
       };
       const categoriesThenable = {
         then: (fn: (v: any) => any) => Promise.resolve({ data: [], error: null }).then(fn),
-        catch: (_fn: (v: any) => any) => categoriesThenable,
+        catch: () => categoriesThenable,
       };
       mockFrom.mockImplementation((table: string) => {
         const eq = vi.fn().mockReturnThis();
@@ -437,7 +438,7 @@ describe('NewPlayerForm', () => {
       };
       const categoriesThenable = {
         then: (fn: (v: any) => any) => Promise.resolve({ data: [], error: null }).then(fn),
-        catch: (_fn: (v: any) => any) => categoriesThenable,
+        catch: () => categoriesThenable,
       };
       mockFrom.mockImplementation((table: string) => {
         const eq = vi.fn().mockReturnThis();

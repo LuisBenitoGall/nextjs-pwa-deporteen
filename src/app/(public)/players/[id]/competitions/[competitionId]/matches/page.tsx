@@ -61,7 +61,7 @@ export default function MatchesByCompetitionPage() {
     const PF_COLOR   = WIN_COLOR;  // PF en verde
     const PC_COLOR   = LOSS_COLOR; // PC en rojo
 
-    // Helpers para colorear por nombre (respetan i18n bÃ¡sico)
+    // Helpers para colorear por nombre (respetan i18n básico)
     const colorForWLD = (name: string) => {
       const n = name.toLowerCase();
       if (n.includes('gan')) return WIN_COLOR;     // Ganados
@@ -395,7 +395,7 @@ const otherTeam = Math.max(0, teamTotalForPie - playerScoringTotal);
             {/* Panels */}
             {tab === 'matches' ? (
                 <section className="mt-8 rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm">
-                    {/* Scroll horizontal en mÃ³vil, suave en desktop, inercia iOS */}
+                    {/* Scroll horizontal en móvil, suave en desktop, inercia iOS */}
                     <div
                         className="relative -mx-4 sm:mx-0 mt-4 overflow-x-auto md:overflow-visible px-4 sm:px-0 md:scroll-smooth"
                         style={{
@@ -425,7 +425,7 @@ const otherTeam = Math.max(0, teamTotalForPie - playerScoringTotal);
                                     </tr>
                                 )}
                                 {visibleMatches.map(m => {
-                                    // Datos bÃ¡sicos
+                                    // Datos básicos
                                     const rival = m.rival_team_name || t('equipo_rival') || 'Rival';
                                     const myGoals = Number(m.my_score ?? 0);
                                     const rivalGoals = Number(m.rival_score ?? 0);
@@ -445,7 +445,7 @@ const otherTeam = Math.max(0, teamTotalForPie - playerScoringTotal);
                                     return (
                                         <tr key={m.id} className="border-t">
                                             <td className="px-3 py-2 whitespace-nowrap">{new Date(m.date_at).toLocaleString()}</td>
-                                            <td className="px-3 py-2">{m.place || 'â€”'}</td>
+                                            <td className="px-3 py-2">{m.place || '—'}</td>
 
                                             <td className="px-3 py-2">
                                                 <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${m.is_home ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
@@ -456,7 +456,7 @@ const otherTeam = Math.max(0, teamTotalForPie - playerScoringTotal);
                                             {/* Rival: SIEMPRE el nombre del rival */}
                                             <td className="px-3 py-2">{rival}</td>
 
-                                            {/* Marcador: verde/rojo/gris segÃºn resultado */}
+                                            {/* Marcador: verde/rojo/gris según resultado */}
                                             <td className="px-3 py-2 font-semibold">
                                                 <span className={scoreClass}>{score}</span>
                                             </td>

@@ -23,7 +23,7 @@ type UploadParams = {
 
 // ─── Local (IndexedDB) ───────────────────────────────────────────────────────
 
-async function uploadLocal(file: File, matchId: string): Promise<UploadResult> {
+async function uploadLocal(file: File): Promise<UploadResult> {
     const mediaId = crypto.randomUUID();
     const deviceKey = `media:${mediaId}`;
     await idbPut(deviceKey, file);
@@ -126,7 +126,7 @@ export async function uploadToProvider(params: UploadParams): Promise<UploadResu
         case 'r2': return uploadR2(file, matchId);
         case 'local':
         default:
-            return uploadLocal(file, matchId);
+            return uploadLocal(file);
     }
 }
 

@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase/client';
  * Devuelve la ruta y una URL firmada (1 hora).
  * OJO: úsalo desde componentes cliente (o pásale el userId).
  */
-export async function uploadToMatchMediaBucket(_file: File, _userId?: string) {
+export async function uploadToMatchMediaBucket(): Promise<never> {
   throw new Error(
     'uploadToMatchMediaBucket está deshabilitado: use /api/remote-media/upload con suscripción de almacenamiento activa.'
   );

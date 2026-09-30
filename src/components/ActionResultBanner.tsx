@@ -13,6 +13,10 @@ const CODE_MESSAGES: Record<string, { okKey: string; errKey: string }> = {
     okKey: 'player_delete_ok',
     errKey: 'player_delete_error',
   },
+  delete_account: {
+    okKey: 'account_delete_ok',
+    errKey: 'account_delete_error',
+  },
 };
 
 type Flash = { variant: 'success' | 'error'; text: string };
