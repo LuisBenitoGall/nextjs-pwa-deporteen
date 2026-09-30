@@ -231,5 +231,7 @@
   "stripe_subscriptions_status_trialing": "En proba",
   "stripe_subscriptions_status_unpaid": "Impagada",
   "stripe_subscriptions_title": "Subscricións",
-  "stripe_subscriptions_view_dashboard": "Ver en Stripe"
+  "stripe_subscriptions_view_dashboard": "Ver en Stripe",
+  "stripe_subscriptions_payment_mode_notice": "DeporTeen vende prazas con Checkout en modo pagamento único, non como subscricións recorrentes de Stripe. Esta lista pode estar baleira aínda que haxa usuarios activos.",
+  "stripe_subscriptions_go_app_subscriptions": "Ver subscricións en DeporTeen →"
 }

@@ -509,5 +509,11 @@
   "volver_atras": "Indietro",
   "volver_inicio": "Torna alla home",
   "volver_panel": "Torna al pannello",
-  "waterpolo": "Pallanuoto"
+  "waterpolo": "Pallanuoto",
+  "registro_validation_email": "Email non valida",
+  "registro_validation_name_min": "Minimo 2 caratteri",
+  "registro_validation_surname_min": "Minimo 2 caratteri",
+  "registro_validation_password_min": "Minimo 8 caratteri",
+  "registro_validation_password_match": "Le password non coincidono",
+  "registro_validation_terms": "Devi accettare Termini e Privacy"
 }

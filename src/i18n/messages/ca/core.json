@@ -509,5 +509,11 @@
   "volver_atras": "Tornar enrere",
   "volver_inicio": "Torna a l'inici",
   "volver_panel": "Torna al tauler",
-  "waterpolo": "Waterpolo"
+  "waterpolo": "Waterpolo",
+  "registro_validation_email": "Correu no vàlid",
+  "registro_validation_name_min": "Mínim 2 caràcters",
+  "registro_validation_surname_min": "Mínim 2 caràcters",
+  "registro_validation_password_min": "Mínim 8 caràcters",
+  "registro_validation_password_match": "Les contrasenyes no coincideixen",
+  "registro_validation_terms": "Has d'acceptar els Termes i la Privacitat"
 }

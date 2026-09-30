@@ -231,5 +231,7 @@
   "stripe_subscriptions_status_trialing": "Proba moduan",
   "stripe_subscriptions_status_unpaid": "Ordaindu gabe",
   "stripe_subscriptions_title": "Harpidetzak",
-  "stripe_subscriptions_view_dashboard": "Ikusi Stripe-n"
+  "stripe_subscriptions_view_dashboard": "Ikusi Stripe-n",
+  "stripe_subscriptions_payment_mode_notice": "DeporTeenek eserlekuak Checkout ordainketa bakarrean saltzen ditu, Stripe harpidura errepikakor gisa ez. Zerrenda hau hutsik egon daiteke erabiltzaile aktiboak daudela ere.",
+  "stripe_subscriptions_go_app_subscriptions": "Ikusi harpidurak DeporTeen-en →"
 }

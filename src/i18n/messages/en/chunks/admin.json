@@ -231,5 +231,7 @@
   "stripe_subscriptions_status_trialing": "Trialing",
   "stripe_subscriptions_status_unpaid": "Unpaid",
   "stripe_subscriptions_title": "Subscriptions",
-  "stripe_subscriptions_view_dashboard": "View in Stripe"
+  "stripe_subscriptions_view_dashboard": "View in Stripe",
+  "stripe_subscriptions_payment_mode_notice": "DeporTeen sells seats via Checkout one-time payment mode, not as recurring Stripe Subscriptions. This list may be empty while users are active.",
+  "stripe_subscriptions_go_app_subscriptions": "View subscriptions in DeporTeen →"
 }

@@ -509,5 +509,11 @@
   "volver_atras": "Volver atrás",
   "volver_inicio": "Volver ao inicio",
   "volver_panel": "Volver ao panel",
-  "waterpolo": "Waterpolo"
+  "waterpolo": "Waterpolo",
+  "registro_validation_email": "Correo non válido",
+  "registro_validation_name_min": "Mínimo 2 caracteres",
+  "registro_validation_surname_min": "Mínimo 2 caracteres",
+  "registro_validation_password_min": "Mínimo 8 caracteres",
+  "registro_validation_password_match": "Os contrasinais non coinciden",
+  "registro_validation_terms": "Debes aceptar os Termos e a Privacidade"
 }

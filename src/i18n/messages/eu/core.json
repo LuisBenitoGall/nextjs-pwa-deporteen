@@ -509,5 +509,11 @@
   "volver_atras": "Itzuli atzera",
   "volver_inicio": "Itzuli hasierara",
   "volver_panel": "Itzuli panelera",
-  "waterpolo": "Waterpoloa"
+  "waterpolo": "Waterpoloa",
+  "registro_validation_email": "Posta baliogabea",
+  "registro_validation_name_min": "Gutxienez 2 karaktere",
+  "registro_validation_surname_min": "Gutxienez 2 karaktere",
+  "registro_validation_password_min": "Gutxienez 8 karaktere",
+  "registro_validation_password_match": "Pasahitzak ez datoz bat",
+  "registro_validation_terms": "Baldintzak eta pribatutasuna onartu behar dituzu"
 }
