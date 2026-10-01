@@ -1,0 +1,5 @@
+- [x] Reproducir error en producción (Playwright + código test)
+- [x] Migración SQL con ON CONSTRAINT + variable_conflict
+- [x] OpenSpec proposal
+- [ ] Aplicar migración en Supabase producción (operación manual)
+- [ ] Revalidar alta 2 jugadores + partido + galería
