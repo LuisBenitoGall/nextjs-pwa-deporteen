@@ -53,22 +53,24 @@ export const LIMITS = {
 
 export const LEGAL_CONSTANTS = {
     company: {
-        name: process.env.NEXT_PUBLIC_COMPANY_NAME ?? '{{company_name}}',
-        nif: process.env.NEXT_PUBLIC_COMPANY_NIF ?? '{{company_nif}}',
-        address: process.env.NEXT_PUBLIC_COMPANY_ADDRESS ?? '{{company_address}}',
-        country: process.env.NEXT_PUBLIC_COMPANY_COUNTRY ?? 'España',
-        email: process.env.NEXT_PUBLIC_COMPANY_EMAIL ?? '{{company_email}}',
-        phone: process.env.NEXT_PUBLIC_COMPANY_PHONE ?? '',
-        reg_merc: process.env.NEXT_PUBLIC_COMPANY_RM ?? ''
+        name: process.env.NEXT_PUBLIC_COMPANY_NAME ?? COMPANY.CORPORATE,
+        nif: process.env.NEXT_PUBLIC_COMPANY_NIF ?? COMPANY.NIF,
+        address:
+            process.env.NEXT_PUBLIC_COMPANY_ADDRESS ??
+            `${COMPANY.ADDRESS}, ${COMPANY.ZIP} ${COMPANY.CITY}`,
+        country: process.env.NEXT_PUBLIC_COMPANY_COUNTRY ?? COMPANY.COUNTRY,
+        email: process.env.NEXT_PUBLIC_COMPANY_EMAIL ?? CONTACT.LEGAL_EMAIL,
+        phone: process.env.NEXT_PUBLIC_COMPANY_PHONE ?? COMPANY.TELF,
+        reg_merc: process.env.NEXT_PUBLIC_COMPANY_RM ?? '',
     },
     legal: {
         jurisdiction: 'España',
-        dpo_email: '',
-        data_subject_email: process.env.NEXT_PUBLIC_PRIVACY_EMAIL ?? '{{privacy_email}}'
+        dpo_email: process.env.NEXT_PUBLIC_DPO_EMAIL ?? '',
+        data_subject_email: process.env.NEXT_PUBLIC_PRIVACY_EMAIL ?? CONTACT.LEGAL_EMAIL,
     },
     product: {
-        app_name: process.env.NEXT_PUBLIC_APP_NAME ?? 'DeporTeen',
-        domain: process.env.NEXT_PUBLIC_APP_DOMAIN ?? '{{app_domain}}'
+        app_name: process.env.NEXT_PUBLIC_APP_NAME ?? APP.NAME,
+        domain: process.env.NEXT_PUBLIC_APP_DOMAIN ?? 'www.deporteen.com',
     },
     providers: {
         supabase_region: 'UE (Irlanda)',

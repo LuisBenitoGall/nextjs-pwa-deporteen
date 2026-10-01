@@ -69,6 +69,10 @@
         {
           "title": "9. Adingabeak",
           "html": "<p>16 urtetik beherakoek ezin dute konturik sortu. Adingabeen datu edo irudiak erregistratzen dituzten helduek legitimazio nahikoa dutela adierazten dute eta <a href=\"/legal/contenidos\">Eduki eta irudi eskubideen politika</a> errespetatuko dutela.</p>"
+        },
+        {
+          "title": "10. Adingabeak",
+          "html": "<p><i>Itzulpen juridiko profesionala zain. Testu autoreitatza gaztelaniaz (ES hizkuntza). Harremana: <a href=\"mailto:{{legal.data_subject_email}}\">{{legal.data_subject_email}}</a>.</i></p>"
         }
       ]
     },
@@ -121,6 +125,14 @@
         {
           "title": "6. Erantzukizunaren mugaketa",
           "html": "<p>Zerbitzua arrazoizko zentzumenaren barruan “bere horretan” eskaintzen da.</p>"
+        },
+        {
+          "title": "7. Erantzukizunaren mugaketa",
+          "html": "<p><i>Berrikuspen juridiko profesionala zain. Erreferentzia-testua gaztelaniaz (ES).</i></p>"
+        },
+        {
+          "title": "8. Aldaketak eta lege aplikagarria",
+          "html": "<p>Llei aplicable: {{legal.jurisdiction}}. <i>Texto completo pendiente de revisión (ES autoritativo).</i></p>"
         }
       ]
     },

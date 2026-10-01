@@ -78,10 +78,45 @@ export async function importCoreMessages(locale: Locale): Promise<Record<string,
   }
 }
 
+type LazyChunkLoader = () => Promise<MessagesModule>;
+
+/** Imports estáticos por locale/chunk: rutas dinámicas con template no se empaquetan en producción. */
+const LAZY_CHUNK_LOADERS: Record<Locale, Record<I18nLazyChunk, LazyChunkLoader>> = {
+  es: {
+    legal: () => import('./messages/es/chunks/legal.json'),
+    admin: () => import('./messages/es/chunks/admin.json'),
+  },
+  en: {
+    legal: () => import('./messages/en/chunks/legal.json'),
+    admin: () => import('./messages/en/chunks/admin.json'),
+  },
+  ca: {
+    legal: () => import('./messages/ca/chunks/legal.json'),
+    admin: () => import('./messages/ca/chunks/admin.json'),
+  },
+  it: {
+    legal: () => import('./messages/it/chunks/legal.json'),
+    admin: () => import('./messages/it/chunks/admin.json'),
+  },
+  pt: {
+    legal: () => import('./messages/pt/chunks/legal.json'),
+    admin: () => import('./messages/pt/chunks/admin.json'),
+  },
+  eu: {
+    legal: () => import('./messages/eu/chunks/legal.json'),
+    admin: () => import('./messages/eu/chunks/admin.json'),
+  },
+  gl: {
+    legal: () => import('./messages/gl/chunks/legal.json'),
+    admin: () => import('./messages/gl/chunks/admin.json'),
+  },
+};
+
 export async function importLazyChunk(
   locale: Locale,
   chunk: I18nLazyChunk
 ): Promise<Record<string, unknown>> {
-  const path = `./messages/${locale}/chunks/${chunk}.json`;
-  return (await import(/* webpackChunkName: "i18n-[request]" */ path)).default;
+  const byLocale = LAZY_CHUNK_LOADERS[locale] ?? LAZY_CHUNK_LOADERS.es;
+  const mod = await byLocale[chunk]();
+  return mod.default;
 }

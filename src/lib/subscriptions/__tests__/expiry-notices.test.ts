@@ -12,7 +12,8 @@ function endAfter(base: Date, days: number): string {
 
 describe('getSubscriptionExpiryNotice', () => {
   const thresholds = [30, 15, 7, 1];
-  const now = new Date('2026-09-26T12:00:00.000Z');
+  // Anclado al reloj real: isSubscriptionActive compara current_period_end con Date.now().
+  const now = new Date();
 
   it('returns null when no active subscriptions', () => {
     expect(getSubscriptionExpiryNotice([], now, thresholds)).toBeNull();
