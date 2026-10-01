@@ -69,6 +69,10 @@
         {
           "title": "9. Menores",
           "html": "<p>Menores de 16 anos não podem criar uma conta. Os adultos que registrem dados ou imagens de menores declaram ter legitimidade suficiente e respeitar a <a href=\"/legal/contenidos\">Política de Direitos de Conteúdo e Imagem</a>.</p>"
+        },
+        {
+          "title": "10. Menores",
+          "html": "<p><i>Tradução jurídica profissional pendente. Texto de referência em espanhol (locale ES). Contacto: <a href=\"mailto:{{legal.data_subject_email}}\">{{legal.data_subject_email}}</a>.</i></p>"
         }
       ]
     },
@@ -121,6 +125,14 @@
         {
           "title": "6. Limitação de responsabilidade",
           "html": "<p>O serviço é fornecido “como está” com diligência razoável.</p>"
+        },
+        {
+          "title": "7. Limitação de responsabilidade",
+          "html": "<p><i>Revisão jurídica profissional pendente. Texto de referência em espanhol (ES).</i></p>"
+        },
+        {
+          "title": "8. Alterações e lei aplicável",
+          "html": "<p>Llei aplicable: {{legal.jurisdiction}}. <i>Texto completo pendiente de revisión (ES autoritativo).</i></p>"
         }
       ]
     },

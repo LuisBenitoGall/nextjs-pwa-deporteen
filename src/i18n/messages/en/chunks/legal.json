@@ -68,7 +68,11 @@
         },
         {
           "title": "9. Minors",
-          "html": "<p>Those under 16 cannot create an account. Adults who register data or images of minors declare that they have sufficient legitimacy and respect the <a href=\"/legal/contents\">Content and Image Rights Policy</a>.</p>"
+          "html": "<p>Those under 16 cannot create an account. Adults who register data or images of minors declare that they have sufficient legitimacy and respect the <a href=\"/legal/terminos\">Terms of Use</a>.</p>"
+        },
+        {
+          "title": "10. Minors",
+          "html": "<p><i>Professional legal translation pending. The authoritative text is the Spanish version (select locale ES). Contact: <a href=\"mailto:{{legal.data_subject_email}}\">{{legal.data_subject_email}}</a>.</i></p>"
         }
       ]
     },
@@ -121,6 +125,14 @@
         {
           "title": "6. Limitation of liability",
           "html": "<p>The service is provided “as is” within reasonable diligence.</p>"
+        },
+        {
+          "title": "7. Limitation of liability",
+          "html": "<p><i>Professional legal translation pending. Authoritative Spanish text at {{product.domain}} (locale ES).</i></p>"
+        },
+        {
+          "title": "8. Changes and governing law",
+          "html": "<p>Governing law: {{legal.jurisdiction}}. <i>Full terms pending legal review (ES authoritative).</i></p>"
         }
       ]
     },

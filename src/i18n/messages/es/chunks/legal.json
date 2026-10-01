@@ -4,31 +4,31 @@
       "sections": [
         {
           "title": "1. Identificación del titular",
-          "html": "<p>Este sitio y la aplicación <b>{{product.app_name}}</b> ({{product.domain}}) son titularidad de <b>{{company.name}}</b>, con NIF {{company.nif}}, domicilio en {{company.address}}, {{company.country}}. Email de contacto: <a href=\"mailto:{{company.email}}\">{{company.email}}</a>.</p><p>Inscripción registral: {{company.reg_merc}}</p>"
+          "html": "<p>El sitio web <b>{{product.domain}}</b> y la aplicación web progresiva (PWA) <b>{{product.app_name}}</b> son titularidad de <b>{{company.name}}</b> (NIF/CIF: {{company.nif}}), con domicilio en {{company.address}}, {{company.country}}. Contacto: <a href=\"mailto:{{company.email}}\">{{company.email}}</a>. Teléfono: {{company.phone}}.</p><p>Datos registrales: {{company.reg_merc}}</p><p><b>{{product.app_name}}</b> se instala y utiliza desde el navegador; <b>no se distribuye en tiendas de aplicaciones</b> (App Store, Google Play u otras).</p>"
         },
         {
           "title": "2. Objeto y aceptación",
-          "html": "<p>El presente Aviso Legal regula el acceso y uso de {{product.app_name}}. El acceso implica la aceptación de estas condiciones y, cuando corresponda, de los <a href=\"/legal/terminos\" target=\"_blank\" rel=\"noopener\">Términos de Uso</a>.</p>"
+          "html": "<p>Este Aviso Legal regula el acceso y uso de {{product.app_name}}, orientado al registro de estadísticas individuales en deportes de equipo (jugadores, clubes, equipos, competiciones y partidos). El acceso implica la aceptación de estas condiciones y, cuando corresponda, de los <a href=\"/legal/terminos\">Términos de Uso</a> y la <a href=\"/legal/privacidad\">Política de Privacidad</a>.</p>"
         },
         {
-          "title": "3. Usuarios y menores",
-          "html": "<p>La plataforma está dirigida a personas adultas. <b>Los menores de 16 años no pueden crear cuenta</b>. Los adultos pueden registrar información deportiva de terceros, incluidos menores de edad, conforme a la <a href=\"/legal/contenidos\" target=\"_blank\" rel=\"noopener\">Política de Contenidos y Derechos de Imagen</a>.</p>"
+          "title": "3. Usuarios, cuentas familiares y menores",
+          "html": "<p>La cuenta debe ser creada por una persona mayor de edad (mínimo <b>16 años</b>). Un mismo usuario puede gestionar varios deportistas («asientos») bajo su cuenta, habitualmente en el ámbito familiar o de club. Los adultos que registren datos o imágenes de menores declaran contar con legitimación suficiente (p. ej. patria potestad o consentimiento del representante legal) y cumplir la sección de contenidos de los <a href=\"/legal/terminos\">Términos de Uso</a>.</p>"
         },
         {
-          "title": "4. Propiedad intelectual",
-          "html": "<p>El software, diseño e interfaz de {{product.app_name}} pertenecen a {{company.name}} o a sus licenciantes. El uso no supone cesión de ningún derecho de propiedad intelectual.</p>"
+          "title": "4. Propiedad intelectual e industrial",
+          "html": "<p>El software, diseño, marcas e interfaz de {{product.app_name}} pertenecen a {{company.name}} o a sus licenciantes. El uso del servicio no implica cesión de derechos de propiedad intelectual o industrial.</p>"
         },
         {
           "title": "5. Responsabilidad",
-          "html": "<p>{{company.name}} no se hace responsable de los datos, imágenes o vídeos que suba el usuario al dispositivo, ni de daños derivados de un uso indebido de la aplicación.</p>"
+          "html": "<p>{{company.name}} no es responsable de la veracidad de los datos deportivos introducidos por los usuarios ni de los contenidos (imágenes, vídeos) que estos almacenen en su dispositivo, en su cuenta de Google Drive o en almacenamiento remoto opcional. El usuario es responsable del uso conforme a la ley y a las condiciones del servicio.</p>"
         },
         {
           "title": "6. Enlaces y servicios de terceros",
-          "html": "<p>La app integra servicios de terceros (p. ej., <b>Supabase</b> en {{providers.supabase_region}} para la base de datos, <b>Stripe</b> en {{providers.stripe_region}} para pagos, <b>{{providers.hosting}}</b> para alojamiento y <b>{{providers.analytics}}</b> para analítica). Véase la <a href=\"/legal/privacidad\">Política de Privacidad</a>.</p>"
+          "html": "<p>La PWA integra servicios de terceros, entre otros: <b>Supabase</b> (base de datos en {{providers.supabase_region}}), <b>Stripe</b> (pagos, {{providers.stripe_region}}), <b>Google</b> (inicio de sesión OAuth, Google Drive del usuario y, con consentimiento, analítica), y <b>{{providers.hosting}}</b> (alojamiento). Detalle en la <a href=\"/legal/privacidad\">Política de Privacidad</a> y la <a href=\"/legal/politica-cookies\">Política de Cookies</a>.</p>"
         },
         {
           "title": "7. Ley aplicable y jurisdicción",
-          "html": "<p>Se aplicará la legislación de {{legal.jurisdiction}} y, salvo norma imperativa, los juzgados del domicilio del usuario consumidor.</p>"
+          "html": "<p>Se aplica la legislación de {{legal.jurisdiction}}. Para consumidores, serán competentes los juzgados del domicilio del usuario cuando la normativa imperativa así lo establezca.</p>"
         }
       ]
     },
@@ -36,91 +36,103 @@
       "sections": [
         {
           "title": "1. Responsable del tratamiento",
-          "html": "<p>Responsable: <b>{{company.name}}</b> ({{company.email}}). No se ha designado Delegado de Protección de Datos por el momento.</p>"
+          "html": "<p><b>Responsable:</b> {{company.name}}, {{company.address}}, {{company.country}}. Email de privacidad: <a href=\"mailto:{{legal.data_subject_email}}\">{{legal.data_subject_email}}</a>.</p><p>No se ha designado Delegado de Protección de Datos (DPD); puede contactarse en la dirección indicada para cualquier cuestión relativa a datos personales.</p>"
         },
         {
-          "title": "2. Datos tratados",
-          "html": "<ul><li><b>Cuenta</b>: nombre, apellidos, email y teléfono (opcional).</li><li><b>Uso del servicio</b>: estadísticas deportivas creadas por el usuario sobre terceros.</li><li><b>Medios</b>: imágenes y vídeos <b>almacenados localmente en el dispositivo</b>, no en la nube.</li><li><b>Pagos</b>: identificación de transacción gestionada por Stripe.</li><li><b>Analítica</b>: mediciones con {{providers.analytics}}.</li></ul>"
+          "title": "2. Ámbito y naturaleza del servicio",
+          "html": "<p>{{product.app_name}} es una PWA de estadísticas deportivas de equipo. Tratamos datos personales de usuarios registrados y, en su caso, de deportistas vinculados a su cuenta (habitualmente menores tutelados por el titular de la cuenta).</p>"
         },
         {
-          "title": "3. Finalidades y bases jurídicas",
-          "html": "<ul><li><b>Prestación del servicio y suscripción</b> (ejecución de contrato).</li><li><b>Analítica de uso</b> (consentimiento; véase <a href=\"/legal/cookies\">Política de Cookies</a>).</li><li><b>Notificaciones de renovación</b> (consentimiento).</li><li><b>Seguridad y prevención de fraude</b> (interés legítimo).</li></ul>"
+          "title": "3. Datos que tratamos",
+          "html": "<ul><li><b>Cuenta de usuario:</b> identificador, nombre, apellidos, correo electrónico, teléfono (opcional), idioma y credenciales gestionadas vía Supabase Auth (incl. OAuth Google si lo activas).</li><li><b>Deportistas y actividad:</b> nombre del jugador, club, equipo, competiciones, partidos, marcadores, estadísticas y metadatos asociados.</li><li><b>Suscripciones y facturación:</b> identificadores de compra, plan contratado por deportista («asiento»), fechas de vigencia, historial de pagos; los datos de tarjeta los trata exclusivamente <b>Stripe</b>.</li><li><b>Almacenamiento en nube (opcional):</b> metadatos y ubicación de fotos/vídeos subidos al servicio remoto contratado por el usuario; la cuota se calcula por usuario.</li><li><b>Medios:</b> imágenes y vídeos pueden permanecer <b>solo en el dispositivo</b> (IndexedDB/PWA), en <b>Google Drive de tu cuenta Google</b> (bajo tu control) o en <b>almacenamiento remoto</b> contratado en {{product.app_name}} (p. ej. infraestructura cloud tipo S3/R2).</li><li><b>Cookies y consentimiento:</b> preferencias de cookies, registro de consentimiento en servidor (<code>cookie_consents</code>) y, si aceptas analítica, identificadores de {{providers.analytics}}.</li><li><b>Comunicaciones:</b> avisos de fin de periodo y renovación manual, soporte y, en su caso, respuestas a ejercicio de derechos.</li></ul>"
         },
         {
-          "title": "4. Origen y veracidad",
-          "html": "<p>Los datos proceden del propio usuario. Si registra información sobre terceros, garantiza contar con legitimación suficiente (p. ej., consentimiento de los titulares de imagen en caso de menores).</p>"
+          "title": "4. Finalidades y bases jurídicas (RGPD / LOPDGDD)",
+          "html": "<ul><li><b>Prestación del servicio, gestión de cuenta y deportistas</b> — art. 6.1.b RGPD (ejecución del contrato / medidas precontractuales).</li><li><b>Pagos, emisión de recibos/facturas y cumplimiento fiscal</b> — art. 6.1.b y 6.1.c RGPD (contrato y obligación legal).</li><li><b>Recordatorios de renovación manual</b> (sin cargo automático) — art. 6.1.b RGPD y, para comunicaciones comerciales similares, art. 6.1.a (consentimiento) cuando corresponda.</li><li><b>Analítica web agregada</b> — art. 6.1.a RGPD (consentimiento previo; véase <a href=\"/legal/politica-cookies\">Cookies</a>).</li><li><b>Seguridad, prevención de fraude y mejora técnica</b> — art. 6.1.f RGPD (interés legítimo, ponderado con tus derechos).</li><li><b>Tratamiento de datos de menores deportistas</b> por el adulto titular — art. 6.1.a o 6.1.f según el caso, con legitimación declarada por quien crea el registro.</li></ul>"
         },
         {
-          "title": "5. Conservación",
-          "html": "<ul><li>Cuenta y registros: mientras exista la cuenta. Datos de facturación: <b>6 años</b>.</li><li>Logs de seguridad: <b>12 meses</b> salvo incidencias.</li><li>Analítica (con consentimiento) y registros de consentimiento de cookies: <b>24 meses</b> desde la fecha del consentimiento, con supresión automática al vencer ese plazo.</li></ul>"
+          "title": "5. Origen, exactitud y responsabilidad del usuario",
+          "html": "<p>Los datos proceden principalmente del propio usuario. Si registras información de terceros (incluidos menores), garantizas que dispones de base legal suficiente y que los datos son exactos. Puedes rectificarlos desde la aplicación o solicitándolo por email.</p>"
         },
         {
-          "title": "6. Destinatarios y encargados",
-          "html": "<ul><li><b>Supabase</b> (UE/Irlanda) como proveedor de base de datos.</li><li><b>Stripe</b> para pagos.</li><li><b>{{providers.hosting}}</b> para alojamiento.</li><li><b>{{providers.analytics}}</b> (configurado según consentimiento).</li></ul><p>No se realizan transferencias internacionales fuera del EEE salvo las inherentes a estos proveedores y amparadas por sus mecanismos de cumplimiento.</p>"
+          "title": "6. Plazos de conservación",
+          "html": "<ul><li><b>Cuenta y datos deportivos:</b> mientras mantengas la cuenta activa; tras la baja, bloqueo/supresión en plazos razonables salvo obligación legal o reclamación.</li><li><b>Datos contables y de facturación:</b> hasta <b>6 años</b> (normativa mercantil/fiscal).</li><li><b>Registros de consentimiento de cookies y analítica asociada:</b> <b>24 meses</b> desde cada decisión, con purga automática al vencer (job diario).</li><li><b>Logs de seguridad:</b> hasta <b>12 meses</b>, salvo investigación de incidentes.</li><li><b>Medios en dispositivo:</b> mientras no los borres tú o desinstales la PWA; no controlamos su persistencia local.</li><li><b>Medios en nube remota:</b> mientras la suscripción de almacenamiento esté activa y el archivo no se elimine; al borrar jugador o medio se aplican las reglas de limpieza del servicio.</li></ul>"
         },
         {
-          "title": "7. Derechos",
-          "html": "<p>Puedes ejercer acceso, rectificación, supresión, oposición, limitación y portabilidad escribiendo a <a href=\"mailto:{{legal.data_subject_email}}\">{{legal.data_subject_email}}</a>. Plazo de respuesta: 1 mes.</p>"
+          "title": "7. Destinatarios, encargados y transferencias",
+          "html": "<ul><li><b>Supabase Inc.</b> — alojamiento de base de datos y autenticación (región UE/Irlanda).</li><li><b>Stripe Payments Europe Ltd.</b> — procesamiento de pagos únicos y documentación de cobro.</li><li><b>Vercel Inc.</b> — alojamiento de la aplicación web.</li><li><b>Google Ireland Ltd.</b> — OAuth, API de Google Drive (cuenta del usuario) y, con consentimiento, {{providers.analytics}}.</li><li><b>Proveedor de almacenamiento de objetos</b> (p. ej. Cloudflare R2 u homólogo) — solo si contratas almacenamiento remoto de medios.</li></ul><p>Existe acceso desde fuera del EEE cuando el proveedor lo requiera; se ampara en decisiones de adecuación, cláusulas contractuales tipo u otros mecanismos previstos en el RGPD. Puedes solicitar información adicional en {{legal.data_subject_email}}.</p><p>No vendemos tus datos personales.</p>"
         },
         {
-          "title": "8. Medidas de seguridad",
-          "html": "<p>Cifrado en tránsito (TLS) y en reposo en los servicios de base de datos, control de accesos, copias de seguridad en el proveedor y buenas prácticas de minimización. Los medios (fotos/vídeos) se guardan en el <b>almacenamiento local del dispositivo</b> que controla el usuario.</p>"
+          "title": "8. Derechos (ARCOPL y reclamación)",
+          "html": "<p>Puedes ejercer <b>acceso, rectificación, supresión, oposición, limitación del tratamiento y portabilidad</b> escribiendo a <a href=\"mailto:{{legal.data_subject_email}}\">{{legal.data_subject_email}}</a>, acreditando tu identidad. Respondemos en el plazo máximo de <b>un mes</b> (prorrogable según complejidad).</p><p>Si consideras que el tratamiento vulnera la normativa, puedes presentar reclamación ante la <b>Agencia Española de Protección de Datos (AEPD)</b> — <a href=\"https://www.aepd.es\" target=\"_blank\" rel=\"noopener\">www.aepd.es</a>.</p>"
         },
         {
-          "title": "9. Menores",
-          "html": "<p>Los menores de 16 no pueden crear cuenta. Los adultos que registren datos o imágenes de menores declaran tener legitimación suficiente y respetar la <a href=\"/legal/contenidos\">Política de Contenidos y Derechos de Imagen</a>.</p>"
+          "title": "9. Medidas de seguridad",
+          "html": "<p>Aplicamos medidas técnicas y organizativas apropiadas: cifrado en tránsito (HTTPS/TLS), controles de acceso, copias de seguridad en el proveedor de base de datos y minimización de datos. Los medios solo locales dependen de la seguridad de tu dispositivo.</p>"
+        },
+        {
+          "title": "10. Menores",
+          "html": "<p>Los menores de <b>16 años</b> no pueden registrarse como titulares de cuenta. Los datos de menores deportistas deben ser introducidos por un adulto con legitimación. Evita publicar imágenes identificables de menores sin consentimiento de quien ejerce la patria potestad.</p>"
         }
       ]
     },
     "cookies": {
       "sections": [
         {
-          "title": "1. ¿Qué son las cookies?",
-          "html": "<p>Utilizamos cookies y tecnologías similares para que la web funcione y, si lo aceptas, para medir el uso con {{providers.analytics}}.</p>"
+          "title": "1. ¿Qué son las cookies y tecnologías similares?",
+          "html": "<p>Utilizamos cookies, almacenamiento local del navegador (localStorage, IndexedDB) y tecnologías equivalentes para el funcionamiento de la PWA, la sesión y, solo si lo aceptas, la medición de uso con {{providers.analytics}}.</p>"
         },
         {
-          "title": "2. Configuración",
-          "html": "<p>Puedes personalizar tus preferencias en el banner de <i>Preferencias de cookies</i>. Las categorías usadas son:</p><ul><li><b>Necesarias</b>: imprescindibles para el funcionamiento (login, seguridad).</li><li><b>Analítica</b>: medición de uso con {{providers.analytics}} (requiere consentimiento salvo modo exento AEPD).</li><li><b>Funcionales</b>: mejoras no esenciales.</li><li><b>Marketing</b>: no utilizamos actualmente.</li></ul>"
+          "title": "2. Gestión del consentimiento",
+          "html": "<p>Al acceder por primera vez (o cuando cambie la configuración) verás el banner de <i>Preferencias de cookies</i>. Las categorías son:</p><ul><li><b>Necesarias / técnicas:</b> imprescindibles para login, seguridad, carrito/checkout y preferencias esenciales.</li><li><b>Analítica:</b> estadísticas agregadas con {{providers.analytics}}; <b>solo se activan con tu consentimiento</b>.</li><li><b>Funcionales:</b> mejoras no esenciales (p. ej. recordar preferencias de interfaz).</li><li><b>Marketing:</b> actualmente no utilizamos cookies con finalidad publicitaria propia.</li></ul>"
         },
         {
-          "title": "3. Cookies que utilizamos",
-          "html": "<p><b>Necesarias</b></p><ul><li>Sesión Supabase: {{cookies.session}}.</li><li>Stripe (checkout): {{cookies.stripe}}.</li></ul><p><b>Analítica</b></p><ul><li>Google Analytics 4: {{cookies.ga4}}.</li></ul><p>Además, podemos usar almacenamiento local (IndexedDB/localStorage) para contenido y preferencias.</p>"
+          "title": "3. Cookies y almacenamiento que utilizamos",
+          "html": "<p><b>Necesarias</b></p><ul><li>Sesión Supabase (autenticación): {{cookies.session}}.</li><li>Stripe (proceso de pago): {{cookies.stripe}}.</li><li>Cookie de idioma y consentimiento (<code>dp_consent_v1</code>, locale).</li></ul><p><b>Analítica</b> (requieren consentimiento)</p><ul><li>{{providers.analytics}}: {{cookies.ga4}}.</li></ul><p><b>Almacenamiento local PWA</b></p><p>IndexedDB y almacenamiento local pueden contener medios deportivos y metadatos en tu dispositivo; no son cookies pero forman parte de la experiencia offline. Consulta la <a href=\"/legal/privacidad\">Política de Privacidad</a>.</p>"
         },
         {
           "title": "4. Cómo cambiar o retirar el consentimiento",
-          "html": "<p>Puedes reabrir el panel de preferencias desde el enlace “Cookies” del pie de página, o borrar cookies desde la configuración del navegador.</p>"
+          "html": "<p>Puedes reabrir el panel desde el enlace «Cookies» del pie de página, modificar categorías o retirar el consentimiento. También puedes borrar cookies desde la configuración del navegador; ten en cuenta que algunas funciones (sesión, checkout) dejarán de operar si eliminas las cookies necesarias.</p>"
         },
         {
           "title": "5. Conservación del registro en servidor",
-          "html": "<p>Para acreditar el consentimiento, guardamos en base de datos una copia de tus elecciones (sin dirección IP). Esos registros se conservan como máximo <b>24 meses</b> desde la fecha de cada decisión y se eliminan automáticamente al vencer ese plazo. La cookie local puede seguir en tu dispositivo hasta que la borres.</p>"
+          "html": "<p>Para acreditar el consentimiento, almacenamos en base de datos (Supabase, UE) una copia de tus elecciones por categoría, sin dirección IP en el registro de prueba. Esos registros se conservan como máximo <b>24 meses</b> desde la fecha de cada decisión y se eliminan automáticamente al vencer ese plazo. La cookie o preferencia local puede permanecer en tu dispositivo hasta que la borres manualmente.</p>"
         }
       ]
     },
     "terms": {
       "sections": [
         {
-          "title": "1. Objeto",
-          "html": "<p>Estos Términos regulan el uso de {{product.app_name}}.</p>"
+          "title": "1. Objeto y descripción del servicio",
+          "html": "<p>Estos Términos regulan el uso de la PWA <b>{{product.app_name}}</b> ({{product.domain}}): registro de estadísticas individuales en deportes de equipo, gestión de varios deportistas por cuenta, almacenamiento opcional de fotos y vídeos, y contratación de planes por deportista.</p>"
         },
         {
-          "title": "2. Cuenta y acceso",
-          "html": "<p>La cuenta es personal y para mayores de 16. Un adulto puede registrar deportistas terceros.</p>"
+          "title": "2. Cuenta, elegibilidad y asientos",
+          "html": "<p>La cuenta es personal del adulto registrante (mínimo 16 años). Puedes vincular <b>varios deportistas</b>; cada uno requiere un <b>asiento</b> activo. Los datos introducidos sobre terceros (incluidos menores) son responsabilidad del titular de la cuenta.</p>"
         },
         {
-          "title": "3. Planes y pagos",
-          "html": "<p>Los pagos se procesan con Stripe. La factura la emite Stripe.</p>"
+          "title": "3. Planes, pagos y renovación",
+          "html": "<p>Los planes disponibles incluyen suscripción <b>anual</b>, <b>trienal</b> y <b>permanente («forever»)</b>, contratados <b>por deportista/asiento</b>. Los pagos son <b>únicos</b> procesados por <b>Stripe</b>; <b>no hay renovación automática ni cargos recurrentes</b> en tarjeta. Antes del fin del periodo te enviaremos avisos por correo electrónico para que puedas <b>renovar manualmente</b> si lo deseas. El comprobante/factura lo facilita Stripe según tus datos fiscales.</p>"
         },
         {
-          "title": "4. Desistimiento y reembolsos",
-          "html": "<p>Dispones de <b>14 días</b> desde la compra para solicitar reembolso si no has consumido prestaciones que lo impidan legalmente.</p>"
+          "title": "4. Almacenamiento de medios",
+          "html": "<p>Puedes guardar fotos y vídeos: (a) en tu dispositivo, (b) en tu Google Drive vinculando tu cuenta Google, o (c) en almacenamiento remoto opcional con cuota <b>por usuario</b> y pago adicional. La disponibilidad depende de tu conexión, del proveedor externo y del plan contratado. {{company.name}} no garantiza recuperación de medios borrados por el usuario.</p>"
         },
         {
-          "title": "5. Contenidos del usuario",
-          "html": "<p>Te responsabilizas de los datos e imágenes que almacenes. Debes cumplir la legislación vigente y nuestra <a href=\"/legal/contenidos\">Política de Contenidos</a>.</p>"
+          "title": "5. Contenidos, derechos de imagen y conducta",
+          "html": "<p>Eres responsable de los datos, imágenes y vídeos que almacenes o sincronices. Debes cumplir la legislación aplicable, respetar derechos de imagen (especialmente de menores) y no subir contenidos ilícitos, difamatorios o que vulneren derechos de terceros. Podemos suspender el acceso ante incumplimientos graves, previa comunicación cuando sea razonable.</p>"
         },
         {
-          "title": "6. Limitación de responsabilidad",
-          "html": "<p>El servicio se presta “tal cual” dentro de una diligencia razonable.</p>"
+          "title": "6. Desistimiento y reembolsos",
+          "html": "<p>Si eres consumidor, puedes desistir en un plazo de <b>14 días naturales</b> desde la compra sin necesidad de justificación, salvo que hayas solicitado expresamente la ejecución inmediata del servicio digital y esta haya comenzado (en cuyo caso pueden aplicarse deducciones proporcionales según la normativa). Solicitudes a <a href=\"mailto:{{company.email}}\">{{company.email}}</a>.</p>"
+        },
+        {
+          "title": "7. Limitación de responsabilidad",
+          "html": "<p>El servicio se presta con diligencia profesional dentro de las limitaciones propias de una PWA y servicios de terceros. No respondemos de resultados deportivos incorrectos introducidos por usuarios, interrupciones de Google/Stripe/operadores, ni de pérdida de medios almacenados solo en el dispositivo del usuario.</p>"
+        },
+        {
+          "title": "8. Modificaciones y ley aplicable",
+          "html": "<p>Podemos actualizar estos Términos; la versión publicada en {{product.domain}} prevalece. Se aplica la ley de {{legal.jurisdiction}} con la protección imperativa del consumidor en su domicilio cuando corresponda.</p>"
         }
       ]
     },
@@ -128,19 +140,19 @@
       "sections": [
         {
           "title": "1. Proceso de compra",
-          "html": "<p>La suscripción se gestiona mediante Stripe. Una vez confirmado el pago se activa el acceso.</p>"
+          "html": "<p>La contratación de asientos se realiza mediante checkout seguro de Stripe. Tras la confirmación del pago (webhook o confirmación de sesión), se activa el acceso al deportista vinculado.</p>"
         },
         {
-          "title": "2. Renovaciones y avisos",
-          "html": "<p>Podemos enviarte avisos de renovación si lo consientes.</p>"
+          "title": "2. Renovaciones manuales y avisos",
+          "html": "<p>No realizamos cargos automáticos al vencimiento. Recibirás avisos por email dentro de los plazos configurados para renovar manualmente antes de que expire el periodo.</p>"
         },
         {
           "title": "3. Facturación",
-          "html": "<p>La factura es la generada por Stripe y estará disponible en tu recibo de pago.</p>"
+          "html": "<p>Stripe emite el comprobante de pago. Los recibos están disponibles en tu área de facturación de la aplicación cuando corresponda.</p>"
         },
         {
           "title": "4. Desistimiento",
-          "html": "<p>14 días de desistimiento conforme a la normativa de consumo, con las excepciones legales aplicables.</p>"
+          "html": "<p>Aplica el derecho de desistimiento de 14 días conforme a la normativa de consumo, con las excepciones legales para contenido digital ya prestado.</p>"
         }
       ]
     },
@@ -148,7 +160,7 @@
       "sections": [
         {
           "title": "1. Ámbito",
-          "html": "<p>Regula el uso de imágenes y vídeos y el registro de datos de terceros, incluidos menores.</p>"
+          "html": "<p>Regula el uso de imágenes y vídeos y el registro de datos de terceros, incluidos menores deportistas.</p>"
         },
         {
           "title": "2. Derechos de imagen",
