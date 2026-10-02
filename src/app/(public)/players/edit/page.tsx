@@ -98,7 +98,12 @@ function EditPlayerFormInner() {
           label={t('deportista_nombre')}
           placeholder={t('nombre')}
         />
-        <Submit text={t('guardar')} loadingText={t('procesando') ?? t('guardar')} disabled={busy} />
+        <Submit
+          text={t('guardar')}
+          loadingText={t('procesando') ?? t('guardar')}
+          loading={busy}
+          disabled={busy}
+        />
       </form>
     </div>
   );
