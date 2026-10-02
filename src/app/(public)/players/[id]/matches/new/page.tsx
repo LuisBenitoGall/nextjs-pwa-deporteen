@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useEffect, useMemo, useState, use as usePromise } from 'react';
+import { Suspense, useEffect, useMemo, useState, use as usePromise } from 'react';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useT } from '@/i18n/I18nProvider';
@@ -23,8 +23,7 @@ type Player = { id: string; full_name: string | null };
 
 type PageProps = { params: Promise<{ id: string }> };
 
-export default function NewMatchMetaPage({ params }: PageProps) {
-  const { id: playerId } = usePromise(params);
+function NewMatchMetaPageInner({ playerId }: { playerId: string }) {
   const t = useT();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -32,21 +31,21 @@ export default function NewMatchMetaPage({ params }: PageProps) {
   const supabase = useMemo(() => supabaseBrowser(), []);
 
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving]   = useState(false);
-  const [error, setError]     = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const [player, setPlayer]               = useState<Player | null>(null);
-  const [competitions, setCompetitions]   = useState<Competition[]>([]);
+  const [player, setPlayer] = useState<Player | null>(null);
+  const [competitions, setCompetitions] = useState<Competition[]>([]);
 
   // Form state
   const [competitionId, setCompetitionId] = useState('');
-  const [seasonId, setSeasonId]           = useState('');
-  const [sportId, setSportId]             = useState('');
-  const [teamId, setTeamId]               = useState('');
-  const [dateAt, setDateAt]               = useState('');
-  const [place, setPlace]                 = useState('');
-  const [isHome, setIsHome]               = useState(true);
-  const [opponentName, setOpponentName]   = useState<string>('');
+  const [seasonId, setSeasonId] = useState('');
+  const [sportId, setSportId] = useState('');
+  const [teamId, setTeamId] = useState('');
+  const [dateAt, setDateAt] = useState('');
+  const [place, setPlace] = useState('');
+  const [isHome, setIsHome] = useState(true);
+  const [opponentName, setOpponentName] = useState<string>('');
 
   // Acepta ?competition=... y ?competition_id=...
   const preCompetition = searchParams.get('competition') || searchParams.get('competition_id') || '';
@@ -62,46 +61,79 @@ export default function NewMatchMetaPage({ params }: PageProps) {
       setLoading(true);
       setError(null);
 
-      const [{ data: auth }, { data: playerRow }, { data: comps }] = await Promise.all([
-        supabase.auth.getUser(),
-        supabase.from('players').select('id, full_name').eq('id', playerId).maybeSingle(),
-        supabase
-          .from('competitions')
-          .select('id, name, sport_id, season_id, team_id')
-          .eq('player_id', playerId)
-          .order('name', { ascending: true }),
-      ]);
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        const user = session?.user ?? null;
 
-      if (!mounted) return;
-
-      if (!auth?.user) { setError(t('sesion_iniciar_aviso')); setLoading(false); return; }
-
-      setPlayer(playerRow || null);
-      setCompetitions(comps || []);
-
-      // Preselección si viene por query, pero sin bloquear ni filtrar la lista
-      if (preCompetition && comps?.length) {
-        const selected = comps.find(c => c.id === preCompetition);
-        if (selected) {
-          setCompetitionId(selected.id);
-          setSportId(selected.sport_id);
-          setSeasonId(selected.season_id || '');
-          setTeamId(selected.team_id || '');
+        if (!user) {
+          if (mounted) setError(t('sesion_iniciar_aviso'));
+          return;
         }
-      } else if (comps && comps.length === 1) {
-        // Autoselección si solo hay una
-        const c = comps[0];
-        setCompetitionId(c.id);
-        setSportId(c.sport_id);
-        setSeasonId(c.season_id || '');
-        setTeamId(c.team_id || '');
-      }
 
-      setLoading(false);
+        const [{ data: playerRow, error: playerErr }, { data: comps, error: compsErr }] =
+          await Promise.all([
+            supabase.from('players').select('id, full_name').eq('id', playerId).eq('user_id', user.id).maybeSingle(),
+            supabase
+              .from('competitions')
+              .select('id, name, sport_id, season_id, team_id')
+              .eq('player_id', playerId)
+              .order('name', { ascending: true }),
+          ]);
+
+        if (!mounted) return;
+
+        if (playerErr) {
+          setError(playerErr.message || tr('player_error_cargar', 'No se pudo cargar el deportista.'));
+          return;
+        }
+        if (compsErr) {
+          setError(compsErr.message || tr('competicion_error_cargar', 'No se pudieron cargar las competiciones.'));
+          return;
+        }
+
+        setPlayer(playerRow || null);
+        setCompetitions(comps || []);
+
+        if (!playerRow) {
+          setError(tr('player_error_cargar', 'No se pudo cargar el deportista.'));
+          return;
+        }
+
+        // Preselección si viene por query, pero sin bloquear ni filtrar la lista
+        if (preCompetition && comps?.length) {
+          const selected = comps.find((c) => c.id === preCompetition);
+          if (selected) {
+            setCompetitionId(selected.id);
+            setSportId(selected.sport_id);
+            setSeasonId(selected.season_id || '');
+            setTeamId(selected.team_id || '');
+          }
+        } else if (comps && comps.length === 1) {
+          const c = comps[0];
+          setCompetitionId(c.id);
+          setSportId(c.sport_id);
+          setSeasonId(c.season_id || '');
+          setTeamId(c.team_id || '');
+        }
+      } catch (e: unknown) {
+        if (mounted) {
+          setError(
+            e instanceof Error ? e.message : tr('error_carga_generica', 'No se pudo cargar el formulario.')
+          );
+        }
+      } finally {
+        if (mounted) setLoading(false);
+      }
     })();
 
-    return () => { mounted = false; };
-  }, [supabase, playerId, preCompetition, t]);
+    return () => {
+      mounted = false;
+    };
+    // `t`/`tr` omitidos a propósito: incluirlos re-dispara el efecto al cargar i18n y deja "Cargando…" colgado.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- ver comentario
+  }, [supabase, playerId, preCompetition]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -115,10 +147,26 @@ export default function NewMatchMetaPage({ params }: PageProps) {
       setDateAt(effectiveDateAt);
     }
 
-    if (!playerId)      { setError(tr('jugador_obligatorio', 'Jugador obligatorio.')); setSaving(false); return; }
-    if (!competitionId) { setError(tr('competicion_selecciona', 'Selecciona competición.')); setSaving(false); return; }
-    if (!sportId)       { setError(tr('deporte_selecciona', 'Selecciona deporte.')); setSaving(false); return; }
-    if (!effectiveDateAt) { setError(tr('fecha_requerida', 'La fecha es obligatoria.')); setSaving(false); return; }
+    if (!playerId) {
+      setError(tr('jugador_obligatorio', 'Jugador obligatorio.'));
+      setSaving(false);
+      return;
+    }
+    if (!competitionId) {
+      setError(tr('competicion_selecciona', 'Selecciona competición.'));
+      setSaving(false);
+      return;
+    }
+    if (!sportId) {
+      setError(tr('deporte_selecciona', 'Selecciona deporte.'));
+      setSaving(false);
+      return;
+    }
+    if (!effectiveDateAt) {
+      setError(tr('fecha_requerida', 'La fecha es obligatoria.'));
+      setSaving(false);
+      return;
+    }
     if (!teamId) {
       setError(
         tr(
@@ -130,25 +178,44 @@ export default function NewMatchMetaPage({ params }: PageProps) {
       return;
     }
 
-    const payload: any = {
+    const payload: {
+      competition_id: string;
+      sport_id: string;
+      season_id: string | null;
+      date_at: string;
+      place: string | null;
+      is_home: boolean;
+      player_id: string;
+      team_id: string;
+      rival_team_name: string | null;
+      my_score: number;
+      rival_score: number;
+      status: string;
+      notes: null;
+      stats: null;
+    } = {
       competition_id: competitionId,
-      sport_id:       sportId,
-      season_id:      seasonId || null,
-      date_at:        new Date(effectiveDateAt).toISOString(),
-      place:          place || null,
-      is_home:        !!isHome,
-      player_id:      playerId,
-      team_id:        teamId,
+      sport_id: sportId,
+      season_id: seasonId || null,
+      date_at: new Date(effectiveDateAt).toISOString(),
+      place: place || null,
+      is_home: !!isHome,
+      player_id: playerId,
+      team_id: teamId,
       rival_team_name: opponentName || null,
-      my_score:       0,
-      rival_score:    0,
-      status:         'scheduled',
-      notes:          null,
-      stats:          null,
+      my_score: 0,
+      rival_score: 0,
+      status: 'scheduled',
+      notes: null,
+      stats: null,
     };
 
     const insertRes = await supabase.from('matches').insert(payload).select('id').single();
-    if (insertRes.error) { setError(insertRes.error.message || 'No se pudo crear el partido.'); setSaving(false); return; }
+    if (insertRes.error) {
+      setError(insertRes.error.message || 'No se pudo crear el partido.');
+      setSaving(false);
+      return;
+    }
 
     router.replace(`/matches/${insertRes.data.id}/live`);
   }
@@ -160,7 +227,9 @@ export default function NewMatchMetaPage({ params }: PageProps) {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <TitleH1>{t('partido_nuevo') || 'Nuevo partido'} <i>{fullName}</i></TitleH1>
+      <TitleH1>
+        {t('partido_nuevo') || 'Nuevo partido'} <i>{fullName}</i>
+      </TitleH1>
 
       <form onSubmit={handleSubmit} className="space-y-6 p-1">
         {/* Competición */}
@@ -181,14 +250,14 @@ export default function NewMatchMetaPage({ params }: PageProps) {
               onChange={(e) => {
                 const val = e.target.value;
                 setCompetitionId(val);
-                const comp = competitions.find(c => c.id === val);
+                const comp = competitions.find((c) => c.id === val);
                 if (comp) {
                   setSportId(comp.sport_id);
                   setSeasonId(comp.season_id || '');
                   setTeamId(comp.team_id || '');
                 }
               }}
-              options={competitions.map(c => ({ value: c.id, label: c.name }))}
+              options={competitions.map((c) => ({ value: c.id, label: c.name }))}
               placeholder={t('competicion_selec') || 'Selecciona…'}
             />
           )}
@@ -202,16 +271,16 @@ export default function NewMatchMetaPage({ params }: PageProps) {
             name="date_at"
             type="datetime-local"
             defaultValue={dateAt}
-            onChange={(e:any)=>setDateAt(e.target.value)}
-            onInput={(e:any)=>setDateAt(e.target.value)}
-            onClick={(e:any) => e.currentTarget?.showPicker?.()}
+            onChange={(e: any) => setDateAt(e.target.value)}
+            onInput={(e: any) => setDateAt(e.target.value)}
+            onClick={(e: any) => e.currentTarget?.showPicker?.()}
           />
           <Input
             label={t('lugar') || 'Lugar'}
             id="place"
             name="place"
             value={place}
-            onChange={(e:any)=>setPlace(e.target.value)}
+            onChange={(e: any) => setPlace(e.target.value)}
           />
         </div>
 
@@ -222,14 +291,26 @@ export default function NewMatchMetaPage({ params }: PageProps) {
             id="opponent_name"
             name="opponent_name"
             value={opponentName}
-            onChange={(e:any)=>setOpponentName(e.target.value)}
+            onChange={(e: any) => setOpponentName(e.target.value)}
           />
         </div>
 
         {/* Local/visitante */}
         <div className="flex items-center gap-8">
-          <Radio name="venue" value="home" checked={isHome} onChange={() => setIsHome(true)}  label={t('juego_local') || 'soy local'} />
-          <Radio name="venue" value="away" checked={!isHome} onChange={() => setIsHome(false)} label={t('juego_visitante') || 'soy visitante'} />
+          <Radio
+            name="venue"
+            value="home"
+            checked={isHome}
+            onChange={() => setIsHome(true)}
+            label={t('juego_local') || 'soy local'}
+          />
+          <Radio
+            name="venue"
+            value="away"
+            checked={!isHome}
+            onChange={() => setIsHome(false)}
+            label={t('juego_visitante') || 'soy visitante'}
+          />
         </div>
 
         {error && <div className="rounded border p-3 bg-red-50 text-red-700">{error}</div>}
@@ -252,5 +333,16 @@ export default function NewMatchMetaPage({ params }: PageProps) {
         </div>
       </form>
     </div>
+  );
+}
+
+export default function NewMatchMetaPage({ params }: PageProps) {
+  const { id: playerId } = usePromise(params);
+  const t = useT();
+
+  return (
+    <Suspense fallback={<div className="p-6">{t('cargando') || 'Cargando…'}</div>}>
+      <NewMatchMetaPageInner playerId={playerId} />
+    </Suspense>
   );
 }
