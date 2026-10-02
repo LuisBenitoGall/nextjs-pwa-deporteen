@@ -13,18 +13,35 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const admin = getSupabaseAdmin();
-  const [{ data: preference }, driveStatus] = await Promise.all([
+  const supabase = await createSupabaseServerClient();
+  const nowIso = new Date().toISOString();
+
+  const [{ data: preference }, driveStatus, { data: r2Sub }] = await Promise.all([
     admin
       .from('media_storage_preferences')
       .select('provider')
       .eq('user_id', user.id)
       .maybeSingle(),
     getDriveStatus(user.id),
+    supabase
+      .from('storage_subscriptions')
+      .select('gb_amount, status, current_period_end')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .gte('current_period_end', nowIso)
+      .order('current_period_end', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
+
+  const r2ExpiresAt = r2Sub?.current_period_end ? new Date(r2Sub.current_period_end) : null;
+  const r2Active = Boolean(r2ExpiresAt && r2ExpiresAt > new Date() && (r2Sub?.gb_amount ?? 0) > 0);
 
   return NextResponse.json({
     provider: (preference?.provider as StorageProvider) ?? 'local',
     driveStatus,
+    r2Active,
+    r2ExpiresAt: r2ExpiresAt?.toISOString() ?? null,
   });
 }
 

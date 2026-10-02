@@ -73,13 +73,16 @@ export default function Navbar({ serverUserId, serverIsAdmin = false }: { server
             }
         } catch {}
 
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            if (!mounted) return;
-            if (loggingOutRef.current) return;
-          // Actualiza sólo si hay usuario; no machacar con null estados recientes de login
-          if (session?.user) setUser(session.user as any);
-          setAuthChecked(true);
-        });
+        if (!serverUserId) {
+            supabase.auth.getSession().then(({ data: { session } }) => {
+                if (!mounted) return;
+                if (loggingOutRef.current) return;
+                if (session?.user) setUser(session.user as any);
+                setAuthChecked(true);
+            });
+        } else {
+            setAuthChecked(true);
+        }
 
         const { data: sub } = supabase.auth.onAuthStateChange((evt, session) => {
             if (loggingOutRef.current) return;
@@ -95,7 +98,7 @@ export default function Navbar({ serverUserId, serverIsAdmin = false }: { server
             mounted = false;
             sub?.subscription?.unsubscribe?.();
         };
-    }, []);
+    }, [serverUserId]);
 
     // Escucha señales de auth (postMessage) para hidratar inmediatamente tras login por password
     useEffect(() => {
@@ -123,6 +126,10 @@ export default function Navbar({ serverUserId, serverIsAdmin = false }: { server
     if (url.pathname === '/logout') return;
     let cancelled = false;
     const recheck = async (attempt = 0) => {
+      if (serverUserId && attempt === 0) {
+        setAuthChecked(true);
+        return;
+      }
       const { data: { session } } = await supabase.auth.getSession();
       if (cancelled) return;
       if (loggingOutRef.current) return;
@@ -153,7 +160,7 @@ export default function Navbar({ serverUserId, serverIsAdmin = false }: { server
     };
     recheck(0);
     return () => { cancelled = true; };
-  }, [pathname, isProtectedPath]);
+  }, [pathname, isProtectedPath, serverUserId]);
 
     // Marca el componente como montado para evitar desajustes de hidratación con UI dependiente de auth
     useEffect(() => {

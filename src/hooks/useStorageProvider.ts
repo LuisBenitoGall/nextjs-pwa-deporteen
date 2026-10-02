@@ -3,7 +3,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { supabase } from '@/lib/supabase/client';
+import { withAuthLockRetry } from '@/lib/supabase/authClientErrors';
 
 export type StorageProvider = 'local' | 'supabase' | 'drive' | 'r2';
 
@@ -26,51 +26,42 @@ export function useStorageProvider(): StorageProviderStatus {
     useEffect(() => {
         let mounted = true;
         (async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!mounted || !user) { setLoading(false); return; }
+            try {
+                await withAuthLockRetry(async () => {
+                    const prefRes = await fetch('/api/storage/provider', { cache: 'no-store' });
+                    if (prefRes.status === 401) {
+                        if (mounted) setLoading(false);
+                        return;
+                    }
+                    const prefJson = (await prefRes.json().catch(() => ({}))) as {
+                        provider?: StorageProvider;
+                        driveStatus?: 'connected' | 'reconnect-required' | 'disconnected';
+                        r2Active?: boolean;
+                        r2ExpiresAt?: string | null;
+                    };
+                    if (!mounted) return;
 
-            const prefRes = await fetch('/api/storage/provider', { cache: 'no-store' });
-            const prefJson = (await prefRes.json().catch(() => ({}))) as {
-                provider?: StorageProvider;
-                driveStatus?: 'connected' | 'reconnect-required' | 'disconnected';
-            };
-            const prov = prefJson.provider ?? 'local';
-
-            // Estado suscripción R2 (tabla storage_subscriptions)
-            const nowIso = new Date().toISOString();
-            const { data: r2Sub } = await supabase
-                .from('storage_subscriptions')
-                .select('gb_amount, status, current_period_end')
-                .eq('user_id', user.id)
-                .eq('status', 'active')
-                .gte('current_period_end', nowIso)
-                .order('current_period_end', { ascending: false })
-                .limit(1)
-                .maybeSingle();
-
-            if (!mounted) return;
-
-            const driveConnected = prefJson.driveStatus === 'connected';
-            if (prov === 'drive' && !driveConnected) {
-                // Sincronizar BD: el proveedor real es local porque Drive no está conectado
-                fetch('/api/storage/provider', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ provider: 'local' }),
-                }).catch(() => {});
-                setProviderState('local');
-            } else {
-                setProviderState(prov);
+                    const prov = prefJson.provider ?? 'local';
+                    const driveConnected = prefJson.driveStatus === 'connected';
+                    if (prov === 'drive' && !driveConnected) {
+                        fetch('/api/storage/provider', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ provider: 'local' }),
+                        }).catch(() => {});
+                        setProviderState('local');
+                    } else {
+                        setProviderState(prov);
+                    }
+                    setDriveStatus(prefJson.driveStatus ?? 'disconnected');
+                    setR2Active(Boolean(prefJson.r2Active));
+                    setR2ExpiresAt(prefJson.r2ExpiresAt ? new Date(prefJson.r2ExpiresAt) : null);
+                });
+            } catch {
+                // Proveedor local por defecto si la API falla
+            } finally {
+                if (mounted) setLoading(false);
             }
-            setDriveStatus(prefJson.driveStatus ?? 'disconnected');
-
-            if (r2Sub?.current_period_end) {
-                const exp = new Date(r2Sub.current_period_end);
-                setR2Active(exp > new Date());
-                setR2ExpiresAt(exp);
-            }
-
-            setLoading(false);
         })();
         return () => { mounted = false; };
     }, []);
