@@ -4,8 +4,10 @@ import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import {
   decryptToken,
   getDriveConnection,
+  GoogleOAuthError,
   refreshGoogleAccessToken,
 } from '@/lib/googleDrive/server';
+import { handleDriveOAuthReconnectFailure } from '@/lib/googleDrive/driveUploadReconnect';
 import { fetchGoogleWithRetry, isRetryableDriveStatus } from '@/lib/googleDrive/http';
 import { getServerUser } from '@/lib/supabase/server';
 
@@ -66,7 +68,16 @@ export async function POST(req: Request) {
 
   try {
     const refreshToken = decryptToken(conn.refresh_token_encrypted);
-    const refreshed = await refreshGoogleAccessToken(refreshToken);
+    let refreshed: { access_token: string };
+    try {
+      refreshed = await refreshGoogleAccessToken(refreshToken);
+    } catch (refreshError) {
+      const reconnectPayload = await handleDriveOAuthReconnectFailure(user.id, refreshError);
+      if (reconnectPayload) {
+        return NextResponse.json(reconnectPayload, { status: 409 });
+      }
+      throw refreshError;
+    }
     const accessToken = refreshed.access_token;
 
     const metadata = {
@@ -145,8 +156,16 @@ export async function POST(req: Request) {
       .eq('user_id', user.id);
 
     return NextResponse.json({ ok: true, mediaId, driveFileId });
-  } catch (error: any) {
-    const message = String(error?.message ?? 'Drive upload failed');
+  } catch (error: unknown) {
+    const reconnectPayload = await handleDriveOAuthReconnectFailure(user.id, error);
+    if (reconnectPayload) {
+      return NextResponse.json(reconnectPayload, { status: 409 });
+    }
+
+    const message =
+      error instanceof GoogleOAuthError
+        ? error.message
+        : String((error as { message?: string })?.message ?? 'Drive upload failed');
     const isTransient = /drive-upload:(408|409|429|500|502|503|504):/.test(message);
     if (isTransient) {
       await admin
@@ -165,6 +184,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Drive temporalmente no disponible' }, { status: 503 });
     }
 
-    return NextResponse.json({ error: error?.message ?? 'Drive upload failed' }, { status: 500 });
+    return NextResponse.json({ error: message || 'Drive upload failed' }, { status: 500 });
   }
 }

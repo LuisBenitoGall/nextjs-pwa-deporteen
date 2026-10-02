@@ -9,15 +9,20 @@ export type StorageProvider = 'local' | 'supabase' | 'drive' | 'r2';
 
 export type StorageProviderStatus = {
     provider: StorageProvider;
+    /** Preferencia persistida en backend (puede ser `drive` aunque el proveedor efectivo sea `local`). */
+    storedProvider: StorageProvider;
     driveStatus: 'connected' | 'reconnect-required' | 'disconnected';
     r2Active: boolean;         // suscripción R2 activa
     r2ExpiresAt: Date | null;
     loading: boolean;
     setProvider: (p: StorageProvider) => Promise<void>;
+    /** Tras fallo OAuth Drive: proveedor efectivo local + estado reconnect-required. */
+    applyDriveReconnectFallback: () => void;
 };
 
 export function useStorageProvider(): StorageProviderStatus {
     const [provider, setProviderState] = useState<StorageProvider>('local');
+    const [storedProvider, setStoredProvider] = useState<StorageProvider>('local');
     const [driveStatus, setDriveStatus] = useState<'connected' | 'reconnect-required' | 'disconnected'>('disconnected');
     const [r2Active, setR2Active] = useState(false);
     const [r2ExpiresAt, setR2ExpiresAt] = useState<Date | null>(null);
@@ -42,6 +47,7 @@ export function useStorageProvider(): StorageProviderStatus {
                     if (!mounted) return;
 
                     const prov = prefJson.provider ?? 'local';
+                    setStoredProvider(prov);
                     const driveConnected = prefJson.driveStatus === 'connected';
                     if (prov === 'drive' && !driveConnected) {
                         fetch('/api/storage/provider', {
@@ -49,6 +55,7 @@ export function useStorageProvider(): StorageProviderStatus {
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ provider: 'local' }),
                         }).catch(() => {});
+                        setStoredProvider('local');
                         setProviderState('local');
                     } else {
                         setProviderState(prov);
@@ -80,7 +87,23 @@ export function useStorageProvider(): StorageProviderStatus {
             return;
         }
         setProviderState(p);
+        setStoredProvider(p);
     }, []);
 
-    return { provider, driveStatus, r2Active, r2ExpiresAt, loading, setProvider };
+    const applyDriveReconnectFallback = useCallback(() => {
+        setProviderState('local');
+        setStoredProvider('local');
+        setDriveStatus('reconnect-required');
+    }, []);
+
+    return {
+        provider,
+        storedProvider,
+        driveStatus,
+        r2Active,
+        r2ExpiresAt,
+        loading,
+        setProvider,
+        applyDriveReconnectFallback,
+    };
 }

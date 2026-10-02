@@ -464,6 +464,7 @@
   "storage_settings_drive_description": "Sube las fotos y vídeos a tu Google Drive para conservarlos fuera del dispositivo.",
   "storage_settings_drive_generic_error": "No se pudo conectar Google Drive.",
   "storage_settings_drive_no_refresh_token": "Vuelve a autorizar Google Drive.",
+  "storage_drive_reconnect_saved_locally": "No pudimos usar Google Drive. El archivo se guardó en este dispositivo. Reconecta Drive en ajustes de almacenamiento.",
   "storage_settings_drive_title": "Google Drive",
   "storage_settings_drive_unavailable_reason": "Conecta Google Drive antes de seleccionarlo como método por defecto.",
   "storage_settings_local_badge": "Local",

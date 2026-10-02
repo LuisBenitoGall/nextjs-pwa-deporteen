@@ -464,6 +464,7 @@
   "storage_settings_drive_description": "Uploads photos and videos to your Google Drive so they are kept outside the device.",
   "storage_settings_drive_generic_error": "Google Drive could not be connected.",
   "storage_settings_drive_no_refresh_token": "Please authorise Google Drive again.",
+  "storage_drive_reconnect_saved_locally": "We could not use Google Drive. The file was saved on this device. Reconnect Drive in storage settings.",
   "storage_settings_drive_title": "Google Drive",
   "storage_settings_drive_unavailable_reason": "Connect Google Drive before selecting it as the default method.",
   "storage_settings_local_badge": "Local",
