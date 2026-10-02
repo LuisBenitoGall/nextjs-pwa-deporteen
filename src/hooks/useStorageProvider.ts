@@ -9,18 +9,21 @@ export type StorageProvider = 'local' | 'supabase' | 'drive' | 'r2';
 
 export type StorageProviderStatus = {
     provider: StorageProvider;
-    storedProvider: StorageProvider | null;
+    /** Preferencia persistida en backend (puede ser `drive` aunque el proveedor efectivo sea `local`). */
+    storedProvider: StorageProvider;
     driveAvailable: boolean;
     driveStatus: 'connected' | 'reconnect-required' | 'disconnected';
     r2Active: boolean;         // suscripción R2 activa
     r2ExpiresAt: Date | null;
     loading: boolean;
     setProvider: (p: StorageProvider) => Promise<void>;
+    /** Tras fallo OAuth Drive: proveedor efectivo local + estado reconnect-required. */
+    applyDriveReconnectFallback: () => void;
 };
 
 export function useStorageProvider(): StorageProviderStatus {
     const [provider, setProviderState] = useState<StorageProvider>('local');
-    const [storedProvider, setStoredProvider] = useState<StorageProvider | null>(null);
+    const [storedProvider, setStoredProvider] = useState<StorageProvider>('local');
     const [driveAvailable, setDriveAvailable] = useState(false);
     const [driveStatus, setDriveStatus] = useState<'connected' | 'reconnect-required' | 'disconnected'>('disconnected');
     const [r2Active, setR2Active] = useState(false);
@@ -64,6 +67,7 @@ export function useStorageProvider(): StorageProviderStatus {
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ provider: 'local' }),
                         }).catch(() => {});
+                        setStoredProvider('local');
                     }
 
                     setProviderState(effective);
@@ -97,5 +101,21 @@ export function useStorageProvider(): StorageProviderStatus {
         setStoredProvider(p);
     }, []);
 
-    return { provider, storedProvider, driveAvailable, driveStatus, r2Active, r2ExpiresAt, loading, setProvider };
+    const applyDriveReconnectFallback = useCallback(() => {
+        setProviderState('local');
+        setStoredProvider('local');
+        setDriveStatus('reconnect-required');
+    }, []);
+
+    return {
+        provider,
+        storedProvider,
+        driveAvailable,
+        driveStatus,
+        r2Active,
+        r2ExpiresAt,
+        loading,
+        setProvider,
+        applyDriveReconnectFallback,
+    };
 }

@@ -46,7 +46,7 @@ type LiveMatchViewProps = {
 
 export default function LiveMatchView({ matchId, initial }: LiveMatchViewProps) {
     const t = useT();
-    const { provider } = useStorageProvider();
+    const { provider, storedProvider, applyDriveReconnectFallback } = useStorageProvider();
 
     const { active: wakeActive, requesting: wakeRequesting, request: wakeRequest, release: wakeRelease } = useWakeLock();
 
@@ -182,6 +182,8 @@ export default function LiveMatchView({ matchId, initial }: LiveMatchViewProps) 
 
         setBusyMedia(true);
         setSaveError(null);
+        let driveReconnectNotice: string | null = null;
+        const choseDriveExplicitly = storedProvider === 'drive';
         try {
             for (const file of Array.from(fileList)) {
                 if (provider === 'r2') {
@@ -195,16 +197,20 @@ export default function LiveMatchView({ matchId, initial }: LiveMatchViewProps) 
                         method: 'POST',
                         body: form,
                     });
+                    const payload = await res.json().catch(() => ({} as {
+                        error?: string;
+                        code?: string;
+                        fallbackLocal?: boolean;
+                    }));
                     if (!res.ok) {
-                        const payload = (await res.json().catch(() => ({}))) as {
-                            error?: string;
-                            code?: string;
-                        };
                         const driveUnavailable =
                             res.status === 503 ||
-                            payload.code === 'DRIVE_NOT_CONFIGURED' ||
-                            payload.code === 'reconnect-required';
+                            payload?.code === 'DRIVE_NOT_CONFIGURED' ||
+                            payload?.code === 'reconnect-required';
                         if (driveUnavailable) {
+                            if (payload?.code === 'reconnect-required') {
+                                applyDriveReconnectFallback();
+                            }
                             await uploadMatchMedia({
                                 matchId: match.id,
                                 playerId: match.player_id ?? null,
@@ -212,6 +218,11 @@ export default function LiveMatchView({ matchId, initial }: LiveMatchViewProps) 
                                 kind,
                                 provider: 'local',
                             });
+                            if (choseDriveExplicitly || payload?.code === 'reconnect-required') {
+                                driveReconnectNotice =
+                                    t('storage_drive_reconnect_saved_locally') ||
+                                    'No pudimos usar Google Drive. El archivo se guardó en este dispositivo. Reconecta Drive en ajustes de almacenamiento.';
+                            }
                             continue;
                         }
                         throw new Error(payload?.error || t('storage_settings_drive_unavailable_reason'));
@@ -226,6 +237,9 @@ export default function LiveMatchView({ matchId, initial }: LiveMatchViewProps) 
                     });
                 }
             }
+            if (driveReconnectNotice) {
+                setSaveError(driveReconnectNotice);
+            }
             window.dispatchEvent(new CustomEvent('cloud-usage-refresh'));
         } catch (e: any) {
             const msg =
@@ -237,7 +251,7 @@ export default function LiveMatchView({ matchId, initial }: LiveMatchViewProps) 
             if (inputEl) inputEl.value = '';
             setBusyMedia(false);
         }
-    }, [match, provider, uploadMatchMediaToR2, t]);
+    }, [match, provider, storedProvider, applyDriveReconnectFallback, uploadMatchMediaToR2, t]);
 
     // Ref para que el debounce de inputs de marcador capture siempre los valores más recientes
     const latestScoresRef = useRef({ my: myScore, rival: rivalScore });

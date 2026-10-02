@@ -4,8 +4,10 @@ import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import {
   decryptToken,
   getDriveConnection,
+  GoogleOAuthError,
   refreshGoogleAccessToken,
 } from '@/lib/googleDrive/server';
+import { handleDriveOAuthReconnectFailure } from '@/lib/googleDrive/driveUploadReconnect';
 import { fetchGoogleWithRetry, isRetryableDriveStatus } from '@/lib/googleDrive/http';
 import { getServerUser } from '@/lib/supabase/server';
 import { isGoogleDriveEnvError, mapGoogleDriveEnvErrorToResponse } from '@/lib/env/server';
@@ -88,7 +90,16 @@ export async function POST(req: Request) {
       }
       throw envErr;
     }
-    const refreshed = await refreshGoogleAccessToken(refreshToken);
+    let refreshed: { access_token: string };
+    try {
+      refreshed = await refreshGoogleAccessToken(refreshToken);
+    } catch (refreshError) {
+      const reconnectPayload = await handleDriveOAuthReconnectFailure(user.id, refreshError);
+      if (reconnectPayload) {
+        return NextResponse.json(reconnectPayload, { status: 409 });
+      }
+      throw refreshError;
+    }
     const accessToken = refreshed.access_token;
 
     const metadata = {
@@ -168,11 +179,18 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true, mediaId, driveFileId });
   } catch (error: unknown) {
+    const reconnectPayload = await handleDriveOAuthReconnectFailure(user.id, error);
+    if (reconnectPayload) {
+      return NextResponse.json(reconnectPayload, { status: 409 });
+    }
     if (isGoogleDriveEnvError(error)) {
       const mapped = mapGoogleDriveEnvErrorToResponse(error);
       return NextResponse.json(mapped.body, { status: mapped.status });
     }
-    const message = String((error as Error)?.message ?? 'Drive upload failed');
+    const message =
+      error instanceof GoogleOAuthError
+        ? error.message
+        : String((error as Error)?.message ?? 'Drive upload failed');
     const isTransient = /drive-upload:(408|409|429|500|502|503|504):/.test(message);
     if (isTransient) {
       await admin

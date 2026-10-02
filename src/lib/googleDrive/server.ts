@@ -127,6 +127,37 @@ export async function exchangeCodeForTokens(code: string) {
   };
 }
 
+export type GoogleOAuthErrorPayload = {
+  error?: string;
+  error_description?: string;
+};
+
+export class GoogleOAuthError extends Error {
+  readonly oauthError?: string;
+
+  constructor(message: string, oauthError?: string) {
+    super(message);
+    this.name = 'GoogleOAuthError';
+    this.oauthError = oauthError;
+  }
+
+  get requiresReconnect(): boolean {
+    return this.oauthError === 'invalid_grant';
+  }
+}
+
+export function parseGoogleOAuthErrorBody(text: string): GoogleOAuthErrorPayload | null {
+  try {
+    return JSON.parse(text) as GoogleOAuthErrorPayload;
+  } catch {
+    return null;
+  }
+}
+
+export function isGoogleOAuthReconnectError(error: unknown): boolean {
+  return error instanceof GoogleOAuthError && error.requiresReconnect;
+}
+
 export async function refreshGoogleAccessToken(refreshToken: string) {
   const { clientId, clientSecret } = getGoogleDriveClientCredentials();
   const body = new URLSearchParams({
@@ -143,9 +174,39 @@ export async function refreshGoogleAccessToken(refreshToken: string) {
   });
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`Refresh failed: ${text}`);
+    const parsed = parseGoogleOAuthErrorBody(text);
+    const oauthError = parsed?.error;
+    if (oauthError === 'invalid_grant') {
+      throw new GoogleOAuthError('Google Drive requiere reconexión', oauthError);
+    }
+    throw new GoogleOAuthError('No se pudo renovar el acceso a Google Drive', oauthError);
   }
   return (await res.json()) as { access_token: string; scope?: string; token_type?: string };
+}
+
+export async function markDriveConnectionReconnectRequired(userId: string, lastError: string) {
+  const admin = getSupabaseAdmin();
+  const now = new Date().toISOString();
+  await admin
+    .from('google_drive_connections')
+    .update({
+      status: 'reconnect-required',
+      last_error: lastError,
+      updated_at: now,
+    })
+    .eq('user_id', userId);
+}
+
+export async function resetMediaStoragePreferenceToLocal(userId: string) {
+  const admin = getSupabaseAdmin();
+  await admin.from('media_storage_preferences').upsert(
+    {
+      user_id: userId,
+      provider: 'local',
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'user_id' }
+  );
 }
 
 export async function getDriveConnection(userId: string) {

@@ -464,6 +464,7 @@
   "storage_settings_drive_description": "Puja les fotos i vídeos al teu Google Drive per conservar-los fora del dispositiu.",
   "storage_settings_drive_generic_error": "No s'ha pogut connectar Google Drive.",
   "storage_settings_drive_no_refresh_token": "Torna a autoritzar Google Drive.",
+  "storage_drive_reconnect_saved_locally": "No hem pogut usar Google Drive. L'arxiu s'ha guardat en aquest dispositiu. Torna a connectar Drive als ajustos d'emmagatzematge.",
   "storage_settings_drive_title": "Google Drive",
   "storage_settings_drive_unavailable_reason": "Connecta Google Drive abans de seleccionar-lo com a mètode per defecte.",
   "storage_settings_drive_server_not_configured": "Google Drive no està configurat al servidor. Utilitza l'emmagatzematge al dispositiu.",
