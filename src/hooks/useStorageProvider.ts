@@ -9,6 +9,8 @@ export type StorageProvider = 'local' | 'supabase' | 'drive' | 'r2';
 
 export type StorageProviderStatus = {
     provider: StorageProvider;
+    storedProvider: StorageProvider | null;
+    driveAvailable: boolean;
     driveStatus: 'connected' | 'reconnect-required' | 'disconnected';
     r2Active: boolean;         // suscripción R2 activa
     r2ExpiresAt: Date | null;
@@ -18,6 +20,8 @@ export type StorageProviderStatus = {
 
 export function useStorageProvider(): StorageProviderStatus {
     const [provider, setProviderState] = useState<StorageProvider>('local');
+    const [storedProvider, setStoredProvider] = useState<StorageProvider | null>(null);
+    const [driveAvailable, setDriveAvailable] = useState(false);
     const [driveStatus, setDriveStatus] = useState<'connected' | 'reconnect-required' | 'disconnected'>('disconnected');
     const [r2Active, setR2Active] = useState(false);
     const [r2ExpiresAt, setR2ExpiresAt] = useState<Date | null>(null);
@@ -35,27 +39,34 @@ export function useStorageProvider(): StorageProviderStatus {
                     }
                     const prefJson = (await prefRes.json().catch(() => ({}))) as {
                         provider?: StorageProvider;
+                        storedProvider?: StorageProvider;
+                        driveAvailable?: boolean;
                         driveStatus?: 'connected' | 'reconnect-required' | 'disconnected';
                         r2Active?: boolean;
                         r2ExpiresAt?: string | null;
                     };
                     if (!mounted) return;
 
-                    const prov = prefJson.provider ?? 'local';
+                    const effective = prefJson.provider ?? 'local';
+                    const stored = prefJson.storedProvider ?? effective;
+                    const driveOk = Boolean(prefJson.driveAvailable);
                     const driveConnected = prefJson.driveStatus === 'connected';
-                    if (prov === 'drive' && !driveConnected) {
+
+                    setStoredProvider(stored);
+                    setDriveAvailable(driveOk);
+                    setDriveStatus(prefJson.driveStatus ?? 'disconnected');
+                    setR2Active(Boolean(prefJson.r2Active));
+                    setR2ExpiresAt(prefJson.r2ExpiresAt ? new Date(prefJson.r2ExpiresAt) : null);
+
+                    if (stored === 'drive' && (!driveOk || !driveConnected) && effective === 'local') {
                         fetch('/api/storage/provider', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ provider: 'local' }),
                         }).catch(() => {});
-                        setProviderState('local');
-                    } else {
-                        setProviderState(prov);
                     }
-                    setDriveStatus(prefJson.driveStatus ?? 'disconnected');
-                    setR2Active(Boolean(prefJson.r2Active));
-                    setR2ExpiresAt(prefJson.r2ExpiresAt ? new Date(prefJson.r2ExpiresAt) : null);
+
+                    setProviderState(effective);
                 });
             } catch {
                 // Proveedor local por defecto si la API falla
@@ -77,10 +88,14 @@ export function useStorageProvider(): StorageProviderStatus {
             if (p === 'drive' && payload.code === 'reconnect-required') {
                 setDriveStatus('reconnect-required');
             }
+            if (p === 'drive' && payload.code === 'DRIVE_NOT_CONFIGURED') {
+                setDriveAvailable(false);
+            }
             return;
         }
         setProviderState(p);
+        setStoredProvider(p);
     }, []);
 
-    return { provider, driveStatus, r2Active, r2ExpiresAt, loading, setProvider };
+    return { provider, storedProvider, driveAvailable, driveStatus, r2Active, r2ExpiresAt, loading, setProvider };
 }

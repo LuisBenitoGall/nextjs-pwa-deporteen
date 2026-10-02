@@ -1,12 +1,24 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
-import { getDriveStatus, type StorageProvider } from '@/lib/googleDrive/server';
+import { getDriveStatus, isGoogleDriveOAuthConfigured, type StorageProvider } from '@/lib/googleDrive/server';
 import { isAllowedProvider, isCrossUserAttempt } from '@/lib/storageProvider/validation';
 import { createSupabaseServerClient, getServerUser } from '@/lib/supabase/server';
 import { hasActiveStorageSubscription } from '@/lib/cloud/has-active-storage-subscription';
 import { isBillableRemoteProvider } from '@/lib/cloud/remote-access';
 
 export const runtime = 'nodejs';
+
+function resolveEffectiveProvider(
+  stored: StorageProvider | undefined,
+  driveStatus: Awaited<ReturnType<typeof getDriveStatus>>,
+  driveAvailable: boolean
+): StorageProvider {
+  const base = (stored as StorageProvider) ?? 'local';
+  if (base === 'drive' && (!driveAvailable || driveStatus !== 'connected')) {
+    return 'local';
+  }
+  return base;
+}
 
 export async function GET() {
   const { user } = await getServerUser();
@@ -15,6 +27,7 @@ export async function GET() {
   const admin = getSupabaseAdmin();
   const supabase = await createSupabaseServerClient();
   const nowIso = new Date().toISOString();
+  const driveAvailable = isGoogleDriveOAuthConfigured();
 
   const [{ data: preference }, driveStatus, { data: r2Sub }] = await Promise.all([
     admin
@@ -34,12 +47,17 @@ export async function GET() {
       .maybeSingle(),
   ]);
 
+  const storedProvider = (preference?.provider as StorageProvider) ?? 'local';
+  const provider = resolveEffectiveProvider(storedProvider, driveStatus, driveAvailable);
+
   const r2ExpiresAt = r2Sub?.current_period_end ? new Date(r2Sub.current_period_end) : null;
   const r2Active = Boolean(r2ExpiresAt && r2ExpiresAt > new Date() && (r2Sub?.gb_amount ?? 0) > 0);
 
   return NextResponse.json({
-    provider: (preference?.provider as StorageProvider) ?? 'local',
+    provider,
+    storedProvider,
     driveStatus,
+    driveAvailable,
     r2Active,
     r2ExpiresAt: r2ExpiresAt?.toISOString() ?? null,
   });
@@ -58,6 +76,15 @@ export async function POST(req: Request) {
   }
 
   if (body.provider === 'drive') {
+    if (!isGoogleDriveOAuthConfigured()) {
+      return NextResponse.json(
+        {
+          error: 'Google Drive no está configurado en el servidor. Usa almacenamiento en el dispositivo.',
+          code: 'DRIVE_NOT_CONFIGURED',
+        },
+        { status: 503 }
+      );
+    }
     const status = await getDriveStatus(user.id);
     if (status !== 'connected') {
       return NextResponse.json({ error: 'Drive not connected', code: 'reconnect-required' }, { status: 409 });

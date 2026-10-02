@@ -196,7 +196,24 @@ export default function LiveMatchView({ matchId, initial }: LiveMatchViewProps) 
                         body: form,
                     });
                     if (!res.ok) {
-                        const payload = await res.json().catch(() => ({} as any));
+                        const payload = (await res.json().catch(() => ({}))) as {
+                            error?: string;
+                            code?: string;
+                        };
+                        const driveUnavailable =
+                            res.status === 503 ||
+                            payload.code === 'DRIVE_NOT_CONFIGURED' ||
+                            payload.code === 'reconnect-required';
+                        if (driveUnavailable) {
+                            await uploadMatchMedia({
+                                matchId: match.id,
+                                playerId: match.player_id ?? null,
+                                file,
+                                kind,
+                                provider: 'local',
+                            });
+                            continue;
+                        }
                         throw new Error(payload?.error || t('storage_settings_drive_unavailable_reason'));
                     }
                 } else {
