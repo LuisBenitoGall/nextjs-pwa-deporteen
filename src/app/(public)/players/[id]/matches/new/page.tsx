@@ -3,346 +3,129 @@
 // Ruta: src/app/players/[id]/matches/new/page.tsx
 // =============================================
 
-'use client';
-
-import { Suspense, useEffect, useMemo, useState, use as usePromise } from 'react';
-import { supabaseBrowser } from '@/lib/supabase/client';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useT } from '@/i18n/I18nProvider';
-
-// Components
-import Input from '@/components/Input';
-import Select from '@/components/Select';
-import Submit from '@/components/Submit';
+import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { tServer } from '@/i18n/server';
 import TitleH1 from '@/components/TitleH1';
-import Radio from '@/components/Radio';
+import NewMatchMetaForm, { type NewMatchCompetition } from './NewMatchMetaForm';
 
-// Types
-type Competition = { id: string; name: string; sport_id: string; season_id: string | null; team_id: string | null };
-type Player = { id: string; full_name: string | null };
+type PageParams = { id: string };
+type Search = { competition?: string; competition_id?: string };
 
-type PageProps = { params: Promise<{ id: string }> };
+function pickInitialCompetition(
+  competitions: NewMatchCompetition[],
+  preCompetition: string
+): NewMatchCompetition | null {
+  if (!competitions.length) return null;
+  if (preCompetition) {
+    const fromQuery = competitions.find((c) => c.id === preCompetition);
+    if (fromQuery) return fromQuery;
+  }
+  if (competitions.length === 1) return competitions[0];
+  return null;
+}
 
-function NewMatchMetaPageInner({ playerId }: { playerId: string }) {
-  const t = useT();
-  const router = useRouter();
-  const searchParams = useSearchParams();
+export default async function NewMatchMetaPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<PageParams>;
+  searchParams: Promise<Search>;
+}) {
+  const { id: playerId } = await params;
+  const sp = await searchParams;
+  const preCompetition = sp?.competition || sp?.competition_id || '';
 
-  const supabase = useMemo(() => supabaseBrowser(), []);
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect(`/login?next=/players/${playerId}/matches/new`);
 
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { data: me } = await supabase.from('users').select('locale').eq('id', user.id).maybeSingle();
+  const { t } = await tServer(me?.locale || undefined);
 
-  const [player, setPlayer] = useState<Player | null>(null);
-  const [competitions, setCompetitions] = useState<Competition[]>([]);
+  const [{ data: player, error: playerErr }, { data: competitionsRaw, error: compsErr }] =
+    await Promise.all([
+      supabase
+        .from('players')
+        .select('id, full_name, user_id')
+        .eq('id', playerId)
+        .eq('user_id', user.id)
+        .maybeSingle(),
+      supabase
+        .from('competitions')
+        .select('id, name, sport_id, season_id, team_id')
+        .eq('player_id', playerId)
+        .order('name', { ascending: true }),
+    ]);
 
-  // Form state
-  const [competitionId, setCompetitionId] = useState('');
-  const [seasonId, setSeasonId] = useState('');
-  const [sportId, setSportId] = useState('');
-  const [teamId, setTeamId] = useState('');
-  const [dateAt, setDateAt] = useState('');
-  const [place, setPlace] = useState('');
-  const [isHome, setIsHome] = useState(true);
-  const [opponentName, setOpponentName] = useState<string>('');
-
-  // Acepta ?competition=... y ?competition_id=...
-  const preCompetition = searchParams.get('competition') || searchParams.get('competition_id') || '';
-
-  const tr = (key: string, fallback: string) => {
-    const value = t(key);
-    return value === key ? fallback : value;
-  };
-
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        const user = session?.user ?? null;
-
-        if (!user) {
-          if (mounted) setError(t('sesion_iniciar_aviso'));
-          return;
-        }
-
-        const [{ data: playerRow, error: playerErr }, { data: comps, error: compsErr }] =
-          await Promise.all([
-            supabase.from('players').select('id, full_name').eq('id', playerId).eq('user_id', user.id).maybeSingle(),
-            supabase
-              .from('competitions')
-              .select('id, name, sport_id, season_id, team_id')
-              .eq('player_id', playerId)
-              .order('name', { ascending: true }),
-          ]);
-
-        if (!mounted) return;
-
-        if (playerErr) {
-          setError(playerErr.message || tr('player_error_cargar', 'No se pudo cargar el deportista.'));
-          return;
-        }
-        if (compsErr) {
-          setError(compsErr.message || tr('competicion_error_cargar', 'No se pudieron cargar las competiciones.'));
-          return;
-        }
-
-        setPlayer(playerRow || null);
-        setCompetitions(comps || []);
-
-        if (!playerRow) {
-          setError(tr('player_error_cargar', 'No se pudo cargar el deportista.'));
-          return;
-        }
-
-        // Preselección si viene por query, pero sin bloquear ni filtrar la lista
-        if (preCompetition && comps?.length) {
-          const selected = comps.find((c) => c.id === preCompetition);
-          if (selected) {
-            setCompetitionId(selected.id);
-            setSportId(selected.sport_id);
-            setSeasonId(selected.season_id || '');
-            setTeamId(selected.team_id || '');
-          }
-        } else if (comps && comps.length === 1) {
-          const c = comps[0];
-          setCompetitionId(c.id);
-          setSportId(c.sport_id);
-          setSeasonId(c.season_id || '');
-          setTeamId(c.team_id || '');
-        }
-      } catch (e: unknown) {
-        if (mounted) {
-          setError(
-            e instanceof Error ? e.message : tr('error_carga_generica', 'No se pudo cargar el formulario.')
-          );
-        }
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    })();
-
-    return () => {
-      mounted = false;
-    };
-    // `t`/`tr` omitidos a propósito: incluirlos re-dispara el efecto al cargar i18n y deja "Cargando…" colgado.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- ver comentario
-  }, [supabase, playerId, preCompetition]);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setSaving(true);
-    setError(null);
-
-    const formData = new FormData(e.currentTarget as HTMLFormElement);
-    const dateFromForm = String(formData.get('date_at') || '').trim();
-    const effectiveDateAt = (dateAt || dateFromForm).trim();
-    if (effectiveDateAt && effectiveDateAt !== dateAt) {
-      setDateAt(effectiveDateAt);
-    }
-
-    if (!playerId) {
-      setError(tr('jugador_obligatorio', 'Jugador obligatorio.'));
-      setSaving(false);
-      return;
-    }
-    if (!competitionId) {
-      setError(tr('competicion_selecciona', 'Selecciona competición.'));
-      setSaving(false);
-      return;
-    }
-    if (!sportId) {
-      setError(tr('deporte_selecciona', 'Selecciona deporte.'));
-      setSaving(false);
-      return;
-    }
-    if (!effectiveDateAt) {
-      setError(tr('fecha_requerida', 'La fecha es obligatoria.'));
-      setSaving(false);
-      return;
-    }
-    if (!teamId) {
-      setError(
-        tr(
-          'equipo_asignado_requerido',
-          'Esta competición no tiene equipo asignado. Edítala y añade club y equipo antes de crear partidos.'
-        )
-      );
-      setSaving(false);
-      return;
-    }
-
-    const payload: {
-      competition_id: string;
-      sport_id: string;
-      season_id: string | null;
-      date_at: string;
-      place: string | null;
-      is_home: boolean;
-      player_id: string;
-      team_id: string;
-      rival_team_name: string | null;
-      my_score: number;
-      rival_score: number;
-      status: string;
-      notes: null;
-      stats: null;
-    } = {
-      competition_id: competitionId,
-      sport_id: sportId,
-      season_id: seasonId || null,
-      date_at: new Date(effectiveDateAt).toISOString(),
-      place: place || null,
-      is_home: !!isHome,
-      player_id: playerId,
-      team_id: teamId,
-      rival_team_name: opponentName || null,
-      my_score: 0,
-      rival_score: 0,
-      status: 'scheduled',
-      notes: null,
-      stats: null,
-    };
-
-    const insertRes = await supabase.from('matches').insert(payload).select('id').single();
-    if (insertRes.error) {
-      setError(insertRes.error.message || 'No se pudo crear el partido.');
-      setSaving(false);
-      return;
-    }
-
-    router.replace(`/matches/${insertRes.data.id}/live`);
+  if (playerErr) {
+    return (
+      <div className="max-w-xl mx-auto">
+        <TitleH1>{t('partido_nuevo') || 'Nuevo partido'}</TitleH1>
+        <div className="mt-4 rounded-xl border p-4 bg-red-50 text-red-800">
+          {t('player_error_cargar') ?? 'No se pudo cargar el deportista.'}
+        </div>
+        <div className="mt-4">
+          <Link href="/dashboard" className="text-green-700 underline">
+            {t('volver_panel') || 'Volver al panel'}
+          </Link>
+        </div>
+      </div>
+    );
   }
 
-  if (loading) return <div className="p-6">{t('cargando') || 'Cargando…'}</div>;
+  if (!player) {
+    redirect('/dashboard');
+  }
 
-  const fullName = player?.full_name || playerId;
-  const panelUrl = `/players/${playerId}`;
+  if (compsErr) {
+    return (
+      <div className="max-w-xl mx-auto">
+        <TitleH1>
+          {t('partido_nuevo') || 'Nuevo partido'} <i>{player.full_name}</i>
+        </TitleH1>
+        <div className="mt-4 rounded-xl border p-4 bg-red-50 text-red-800">
+          {compsErr.message || t('competicion_error_cargar') || 'No se pudieron cargar las competiciones.'}
+        </div>
+      </div>
+    );
+  }
+
+  const competitions = (competitionsRaw || []) as NewMatchCompetition[];
+  const initial = pickInitialCompetition(competitions, preCompetition);
 
   return (
     <div className="max-w-3xl mx-auto">
       <TitleH1>
-        {t('partido_nuevo') || 'Nuevo partido'} <i>{fullName}</i>
+        {t('partido_nuevo') || 'Nuevo partido'} <i>{player.full_name}</i>
       </TitleH1>
 
-      <form onSubmit={handleSubmit} className="space-y-6 p-1">
-        {/* Competición */}
-        <div className="grid grid-cols-1">
-          {competitions.length === 1 ? (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('competicion') || 'Competición'}</label>
-              <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 text-gray-900">
-                {competitions[0].name}
-              </div>
-              <input type="hidden" name="competition_id" value={competitionId} />
-            </div>
-          ) : (
-            <Select
-              name="competition_id"
-              label={t('competicion') || 'Competición'}
-              value={competitionId}
-              onChange={(e) => {
-                const val = e.target.value;
-                setCompetitionId(val);
-                const comp = competitions.find((c) => c.id === val);
-                if (comp) {
-                  setSportId(comp.sport_id);
-                  setSeasonId(comp.season_id || '');
-                  setTeamId(comp.team_id || '');
-                }
-              }}
-              options={competitions.map((c) => ({ value: c.id, label: c.name }))}
-              placeholder={t('competicion_selec') || 'Selecciona…'}
-            />
-          )}
-        </div>
-
-        {/* Fecha y lugar */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input
-            label={t('fecha') || 'Fecha'}
-            id="date_at"
-            name="date_at"
-            type="datetime-local"
-            defaultValue={dateAt}
-            onChange={(e: any) => setDateAt(e.target.value)}
-            onInput={(e: any) => setDateAt(e.target.value)}
-            onClick={(e: any) => e.currentTarget?.showPicker?.()}
-          />
-          <Input
-            label={t('lugar') || 'Lugar'}
-            id="place"
-            name="place"
-            value={place}
-            onChange={(e: any) => setPlace(e.target.value)}
-          />
-        </div>
-
-        {/* Equipo rival */}
-        <div className="grid grid-cols-1">
-          <Input
-            label={t('equipo_rival') || 'Nombre equipo rival'}
-            id="opponent_name"
-            name="opponent_name"
-            value={opponentName}
-            onChange={(e: any) => setOpponentName(e.target.value)}
-          />
-        </div>
-
-        {/* Local/visitante */}
-        <div className="flex items-center gap-8">
-          <Radio
-            name="venue"
-            value="home"
-            checked={isHome}
-            onChange={() => setIsHome(true)}
-            label={t('juego_local') || 'soy local'}
-          />
-          <Radio
-            name="venue"
-            value="away"
-            checked={!isHome}
-            onChange={() => setIsHome(false)}
-            label={t('juego_visitante') || 'soy visitante'}
-          />
-        </div>
-
-        {error && <div className="rounded border p-3 bg-red-50 text-red-700">{error}</div>}
-
-        {/* Acciones: 50/50 Cancelar / Continuar */}
-        <div className="grid grid-cols-2 gap-3 pt-2">
-          <button
-            type="button"
-            onClick={() => router.push(panelUrl)}
-            className="w-full rounded-lg border border-gray-300 px-4 py-3 font-semibold text-gray-700 hover:bg-gray-50"
+      {!competitions.length ? (
+        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
+          <p className="text-sm">
+            {t('competicion_crear_primero') ||
+              'Crea al menos una competición para este deportista antes de registrar un partido.'}
+          </p>
+          <Link
+            href={`/players/${player.id}/competitions/new`}
+            className="mt-3 inline-block text-sm font-semibold text-green-700 underline"
           >
-            {t('cancelar') || 'Cancelar'}
-          </button>
-          <Submit
-            text={t('continuar') || 'Continuar'}
-            loadingText={t('guardando') || 'Guardando…'}
-            disabled={!competitionId || saving}
-            className="w-full"
-          />
+            {t('competicion_nueva') || 'Nueva competición'}
+          </Link>
         </div>
-      </form>
+      ) : (
+        <NewMatchMetaForm
+          playerId={player.id}
+          competitions={competitions}
+          initialCompetitionId={initial?.id ?? ''}
+          initialSportId={initial?.sport_id ?? ''}
+          initialSeasonId={initial?.season_id ?? ''}
+          initialTeamId={initial?.team_id ?? ''}
+        />
+      )}
     </div>
-  );
-}
-
-export default function NewMatchMetaPage({ params }: PageProps) {
-  const { id: playerId } = usePromise(params);
-  const t = useT();
-
-  return (
-    <Suspense fallback={<div className="p-6">{t('cargando') || 'Cargando…'}</div>}>
-      <NewMatchMetaPageInner playerId={playerId} />
-    </Suspense>
   );
 }
