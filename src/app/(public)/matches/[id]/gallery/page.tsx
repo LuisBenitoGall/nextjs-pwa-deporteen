@@ -4,13 +4,15 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { supabaseBrowser } from '@/lib/supabase/client';
-import { idbGet } from '@/lib/mediaLocal';
 import { useT } from '@/i18n/I18nProvider';
 import Image from 'next/image';
 import { useWakeLock } from '@/lib/useWakeLock';
 import { useStorageProvider } from '@/hooks/useStorageProvider';
 import CloudUsageStatus from '@/components/cloud/CloudUsageStatus';
-import { resolveDriveMediaSource } from '@/lib/googleDrive/mediaResolution';
+import {
+  isSupabaseStoragePath,
+  resolveMatchMediaSources,
+} from '@/lib/matchMedia/resolveSources';
 
 //Componentes
 import ConfirmDeleteButton from '@/components/ConfirmDeleteButton';
@@ -52,6 +54,8 @@ export default function MatchGalleryPage() {
   //const [deletingId, setDeletingId] = useState<string | null>(null);
     const [urls, setUrls] = useState<Record<string, string>>({}); // id -> src usable
     const blobUrlsRef = useRef<string[]>([]);
+    const resolvedIdsRef = useRef<Set<string>>(new Set());
+    const mediaRef = useRef<MediaRow[]>([]);
 
   // --- Mantener pantalla encendida (Wake Lock) ---
   const {
@@ -110,7 +114,10 @@ export default function MatchGalleryPage() {
         return;
       }
 
-      setMedia((mediaRows as MediaRow[]) || []);
+      const rows = (mediaRows as MediaRow[]) || [];
+      resolvedIdsRef.current = new Set();
+      setMedia(rows);
+      mediaRef.current = rows;
       setLoading(false);
     })();
 
@@ -127,73 +134,63 @@ export default function MatchGalleryPage() {
 
 
 
-      // Resolver URLs: signed URL si hay storage_path; blob: si solo hay device_uri
- useEffect(() => {
-   let cancelled = false;
-  (async () => {
-    const out: Record<string, string> = {};
-    const created: string[] = [];
-    for (const m of media) {
-      try {
-        const driveFileId = m.google_drive_file_id ?? (m.storage_path?.startsWith('drive:') ? m.storage_path.slice(6) : null);
-        const isDrive = !!driveFileId;
-        if (!isDrive && m.device_uri) {
-          const blob = await idbGet(m.device_uri);
-          if (blob) {
-            const u = URL.createObjectURL(blob);
-            created.push(u);
-            out[m.id] = u;
-            continue;
-          }
-        }
+  useEffect(() => {
+    mediaRef.current = media;
+  }, [media]);
 
-        if (m.storage_path?.startsWith('r2:')) {
-          const base = process.env.NEXT_PUBLIC_R2_PUBLIC_URL?.replace(/\/$/, '');
-          if (base) {
-            out[m.id] = `${base}/${m.storage_path.slice(3)}`;
-          }
-        } else if (isDrive && driveFileId) {
-          const result = await resolveDriveMediaSource(driveFileId);
-          if (result.available) {
-            out[m.id] = result.src;
-          } else {
-            setUnavailable((prev) => ({ ...prev, [m.id]: t('media_no_disponible') || t('sin_preview') || 'No disponible' }));
-          }
-        } else if (m.storage_path) {
-          const { data, error } = await supabase
-            .storage
-            .from('matches')
-            .createSignedUrl(m.storage_path, 60 * 60); // 1h
-          if (!error && data?.signedUrl) {
-            out[m.id] = data.signedUrl;
-          }
-        }
-      } catch {/* silencio administrativo */}
-    }
-    if (!cancelled) {
-      // revoca blobs anteriores y guarda los nuevos
-      for (const u of blobUrlsRef.current) if (u?.startsWith('blob:')) URL.revokeObjectURL(u);
-      blobUrlsRef.current = created;
-      setUrls(out);
-    }
-  })();
-  return () => {
-    cancelled = true;
-    // revoca solo los creados en esta ejecución
-    for (const u of blobUrlsRef.current) if (u?.startsWith('blob:')) URL.revokeObjectURL(u);
-    blobUrlsRef.current = [];
-  };
-}, [media, supabase, t]);
+  // Resolver URLs en paralelo; solo ítems nuevos (evita re-leer IDB al recuperar foco).
+  useEffect(() => {
+    let cancelled = false;
+    const newMedia = media.filter(m => !resolvedIdsRef.current.has(m.id));
+    if (newMedia.length === 0) return;
 
- // Re-genera signed URLs al recuperar foco (por si caducan)
- useEffect(() => {
-   const onFocus = () => {
-     // fuerza recálculo provocando cambio de referencia
-     setMedia(m => [...m]);
-   };
-   window.addEventListener('focus', onFocus);
-   return () => window.removeEventListener('focus', onFocus);
- }, []);
+    for (const m of newMedia) resolvedIdsRef.current.add(m.id);
+
+    const unavailableLabel = t('media_no_disponible') || t('sin_preview') || 'No disponible';
+
+    void resolveMatchMediaSources(newMedia, supabase, unavailableLabel, {
+      onItem: ({ id, src, blobUrl }) => {
+        if (cancelled) return;
+        if (blobUrl) blobUrlsRef.current.push(blobUrl);
+        setUrls(prev => (prev[id] === src ? prev : { ...prev, [id]: src }));
+      },
+    }).then(({ unavailable: batchUnavailable }) => {
+      if (cancelled) return;
+      if (Object.keys(batchUnavailable).length) {
+        setUnavailable(prev => ({ ...prev, ...batchUnavailable }));
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [media, supabase, t]);
+
+  // Re-firma solo Supabase Storage al recuperar foco (sin re-resolver IDB/Drive/R2).
+  useEffect(() => {
+    const onFocus = () => {
+      const rows = mediaRef.current.filter(m => isSupabaseStoragePath(m.storage_path));
+      if (rows.length === 0) return;
+      const unavailableLabel = t('media_no_disponible') || t('sin_preview') || 'No disponible';
+      void resolveMatchMediaSources(rows, supabase, unavailableLabel, {
+        supabaseSignedUrlsOnly: true,
+        onItem: ({ id, src }) => {
+          setUrls(prev => (prev[id] === src ? prev : { ...prev, [id]: src }));
+        },
+      });
+    };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [supabase, t]);
+
+  useEffect(() => {
+    const urlsToRevoke = blobUrlsRef.current;
+    return () => {
+      for (const u of urlsToRevoke) {
+        if (u?.startsWith('blob:')) URL.revokeObjectURL(u);
+      }
+    };
+  }, []);
   
 
     async function handleDelete(id: string) {

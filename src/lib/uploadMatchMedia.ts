@@ -82,19 +82,26 @@ export async function uploadMatchMedia(params: {
     : params.kind;
 
   const supabase = supabaseBrowser();
-  const { data: authData, error: authErr } = await supabase.auth.getUser();
-  if (authErr || !authData?.user?.id) throw new Error('No autenticado');
-  const uid = authData.user.id;
-
-  // Metadatos
-  let { width, height, duration_ms } = params;
-  if (kind === 'image' && (!width || !height)) {
-    const meta = await probeImage(file);
-    width = meta.width; height = meta.height;
-  } else if (kind === 'video' && (!width || !height || !duration_ms)) {
-    const meta = await probeVideo(file);
-    width = meta.width; height = meta.height; duration_ms = meta.duration_ms;
+  const { data: sessionData } = await supabase.auth.getSession();
+  let uid = sessionData.session?.user?.id;
+  if (!uid) {
+    const { data: authData, error: authErr } = await supabase.auth.getUser();
+    if (authErr || !authData?.user?.id) throw new Error('No autenticado');
+    uid = authData.user.id;
   }
+
+  const requestedProvider = params.provider ?? (LEGACY_CLOUD_FLAG ? 'supabase' : 'local');
+  const isLocalProvider = requestedProvider === 'local';
+
+  // Metadatos: en local no bloqueamos el insert; se completan en segundo plano si faltan.
+  let { width, height, duration_ms } = params;
+  const needsImageProbe = kind === 'image' && (!width || !height);
+  const needsVideoProbe = kind === 'video' && (!width || !height || !duration_ms);
+  const needsProbe = needsImageProbe || needsVideoProbe;
+
+  const probePromise = needsProbe
+    ? (kind === 'image' ? probeImage(file) : probeVideo(file))
+    : null;
 
   // Identificadores y clave local
   const mediaId = (crypto?.randomUUID?.() ?? `m_${Math.random().toString(36).slice(2)}${Date.now()}`);
@@ -104,7 +111,18 @@ export async function uploadMatchMedia(params: {
   // 1) Guardar local siempre: sirve como caché inmediata aunque el proveedor sea Drive/Supabase.
   await idbPut(deviceKey, file);
 
-  const requestedProvider = params.provider ?? (LEGACY_CLOUD_FLAG ? 'supabase' : 'local');
+  if (!isLocalProvider && probePromise) {
+    const meta = await probePromise;
+    if (kind === 'image') {
+      width = meta.width ?? width;
+      height = meta.height ?? height;
+    } else {
+      const videoMeta = meta as Awaited<ReturnType<typeof probeVideo>>;
+      width = videoMeta.width ?? width;
+      height = videoMeta.height ?? height;
+      duration_ms = videoMeta.duration_ms ?? duration_ms;
+    }
+  }
 
   // Remoto facturable (R2 / Supabase): solo vía API con validación en servidor
   if (requestedProvider === 'r2' || requestedProvider === 'supabase') {
@@ -197,7 +215,9 @@ export async function uploadMatchMedia(params: {
       storage_provider: requestedProvider === 'drive' ? 'drive' : 'local',
       mime_type: mime,
       size_bytes: file.size,
-      width, height, duration_ms,
+      width: width ?? null,
+      height: height ?? null,
+      duration_ms: duration_ms ?? null,
       device_uri: deviceKey,
       storage_path: storagePath,
       google_drive_file_id: capturedDriveFileId,
@@ -208,6 +228,23 @@ export async function uploadMatchMedia(params: {
     .single();
 
   if (insertRes.error) throw new Error(insertRes.error.message || 'No se pudo insertar en match_media');
+
+  if (isLocalProvider && probePromise) {
+    void probePromise.then(async (meta) => {
+      const patch: { width?: number; height?: number; duration_ms?: number } = {};
+      if (kind === 'image') {
+        if (meta.width) patch.width = meta.width;
+        if (meta.height) patch.height = meta.height;
+      } else {
+        const videoMeta = meta as Awaited<ReturnType<typeof probeVideo>>;
+        if (videoMeta.width) patch.width = videoMeta.width;
+        if (videoMeta.height) patch.height = videoMeta.height;
+        if (videoMeta.duration_ms != null) patch.duration_ms = videoMeta.duration_ms;
+      }
+      if (Object.keys(patch).length === 0) return;
+      await supabase.from('match_media').update(patch).eq('id', mediaId);
+    }).catch(() => {});
+  }
 
   return { id: mediaId, storagePath };
 }

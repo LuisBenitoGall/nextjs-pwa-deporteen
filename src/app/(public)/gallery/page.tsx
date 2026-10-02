@@ -3,10 +3,9 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { supabaseBrowser } from '@/lib/supabase/client';
-import { idbGet } from '@/lib/mediaLocal';
 import { useT } from '@/i18n/I18nProvider';
 import Image from 'next/image';
-import { resolveDriveMediaSource } from '@/lib/googleDrive/mediaResolution';
+import { resolveMatchMediaSources } from '@/lib/matchMedia/resolveSources';
 import TitleH1 from '@/components/TitleH1';
 import ConfirmDeleteButton from '@/components/ConfirmDeleteButton';
 import InlineFlashBanner from '@/components/InlineFlashBanner';
@@ -110,7 +109,12 @@ export default function MyGalleryPage() {
       setLoading(true);
       setError(null);
 
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      let user = session?.user ?? null;
+      if (!user) {
+        const { data: { user: refreshed } } = await supabase.auth.getUser();
+        user = refreshed ?? null;
+      }
       if (!mounted) return;
       if (!user) {
         window.location.replace('/login');
@@ -162,46 +166,22 @@ export default function MyGalleryPage() {
     const newMedia = allMedia.filter(m => !resolvedIdsRef.current.has(m.id));
     if (newMedia.length === 0) return;
 
-    (async () => {
-      const out: Record<string, string> = {};
-      const created: string[] = [];
-      for (const m of newMedia) {
-        resolvedIdsRef.current.add(m.id);
-        try {
-          const driveFileId = m.google_drive_file_id ?? (m.storage_path?.startsWith('drive:') ? m.storage_path.slice(6) : null);
-          const isDrive = !!driveFileId;
-          if (!isDrive && m.device_uri) {
-            const blob = await idbGet(m.device_uri);
-            if (blob) {
-              const u = URL.createObjectURL(blob);
-              created.push(u);
-              out[m.id] = u;
-              continue;
-            }
-          }
-          if (m.storage_path?.startsWith('r2:')) {
-            const base = process.env.NEXT_PUBLIC_R2_PUBLIC_URL?.replace(/\/$/, '');
-            if (base) out[m.id] = `${base}/${m.storage_path.slice(3)}`;
-          } else if (isDrive && driveFileId) {
-            const result = await resolveDriveMediaSource(driveFileId);
-            if (result.available) {
-              out[m.id] = result.src;
-            } else {
-              setUnavailable(prev => ({ ...prev, [m.id]: t('media_no_disponible') || t('sin_preview') || 'No disponible' }));
-            }
-          } else if (m.storage_path) {
-            const { data, error } = await supabase.storage
-              .from('matches')
-              .createSignedUrl(m.storage_path, 60 * 60);
-            if (!error && data?.signedUrl) out[m.id] = data.signedUrl;
-          }
-        } catch { /* noop */ }
+    for (const m of newMedia) resolvedIdsRef.current.add(m.id);
+
+    const unavailableLabel = t('media_no_disponible') || t('sin_preview') || 'No disponible';
+
+    void resolveMatchMediaSources(newMedia, supabase, unavailableLabel, {
+      onItem: ({ id, src, blobUrl }) => {
+        if (cancelled) return;
+        if (blobUrl) blobUrlsRef.current.push(blobUrl);
+        setUrls(prev => (prev[id] === src ? prev : { ...prev, [id]: src }));
+      },
+    }).then(({ unavailable: batchUnavailable }) => {
+      if (cancelled) return;
+      if (Object.keys(batchUnavailable).length) {
+        setUnavailable(prev => ({ ...prev, ...batchUnavailable }));
       }
-      if (!cancelled) {
-        blobUrlsRef.current.push(...created);
-        setUrls(prev => ({ ...prev, ...out }));
-      }
-    })();
+    });
 
     return () => { cancelled = true; };
   }, [groups, supabase, t]);
