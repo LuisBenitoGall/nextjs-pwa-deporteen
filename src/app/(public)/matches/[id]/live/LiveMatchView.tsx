@@ -203,10 +203,14 @@ export default function LiveMatchView({ matchId, initial }: LiveMatchViewProps) 
                         fallbackLocal?: boolean;
                     }));
                     if (!res.ok) {
-                        const canFallbackLocal =
-                            payload?.code === 'reconnect-required' && payload?.fallbackLocal === true;
-                        if (canFallbackLocal) {
-                            applyDriveReconnectFallback();
+                        const driveUnavailable =
+                            res.status === 503 ||
+                            payload?.code === 'DRIVE_NOT_CONFIGURED' ||
+                            payload?.code === 'reconnect-required';
+                        if (driveUnavailable) {
+                            if (payload?.code === 'reconnect-required') {
+                                applyDriveReconnectFallback();
+                            }
                             await uploadMatchMedia({
                                 matchId: match.id,
                                 playerId: match.player_id ?? null,
@@ -214,7 +218,7 @@ export default function LiveMatchView({ matchId, initial }: LiveMatchViewProps) 
                                 kind,
                                 provider: 'local',
                             });
-                            if (choseDriveExplicitly) {
+                            if (choseDriveExplicitly || payload?.code === 'reconnect-required') {
                                 driveReconnectNotice =
                                     t('storage_drive_reconnect_saved_locally') ||
                                     'No pudimos usar Google Drive. El archivo se guardó en este dispositivo. Reconecta Drive en ajustes de almacenamiento.';

@@ -10,6 +10,8 @@ import {
 import { handleDriveOAuthReconnectFailure } from '@/lib/googleDrive/driveUploadReconnect';
 import { fetchGoogleWithRetry, isRetryableDriveStatus } from '@/lib/googleDrive/http';
 import { getServerUser } from '@/lib/supabase/server';
+import { isGoogleDriveEnvError, mapGoogleDriveEnvErrorToResponse } from '@/lib/env/server';
+import { isGoogleDriveOAuthConfigured } from '@/lib/googleDrive/server';
 
 const ALLOWED = ['image/', 'video/'];
 const MAX_IMAGE_BYTES = 12 * 1024 * 1024;
@@ -24,6 +26,17 @@ function isAllowedMime(mime: string) {
 export async function POST(req: Request) {
   const { user } = await getServerUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  if (!isGoogleDriveOAuthConfigured()) {
+    return NextResponse.json(
+      {
+        error:
+          'Google Drive no está disponible. El archivo se puede guardar en el dispositivo desde ajustes de almacenamiento.',
+        code: 'DRIVE_NOT_CONFIGURED',
+      },
+      { status: 503 }
+    );
+  }
 
   const form = await req.formData();
   const file = form.get('file');
@@ -67,7 +80,16 @@ export async function POST(req: Request) {
   }
 
   try {
-    const refreshToken = decryptToken(conn.refresh_token_encrypted);
+    let refreshToken: string;
+    try {
+      refreshToken = decryptToken(conn.refresh_token_encrypted);
+    } catch (envErr) {
+      if (isGoogleDriveEnvError(envErr)) {
+        const mapped = mapGoogleDriveEnvErrorToResponse(envErr);
+        return NextResponse.json(mapped.body, { status: mapped.status });
+      }
+      throw envErr;
+    }
     let refreshed: { access_token: string };
     try {
       refreshed = await refreshGoogleAccessToken(refreshToken);
@@ -161,11 +183,14 @@ export async function POST(req: Request) {
     if (reconnectPayload) {
       return NextResponse.json(reconnectPayload, { status: 409 });
     }
-
+    if (isGoogleDriveEnvError(error)) {
+      const mapped = mapGoogleDriveEnvErrorToResponse(error);
+      return NextResponse.json(mapped.body, { status: mapped.status });
+    }
     const message =
       error instanceof GoogleOAuthError
         ? error.message
-        : String((error as { message?: string })?.message ?? 'Drive upload failed');
+        : String((error as Error)?.message ?? 'Drive upload failed');
     const isTransient = /drive-upload:(408|409|429|500|502|503|504):/.test(message);
     if (isTransient) {
       await admin

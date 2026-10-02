@@ -467,6 +467,8 @@
   "storage_drive_reconnect_saved_locally": "No hem pogut usar Google Drive. L'arxiu s'ha guardat en aquest dispositiu. Torna a connectar Drive als ajustos d'emmagatzematge.",
   "storage_settings_drive_title": "Google Drive",
   "storage_settings_drive_unavailable_reason": "Connecta Google Drive abans de seleccionar-lo com a mètode per defecte.",
+  "storage_settings_drive_server_not_configured": "Google Drive no està configurat al servidor. Utilitza l'emmagatzematge al dispositiu.",
+  "live_media_saved_local_drive_unavailable": "Desat al dispositiu. Google Drive no està disponible; tria «Dispositiu» a Compte → Emmagatzematge.",
   "storage_settings_local_badge": "Local",
   "storage_settings_local_description": "Desa fotos i vídeos en aquest dispositiu. És ràpid i funciona sense connexió, però no estarà disponible des d'altres mòbils.",
   "storage_settings_local_title": "Aquest dispositiu",

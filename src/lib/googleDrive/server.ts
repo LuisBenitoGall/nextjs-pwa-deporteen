@@ -3,15 +3,22 @@ import 'server-only';
 import crypto from 'crypto';
 import { cookies } from 'next/headers';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
-import { getServerEnv } from '@/lib/env/server';
+import {
+  getGoogleDriveClientCredentials,
+  getGoogleDriveOAuthEnv,
+  getGoogleDriveTokenSecretBuffer,
+  isGoogleDriveOAuthConfigured,
+} from '@/lib/env/server';
 
 export type DriveConnectionStatus = 'connected' | 'reconnect-required' | 'disconnected';
 export type StorageProvider = 'local' | 'drive' | 'r2' | 'supabase';
 
+export { isGoogleDriveOAuthConfigured };
+
 const STATE_COOKIE = 'google_drive_oauth_state';
 
 export function getGoogleOAuthConfig() {
-  const env = getServerEnv();
+  const env = getGoogleDriveOAuthEnv();
   return {
     clientId: env.GOOGLE_CLIENT_ID,
     clientSecret: env.GOOGLE_CLIENT_SECRET,
@@ -20,8 +27,7 @@ export function getGoogleOAuthConfig() {
 }
 
 function getTokenSecret(): Buffer {
-  const raw = getServerEnv().GOOGLE_DRIVE_TOKEN_SECRET;
-  return crypto.createHash('sha256').update(raw).digest();
+  return getGoogleDriveTokenSecretBuffer();
 }
 
 export function encryptToken(plain: string): string {
@@ -153,7 +159,7 @@ export function isGoogleOAuthReconnectError(error: unknown): boolean {
 }
 
 export async function refreshGoogleAccessToken(refreshToken: string) {
-  const { clientId, clientSecret } = getGoogleOAuthConfig();
+  const { clientId, clientSecret } = getGoogleDriveClientCredentials();
   const body = new URLSearchParams({
     refresh_token: refreshToken,
     client_id: clientId,
@@ -214,6 +220,7 @@ export async function getDriveConnection(userId: string) {
 }
 
 export async function getDriveStatus(userId: string): Promise<DriveConnectionStatus> {
+  if (!isGoogleDriveOAuthConfigured()) return 'disconnected';
   const conn = await getDriveConnection(userId);
   if (!conn) return 'disconnected';
   if (conn.status === 'reconnect-required') return 'reconnect-required';

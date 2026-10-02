@@ -467,6 +467,8 @@
   "storage_drive_reconnect_saved_locally": "No pudimos usar Google Drive. El archivo se guardó en este dispositivo. Reconecta Drive en ajustes de almacenamiento.",
   "storage_settings_drive_title": "Google Drive",
   "storage_settings_drive_unavailable_reason": "Conecta Google Drive antes de seleccionarlo como método por defecto.",
+  "storage_settings_drive_server_not_configured": "Google Drive no está configurado en el servidor. Usa almacenamiento en el dispositivo.",
+  "live_media_saved_local_drive_unavailable": "Guardado en el dispositivo. Google Drive no está disponible; elige «Dispositivo» en Cuenta → Almacenamiento.",
   "storage_settings_local_badge": "Local",
   "storage_settings_local_description": "Guarda fotos y vídeos en este dispositivo. Es rápido y funciona sin conexión, pero no estará disponible desde otros móviles.",
   "storage_settings_local_title": "Este dispositivo",
