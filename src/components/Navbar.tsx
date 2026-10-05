@@ -27,7 +27,15 @@ type UserLike = {
     user_metadata?: Record<string, any>;
 } | null;
 
-export default function Navbar({ serverUserId, serverIsAdmin = false }: { serverUserId?: string | null; serverIsAdmin?: boolean }) {
+export default function Navbar({
+    serverUserId,
+    serverIsAdmin = false,
+    hasSubscriptionBanner = false,
+}: {
+    serverUserId?: string | null;
+    serverIsAdmin?: boolean;
+    hasSubscriptionBanner?: boolean;
+}) {
     const t = useT();
     const { locale, setLocale, locales } = useLocale();
     const BRAND = process.env.NEXT_PUBLIC_PROJECT || 'DeporTeen';
@@ -411,7 +419,9 @@ export default function Navbar({ serverUserId, serverIsAdmin = false }: { server
     const showCTAs = mounted && !isProtectedPath && ((hideAuthUI) ? true : (authChecked && !user));
 
     return (
-        <nav className="fixed left-0 right-0 top-0 z-50 border-b border-green-200 bg-green-100 text-slate-100 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-green-100 dark:border-zinc-700 dark:bg-zinc-950/80">
+        <nav
+            className={`fixed left-0 right-0 z-50 border-b border-green-200 bg-green-100 text-slate-100 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-green-100 dark:border-zinc-700 dark:bg-zinc-950/80 ${hasSubscriptionBanner ? 'top-10' : 'top-0'}`}
+        >
             <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:h-16 sm:px-6 lg:px-8">
                 {/* Brand */}
                 <div className="text-3xl font-extrabold text-green-700">

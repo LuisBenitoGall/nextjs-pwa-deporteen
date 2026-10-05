@@ -497,6 +497,7 @@
   "suscripcion_codigo_error": "Código de suscripción no válido.",
   "suscripcion_inactiva_texto": "Debes renovar tu suscripción para poder añadir nuevos partidos, y ampliarla para incluir nuevos deportistas.",
   "suscripcion_inactiva_titulo": "No tienes ninguna suscripción activa en estos momentos.",
+  "suscripcion_vencida_banner": "Tu suscripción ha vencido.",
   "suscripcion_necesaria_para_crear": "Necesitas una suscripción para crear esto.",
   "suscripcion_planes_texto": "Todos los planes de suscripción incluyen las siguientes características: <br> · Acceso ilimitado a todo el historial registrado. <br> · Exportación del historial a .xls. <br> · Imágenes y videos se guardan en el propio dispositivo. <br> · Período de 14 días para solicitar reembolso.",
   "suscripcion_renovar": "Renovar suscripción",
