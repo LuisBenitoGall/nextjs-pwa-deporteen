@@ -400,6 +400,36 @@ export default async function PlayerDetailPage({
                     ) : null}
                 </div>
 
+                {currentSeasonId && !isActiveSubscription && (
+                    <div
+                        className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+                        role="status"
+                    >
+                        <p>
+                            {t('competicion_aviso_suscripcion_inactiva') ||
+                                t('suscripcion_necesaria_para_crear') ||
+                                'Necesitas una suscripción activa para crear competiciones.'}
+                        </p>
+                        <Link
+                            href="/billing/renew"
+                            className="mt-2 inline-block font-semibold text-green-700 underline hover:text-green-800"
+                        >
+                            {t('renovar') || 'Renovar'}
+                        </Link>
+                    </div>
+                )}
+
+                {currentSeasonId && isActiveSubscription && reachedMax && (
+                    <div
+                        className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+                        role="status"
+                    >
+                        {t('competicion_aviso_limite_alcanzado', { max: String(MAX_COMP) }) ||
+                            t('limite_competiciones_alcanzado') ||
+                            'Has alcanzado el límite de competiciones para esta temporada.'}
+                    </div>
+                )}
+
                 {/* Contenedor con scroll horizontal en móvil, suave en desktop, inercia iOS */}
                 <div
                 className="relative -mx-4 sm:mx-0 mt-4 overflow-x-auto md:overflow-visible px-4 sm:px-0 md:scroll-smooth"
