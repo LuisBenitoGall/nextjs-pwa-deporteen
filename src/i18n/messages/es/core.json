@@ -89,6 +89,8 @@
   "competicion_nombre": "Nombre de la competición",
   "competicion_nombre_info": "Por ejemplo: pretemporada, torneos, liga, playoffs...",
   "competicion_nueva": "Nueva competición",
+  "competicion_aviso_suscripcion_inactiva": "Tu suscripción no está activa. Renueva para poder crear nuevas competiciones en esta temporada.",
+  "competicion_aviso_limite_alcanzado": "Has alcanzado el máximo de competiciones permitidas en esta temporada ({max}).",
   "competicion_requerida": "La competición es obligatoria.",
   "competicion_selec": "Selecciona una competición",
   "competicion_volver": "Volver a la competición",
