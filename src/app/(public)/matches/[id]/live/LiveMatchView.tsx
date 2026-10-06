@@ -8,6 +8,7 @@ import type { LiveMatchInitialPayload } from '@/lib/matches/loadLiveMatchInitial
 import { getSportIconPath } from '@/lib/sports';
 import { useWakeLock } from '@/lib/useWakeLock';
 import { uploadMatchMedia } from '@/lib/uploadMatchMedia';
+import { isIosDevice } from '@/lib/isIosDevice';
 import { useStorageProvider } from '@/hooks/useStorageProvider';
 import CloudUsageStatus from '@/components/cloud/CloudUsageStatus';
 import {
@@ -46,7 +47,7 @@ type LiveMatchViewProps = {
 
 export default function LiveMatchView({ matchId, initial }: LiveMatchViewProps) {
     const t = useT();
-    const { provider, storedProvider, applyDriveReconnectFallback } = useStorageProvider();
+    const { provider, storedProvider, loading: storageLoading, applyDriveReconnectFallback } = useStorageProvider();
 
     const { active: wakeActive, requesting: wakeRequesting, request: wakeRequest, release: wakeRelease } = useWakeLock();
 
@@ -73,6 +74,21 @@ export default function LiveMatchView({ matchId, initial }: LiveMatchViewProps) 
     const [stats, setStats]           = useState<Record<string, any>>((initial.match.stats as Record<string, any>) || {});
 
     const [busyMedia, setBusyMedia] = useState(false);
+    const [pendingExisting, setPendingExisting] = useState<File[] | null>(null);
+    const [platformReady, setPlatformReady] = useState(false);
+    const [iosDevice, setIosDevice] = useState(false);
+    const existingInputRef = useRef<HTMLInputElement | null>(null);
+
+    useEffect(() => {
+        setIosDevice(isIosDevice());
+        setPlatformReady(true);
+    }, []);
+
+    const showExistingFiles =
+        !storageLoading &&
+        platformReady &&
+        !iosDevice &&
+        (storedProvider === 'local' || storedProvider === 'drive');
     const [busyMsg] = useState<string | undefined>(undefined);
     //const [uploadStep, setUploadStep] = useState<string | null>(null);
 
@@ -252,6 +268,94 @@ export default function LiveMatchView({ matchId, initial }: LiveMatchViewProps) 
             setBusyMedia(false);
         }
     }, [match, provider, storedProvider, applyDriveReconnectFallback, uploadMatchMediaToR2, t]);
+
+    const clearExistingInput = useCallback(() => {
+        if (existingInputRef.current) existingInputRef.current.value = '';
+    }, []);
+
+    const saveExistingBatch = useCallback(async (files: File[], destination: 'local' | 'drive') => {
+        if (!match || files.length === 0) return;
+
+        setBusyMedia(true);
+        setSaveError(null);
+        let driveReconnectNotice: string | null = null;
+        try {
+            for (const file of files) {
+                const kind: 'image' | 'video' = file.type?.startsWith('video/') ? 'video' : 'image';
+                if (destination === 'local') {
+                    await uploadMatchMedia({
+                        matchId: match.id,
+                        playerId: match.player_id ?? null,
+                        file,
+                        kind,
+                        provider: 'local',
+                    });
+                    continue;
+                }
+
+                const form = new FormData();
+                form.append('file', file);
+                form.append('matchId', match.id);
+                form.append('playerId', match.player_id ?? '');
+                const res = await fetch('/api/google/drive/upload', {
+                    method: 'POST',
+                    body: form,
+                });
+                const payload = await res.json().catch(() => ({} as {
+                    error?: string;
+                    code?: string;
+                }));
+                if (!res.ok) {
+                    const driveUnavailable =
+                        res.status === 503 ||
+                        payload?.code === 'DRIVE_NOT_CONFIGURED' ||
+                        payload?.code === 'reconnect-required';
+                    if (driveUnavailable) {
+                        if (payload?.code === 'reconnect-required') {
+                            applyDriveReconnectFallback();
+                        }
+                        await uploadMatchMedia({
+                            matchId: match.id,
+                            playerId: match.player_id ?? null,
+                            file,
+                            kind,
+                            provider: 'local',
+                        });
+                        driveReconnectNotice =
+                            t('storage_drive_reconnect_saved_locally') ||
+                            'No pudimos usar Google Drive. El archivo se guardó en este dispositivo. Reconecta Drive en ajustes de almacenamiento.';
+                        continue;
+                    }
+                    throw new Error(payload?.error || t('storage_settings_drive_unavailable_reason'));
+                }
+            }
+            if (driveReconnectNotice) {
+                setSaveError(driveReconnectNotice);
+            }
+            window.dispatchEvent(new CustomEvent('cloud-usage-refresh'));
+        } catch (e: any) {
+            const msg =
+                e?.message === 'UPLOAD_TIMEOUT'
+                    ? (t('upload_timeout') || 'La subida tardó demasiado. Comprueba la conexión e inténtalo de nuevo.')
+                    : (e?.message || 'Error al procesar los ficheros');
+            setSaveError(msg);
+        } finally {
+            clearExistingInput();
+            setBusyMedia(false);
+        }
+    }, [match, applyDriveReconnectFallback, t, clearExistingInput]);
+
+    const cancelExistingDestination = useCallback(() => {
+        setPendingExisting(null);
+        clearExistingInput();
+    }, [clearExistingInput]);
+
+    const confirmExistingDestination = useCallback((destination: 'local' | 'drive') => {
+        const files = pendingExisting;
+        setPendingExisting(null);
+        if (!files?.length) return;
+        void saveExistingBatch(files, destination);
+    }, [pendingExisting, saveExistingBatch]);
 
     // Ref para que el debounce de inputs de marcador capture siempre los valores más recientes
     const latestScoresRef = useRef({ my: myScore, rival: rivalScore });
@@ -544,6 +648,12 @@ export default function LiveMatchView({ matchId, initial }: LiveMatchViewProps) 
                         </svg>
                         <span>{t('competicion_volver') || 'Partidos de la competición'}</span>
                     </a>
+                    <Link
+                        href={`/matches/${matchId}/edit`}
+                        className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-3 py-2 rounded-lg shadow transition"
+                    >
+                        {t('editar') || 'Editar'}
+                    </Link>
                     <button
                         type="button"
                         onClick={() => setDeleteOpen(true)}
@@ -659,7 +769,7 @@ export default function LiveMatchView({ matchId, initial }: LiveMatchViewProps) 
 
                 {/* Barra inferior */}
                 <div className="fixed bottom-0 left-0 right-0 border-t bg-white/95 backdrop-blur p-3">
-                    <div className="max-w-4xl mx-auto grid grid-cols-6 gap-3 items-stretch">
+                    <div className={`max-w-4xl mx-auto grid gap-3 items-stretch ${showExistingFiles ? 'grid-cols-6' : 'grid-cols-5'}`}>
                         {/* Pantalla activa */}
                         <button
                         type="button"
@@ -687,13 +797,33 @@ export default function LiveMatchView({ matchId, initial }: LiveMatchViewProps) 
                         <div className="font-medium">{t('galeria') || 'Galería'}</div>
                         </Link>
 
-                        {/* Editar (Link estilizado como botón) */}
-                        <Link
-                        href={`/matches/${matchId}/edit`}
-                        className="w-full responsive-submit-button inline-flex items-center justify-center rounded-lg bg-emerald-600 px-3 py-3 font-semibold text-white hover:bg-emerald-700"
-                        >
-                        {t('editar') || 'Editar'}
-                        </Link>
+                        {showExistingFiles && (
+                        <label className="block responsive-button cursor-pointer">
+                            <input
+                                ref={existingInputRef}
+                                type="file"
+                                accept="image/*,video/*"
+                                multiple
+                                className="hidden"
+                                disabled={busyMedia}
+                                onChange={(e) => {
+                                    const list = e.currentTarget.files;
+                                    if (!list || list.length === 0) return;
+                                    setPendingExisting(Array.from(list));
+                                }}
+                            />
+                            <span
+                                className={`grid place-content-center gap-1 border rounded-lg text-xs border-gray-300 ${
+                                    busyMedia ? 'opacity-60 pointer-events-none' : ''
+                                }`}
+                            >
+                                <span className="text-base text-center" aria-hidden>
+                                    {busyMedia ? '⏳' : '📎'}
+                                </span>
+                                <span className="font-medium">{t('archivos_existentes') || 'Archivos'}</span>
+                            </span>
+                        </label>
+                        )}
 
                         {/* Guardar manual */}
                         <Submit
@@ -712,6 +842,43 @@ export default function LiveMatchView({ matchId, initial }: LiveMatchViewProps) 
                 title={busyMsg || (t('guardando_archivo') || 'Guardando archivo…')}
                 subtitle={t('no_cierres_app') || 'No cierres la aplicación ni bloquees la pantalla.'}
             />
+
+            {pendingExisting && pendingExisting.length > 0 && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="destino-lote-titulo">
+                    <div className="absolute inset-0 bg-black/40" onClick={() => !busyMedia && cancelExistingDestination()} aria-hidden="true"></div>
+                    <div className="relative z-10 w-full max-w-sm rounded-lg bg-white p-4 shadow-lg">
+                        <h2 id="destino-lote-titulo" className="text-lg font-semibold text-gray-900">
+                            {t('destino_lote_titulo') || 'Dónde guardar este lote'}
+                        </h2>
+                        <p className="mt-2 text-sm text-gray-700">
+                            {t('destino_lote_texto') || 'Elige si este lote se queda en este dispositivo o se sube a Google Drive.'}
+                        </p>
+                        <div className="mt-4 flex flex-col gap-2">
+                            <button
+                                type="button"
+                                className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                                onClick={() => confirmExistingDestination('local')}
+                            >
+                                {t('destino_local') || 'En este dispositivo'}
+                            </button>
+                            <button
+                                type="button"
+                                className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                                onClick={() => confirmExistingDestination('drive')}
+                            >
+                                {t('destino_drive') || 'Google Drive'}
+                            </button>
+                            <button
+                                type="button"
+                                className="rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"
+                                onClick={cancelExistingDestination}
+                            >
+                                {t('cancelar') || 'Cancelar'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Modal eliminar */}
             {deleteOpen && (
