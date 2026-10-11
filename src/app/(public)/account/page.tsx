@@ -394,7 +394,15 @@ export default async function AccountPage() {
                     }}
                 >
                     {subs.length === 0 ? (
-                        <p className="text-sm text-gray-500">{t('suscripciones_no_registradas')}</p>
+                        <div>
+                            <p className="text-sm text-gray-500">{t('suscripciones_no_registradas')}</p>
+                            <Link
+                                href="/subscription"
+                                className="mt-3 inline-flex items-center rounded-xl bg-green-600 px-3 py-2 text-sm font-semibold text-white hover:bg-green-700"
+                            >
+                                {t('crear_suscripcion')}
+                            </Link>
+                        </div>
                     ) : (
                         <table className="min-w-[720px] md:min-w-full text-sm">
                             <thead>

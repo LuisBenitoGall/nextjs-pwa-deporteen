@@ -29,8 +29,8 @@ export default async function PublicLayout({ children }: { children: React.React
         const supabase = await createSupabaseServerClientReadOnly();
         serverIsAdmin = await userCanAccessAdminPanel(supabase, user);
 
-        const { isActiveSubscription } = await getSubscriptionState(user.id);
-        if (!isActiveSubscription) {
+        const { hasAnySubscription, isActiveSubscription } = await getSubscriptionState(user.id);
+        if (hasAnySubscription && !isActiveSubscription) {
             const { data: profile } = await supabase
                 .from('users')
                 .select('locale')

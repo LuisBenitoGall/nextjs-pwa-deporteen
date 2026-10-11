@@ -497,6 +497,7 @@
   "stripe_pago_seguro": "Pago seguro con Stripe",
   "suscribete": "Suscríbete",
   "suscribirme": "Suscribirme",
+  "crear_suscripcion": "Crear suscripción",
   "suscripcion": "Suscripción",
   "suscripcion_ampliar": "Ampliar suscripción",
   "suscripcion_aviso_caducidad_cuerpo": "Tu periodo de asiento vence en {DAYS} días ({DATE}). No hay cobro automático: renueva manualmente para mantener el acceso.",
