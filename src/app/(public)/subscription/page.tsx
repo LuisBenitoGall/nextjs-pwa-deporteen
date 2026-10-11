@@ -1,447 +1,66 @@
-'use client';
-
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { supabaseBrowser } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { tServer } from '@/i18n/server';
 import {
-    applyI18nToPlans,
-    LOCAL_PAID_PLANS,
-    LOCAL_FREE_PLAN,
-    type Plan,
-    type PlanChoice,
-    euros,
-    yearsFromDays,
-    isLifetime
+  applyI18nToPlans,
+  LOCAL_PAID_PLANS,
+  normalizeSubscriptionPlansFromDb,
+  type PlanChoice,
+  type SubscriptionPlanDbRow,
 } from '@/lib/subscription-plans';
-import { isSubscriptionActive } from '@/lib/subscriptions/shared';
-import { useT } from '@/i18n/I18nProvider';
-import { LIMITS } from '@/config/constants';
+import SubscriptionPageClient from './SubscriptionPageClient';
 
-// UI
-import Input from '@/components/Input';
-import Submit from '@/components/Submit';
-import TitleH1 from '@/components/TitleH1';
+export const runtime = 'nodejs';
 
 const FAKE_MODE = process.env.NEXT_PUBLIC_FAKE_PLANS === '1';
 
-type RedeemRpcPayload = {
-  ok?: boolean;
-  message?: string;
-  subscription_id?: string;
-};
+const PLAN_SELECT =
+  'id, name, days, amount_cents, currency, active, free, metadata, stripe_price_id';
 
-function asRedeemPayload(data: unknown): RedeemRpcPayload | null {
-  if (data == null) return null;
-  const row = Array.isArray(data) ? data[0] : data;
-  return row && typeof row === 'object' ? (row as RedeemRpcPayload) : null;
-}
+export default async function SubscriptionPage() {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { t } = await tServer();
 
-export default function SubscriptionPage() {
-    const t = useT();
-    const router = useRouter();
-
-    const supabase = supabaseBrowser();
-
-    // --- UI state
-    const [error, setError] = useState<string | null>(null);
-    const [units, setUnits] = useState<number>(1);
-    const [code, setCode] = useState('');
-
-    const [paidPlans, setPaidPlans] = useState<PlanChoice[]>(
-        () => applyI18nToPlans(LOCAL_PAID_PLANS, t)
-    );
-    const [selectedPlanId, setSelectedPlanId] = useState<string>('');
-    const [loadingPlans, setLoadingPlans] = useState(true);
-
-    const [subActive, setSubActive] = useState<boolean>(false);
-    const [subPlanId, setSubPlanId] = useState<string>('');
-    const [subEndsAt, setSubEndsAt] = useState<string>('');
-    const [refreshKey, setRefreshKey] = useState(0);
-    const [statusBanner, setStatusBanner] = useState<'success' | 'cancel' | ''>('');
-
-    // -------- Load plans + current subscription status
-    useEffect(() => {
-        let alive = true;
-
-        (async () => {
-        setPaidPlans(applyI18nToPlans(LOCAL_PAID_PLANS, t));
-
-        const { data: userRes } = await supabase.auth.getUser();
-        if (!alive) return;
-
-        if (!userRes?.user) {
-            setError(t('sesion_iniciar_aviso'));
-            setLoadingPlans(false);
-            return;
-        }
-
-        if (FAKE_MODE) {
-            const translated = applyI18nToPlans(LOCAL_PAID_PLANS, t);
-            setPaidPlans(translated);
-            if (translated.length === 1) setSelectedPlanId(translated[0].id);
-            setLoadingPlans(false);
-            return;
-        }
-
-        setLoadingPlans(true);
-
-        // Planes activos (de pago)
-        const { data: plansData, error: plansErr } = await supabase
-            .from('subscription_plans')
-            .select('id, name, days, amount_cents, currency, active, free')
-            .eq('active', true)
-            .eq('free', false)
-            .order('days', { ascending: true });
-
-        if (plansErr) {
-            console.warn('[subscription] could not load plans from DB:', plansErr);
-            setPaidPlans([]);
-            setError(t('no_planes_activos'));
-        } else {
-            const plans = (plansData || []) as Plan[];
-            const visibles = plans.filter((p) => p.active && !p.free);
-            const translated = applyI18nToPlans(visibles, t);
-            setPaidPlans(translated);
-            if (translated.length === 1) setSelectedPlanId(translated[0].id);
-            if (!translated.length) setError(t('no_planes_activos'));
-        }
-
-        // Última suscripción del usuario
-        const { data: latest } = await supabase
-            .from('subscriptions')
-            .select('plan_id, current_period_end, status, user_id, created_at')
-            .eq('user_id', userRes.user.id)
-            .order('current_period_end', { ascending: false })
-            .order('created_at', { ascending: false })
-            .limit(1);
-
-        const s = Array.isArray(latest) ? latest[0] : null;
-        if (s) {
-            const isActive = isSubscriptionActive(s);
-            const end = s.current_period_end ? new Date(s.current_period_end) : null;
-            setSubActive(isActive);
-            if (isActive) {
-            if (s.plan_id) {
-                setSubPlanId(s.plan_id);
-                setSelectedPlanId(s.plan_id);
-            }
-            setSubEndsAt(end ? end.toISOString() : '');
-            }
-        } else {
-            setSubActive(false);
-            setSubPlanId('');
-            setSubEndsAt('');
-        }
-
-        setLoadingPlans(false);
-        })();
-
-        return () => {
-        alive = false;
-        };
-    }, [supabase, t, refreshKey]);
-
-    // -------- Handle Stripe return (?status=...)
-    useEffect(() => {
-        // sólo en cliente
-        const params = new URLSearchParams(window.location.search);
-        const status = params.get('status');
-        const sessionId = params.get('session_id');
-
-        if (status === 'success') setStatusBanner('success');
-        else if (status === 'cancel') setStatusBanner('cancel');
-
-        if (status === 'success' && sessionId) {
-        (async () => {
-            try {
-            await fetch('/api/stripe/confirm-session', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ session_id: sessionId }),
-            });
-            setRefreshKey((x) => x + 1);
-            } catch (e) {
-            console.error('[confirm-session] POST failed:', e);
-            }
-        })();
-        }
-    }, []);
-
-    // -------- Stripe checkout
-    const goStripe = async () => {
-        try {
-        setError(null);
-
-        const multi = paidPlans.length > 1;
-        if (multi && !selectedPlanId) {
-            setError(t('selecciona_plan'));
-            return;
-        }
-        const planId = selectedPlanId || paidPlans[0]?.id || '';
-        if (!planId) {
-            setError(t('no_planes_activos'));
-            return;
-        }
-
-        if (FAKE_MODE) {
-            router.replace(`/players/new?units=${units}`);
-            return;
-        }
-
-        const res = await fetch('/api/stripe/create-checkout-session', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ planId, units }),
-        });
-        const { url, error } = await res.json();
-        if (error) {
-            setError(error);
-            return;
-        }
-        if (url) {
-            window.location.href = url;
-        } else {
-            router.replace(`/players/new?units=${units}`);
-        }
-        } catch (e: any) {
-        setError(e?.message ?? 'No se pudo iniciar el checkout.');
-        }
-    };
-
-    // -------- Use access code
-    const useCode = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError(null);
-
-        const trimmed = code.trim();
-        if (!trimmed) { setError(t('codigo_introduce_valido')); return; }
-        if (units !== 1) { setError(t('codigo_solo_un_deportista')); return; }
-
-        try {
-            // 1) Garantiza perfil (public.users)
-            const { error: ensureErr } = await supabase.rpc('ensure_profile_server');
-            if (ensureErr) { setError('No se pudo preparar tu perfil.'); return; }
-
-            // 2) Id del plan FREE activo desde BD (tabla real)
-            let planIdForCode: string | null = null;
-            {
-            const { data: plan, error } = await supabase
-                .from('subscription_plans')
-                .select('id, name, days, amount_cents, currency, active, free')
-                .eq('free', true)
-                .eq('active', true)
-                .limit(1)
-                .maybeSingle();
-            if (!error && plan?.id) planIdForCode = plan.id;
-            }
-
-            // Fallback local solo si no hay fila en BD:
-            if (!planIdForCode) planIdForCode = LOCAL_FREE_PLAN.id;
-
-            // 3) Crea la suscripción con la RPC (NO pases p_user_id)
-            // NOTA: La función RPC create_code_subscription debe insertar status='active' 
-            // para cumplir con el constraint subscriptions_status_check que solo permite
-            // valores como 'active', 'trialing', 'past_due', 'canceled', etc.
-            const { data, error: rpcErr } = await supabase.rpc('create_code_subscription', {
-            p_code: trimmed,
-            p_plan_id: planIdForCode,
-            // p_user_id -> omitido; la función usa auth.uid()
-            });
-            if (rpcErr) {
-                // Detectar específicamente el error de constraint de status
-                // Este error ocurre cuando la función RPC intenta insertar un valor de status
-                // que no cumple con el constraint subscriptions_status_check
-                if (rpcErr.message?.includes('subscriptions_status_check') || 
-                    rpcErr.message?.includes('violates check constraint')) {
-                    console.error('[create_code_subscription] Constraint error - La función RPC debe usar status="active":', rpcErr);
-                    setError('Error al crear la suscripción. El código introducido no es válido o hubo un problema con la configuración del sistema.');
-                } else {
-                    setError(rpcErr.message || t('suscripcion_codigo_error'));
-                }
-                return;
-            }
-
-            const res = asRedeemPayload(data);
-            if (!res?.ok || !res?.subscription_id) {
-            setError(res?.message || t('suscripcion_codigo_error'));
-            return;
-            }
-
-            // 4) Guarda el código y redirige al alta de jugador
-            try {
-            localStorage.setItem('pending_access_code', trimmed);
-            sessionStorage.setItem('pending_access_code', trimmed);
-            } catch {}
-            router.replace(`/players/new?via=code&code=${encodeURIComponent(trimmed)}`);
-        } catch (e: any) {
-            setError(e?.message ?? t('suscripcion_codigo_error'));
-        }
-    };
-
-    const isMultiPlan = paidPlans.length > 1;
-
-    const formatDate = (iso?: string) => {
-        if (!iso) return '';
-        try {
-        const d = new Date(iso);
-        return d.toLocaleDateString();
-        } catch {
-        return iso || '';
-        }
-    };
-
+  if (!user) {
     return (
-        <div>
-            <TitleH1>{t('suscripcion')}</TitleH1>
-
-            <div className="p-4 space-y-4">
-                {/* Estado de suscripción */}
-                {subActive && (
-                <div className="rounded-lg border border-green-600 bg-green-50 px-4 py-3 text-green-800">
-                    {t('suscripcion')} activa. {subEndsAt ? `Fin del periodo: ${formatDate(subEndsAt)}` : ''}
-                </div>
-                )}
-
-                <p>{t('suscripcion_texto1')}</p>
-
-                {/* Cantidad de deportistas */}
-                <div className="space-y-2">
-                <Input
-                    label={t('deportistas_num')}
-                    type="number"
-                    min={1}
-                    max={LIMITS.CHECKOUT_MAX_UNITS}
-                    value={units}
-                    onChange={(e: any) =>
-                    setUnits(Math.min(Math.max(1, parseInt(e.target.value || '1', 10)), LIMITS.CHECKOUT_MAX_UNITS))
-                    }
-                    noSpinner
-                    containerClassName="w-1/2"
-                />
-                <p dangerouslySetInnerHTML={{ __html: t('suscripcion_texto2') }} />
-                </div>
-
-                {/* Si solo 1 deportista, opción de código */}
-                {units === 1 && (
-                <>
-                    <form onSubmit={useCode} className="flex gap-2">
-                    <Input
-                        value={code}
-                        onChange={(e: any) => setCode(e.target.value)}
-                        placeholder={t('codigo_tengo')}
-                        containerClassName="w-1/2 mb-0"
-                    />
-                    <button
-                        type="submit"
-                        className="w-1/2 h-[40.5px] rounded-lg bg-gray-600 text-white flex items-center justify-center hover:bg-gray-700"
-                    >
-                        {t('codigo_usar')}
-                    </button>
-                    </form>
-
-                    <div className="text-center">{t('o')}</div>
-                </>
-                )}
-
-                {/* Cards de planes si hay > 1 activo */}
-                {isMultiPlan && (
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {loadingPlans
-                        ? Array.from({ length: 3 }).map((_, i) => (
-                            <div
-                                key={i}
-                                className="animate-pulse h-44 rounded-xl border border-green-600 bg-gray-100"
-                            />
-                            ))
-                        : paidPlans.map((p) => {
-                            const selected = selectedPlanId === p.id;
-                            const yrs = yearsFromDays(p.days);
-                            const total = euros(p.amount_cents);
-                            const perYear = (p.amount_cents / 100 / (yrs || 1)).toFixed(2);
-                            const lifetime = isLifetime({ days: p.days });
-
-                            return (
-                                <button
-                                key={p.id}
-                                type="button"
-                                onClick={() => setSelectedPlanId(p.id)}
-                                aria-pressed={selected}
-                                className={[
-                                    'relative text-left rounded-xl border p-5 transition flex flex-col justify-start',
-                                    'border-green-600',
-                                    'hover:bg-green-50',
-                                    selected ? 'ring-2 ring-green-700 bg-green-50' : '',
-                                ].join(' ')}
-                                >
-                                    <div className="text-sm text-gray-700">{p.name}</div>
-                                    {subPlanId === p.id && (
-                                        <span className="absolute top-3 right-3 inline-flex items-center rounded bg-green-600 px-2 py-0.5 text-xs font-semibold text-white">
-                                        Activo
-                                        </span>
-                                    )}
-
-                                    <div className="mt-2 text-3xl font-extrabold">
-                                        {total}€
-                                        <span className="text-sm ml-2 font-normal text-gray-600">
-                                        x {t('jugador')}
-                                        </span>
-                                    </div>
-
-                                    <div className="mt-1 text-xs text-gray-600">
-                                        {lifetime ? (
-                                        <>{t('acceso_vida')}</>
-                                        ) : (
-                                        <>
-                                            ≈ {perYear} € / {t('any')} · {t('duracion')}: {p.days} {t('dias')}{' '}
-                                            {yrs >= 1 ? `(≈${yrs} ${t('años')})` : null}
-                                        </>
-                                        )}
-                                    </div>
-                                </button>
-                            );
-                        })}
-                    </div>
-                )}
-
-                {/* CTA Stripe */}
-                <div>
-                    <Submit
-                        onClick={goStripe}
-                        text={subActive ? (t('ampliar_suscripcion') || t('suscripcion_stripe')) : t('suscripcion_stripe')}
-                        loadingText={t('enviando') ?? t('suscripcion_stripe')}
-                        disabled={isMultiPlan && !selectedPlanId}
-                    />
-
-                    <div className="mt-4 px-4 py-6 rounded-lg bg-gray-200 text-gray-700">
-                        <span className="inline-flex h-5 w-5 mr-2 items-center justify-center rounded bg-[#635BFF] text-white font-bold">
-                        S
-                        </span>
-                        <span className="font-bold">{t('stripe_pago_seguro')}</span>
-                        <br />
-                        <br />
-                        <p dangerouslySetInnerHTML={{ __html: t('suscripcion_planes_texto') }} />
-                    </div>
-                </div>
-
-                {statusBanner === 'success' && (
-                    <div className="rounded border p-3 bg-green-50 text-green-800 space-y-2">
-                        <p>{t('pago_completado')}</p>
-                        <Link
-                            href="/players/new"
-                            className="inline-block font-medium underline text-green-900"
-                        >
-                            {t('deportista_agregar') || 'Añadir deportista'}
-                        </Link>
-                    </div>
-                )}
-                {statusBanner === 'cancel' && (
-                    <div className="rounded border p-3 bg-yellow-50 text-yellow-800">
-                        {t('pago_cancelado')}
-                    </div>
-                )}
-                {error && <div className="rounded border p-3 bg-red-50 text-red-700">{error}</div>}
-            </div>
-        </div>
+      <SubscriptionPageClient authenticated={false} initialPaidPlans={[]} initialPlansError={null} />
     );
+  }
+
+  let initialPaidPlans: PlanChoice[] = [];
+  let initialPlansError: string | null = null;
+
+  if (FAKE_MODE) {
+    initialPaidPlans = applyI18nToPlans(LOCAL_PAID_PLANS, t);
+  } else {
+    const { data: plansData, error: plansErr } = await supabase
+      .from('subscription_plans')
+      .select(PLAN_SELECT)
+      .eq('active', true)
+      .eq('free', false)
+      .order('days', { ascending: true });
+
+    if (plansErr) {
+      console.warn('[subscription/page] could not load plans:', plansErr.message);
+      initialPlansError = t('no_planes_activos') ?? 'No hay planes activos';
+    } else {
+      const visibles = normalizeSubscriptionPlansFromDb(
+        (plansData || []) as SubscriptionPlanDbRow[],
+      );
+      initialPaidPlans = applyI18nToPlans(visibles, t);
+      if (!initialPaidPlans.length) {
+        initialPlansError = t('no_planes_activos') ?? 'No hay planes activos';
+      }
+    }
+  }
+
+  return (
+    <SubscriptionPageClient
+      authenticated
+      initialPaidPlans={initialPaidPlans}
+      initialPlansError={initialPlansError}
+    />
+  );
 }

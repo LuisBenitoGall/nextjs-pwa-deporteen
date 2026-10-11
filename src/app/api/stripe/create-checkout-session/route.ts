@@ -63,8 +63,14 @@ export async function POST(req: NextRequest) {
     .eq('free', false)
     .maybeSingle();
 
-  if (planErr || !plan || !plan.stripe_price_id) {
+  if (planErr || !plan) {
     return NextResponse.json({ error: 'Plan inválido' }, { status: 400 });
+  }
+  if (!plan.stripe_price_id?.trim()) {
+    return NextResponse.json(
+      { error: 'Este plan no está vinculado a Stripe (falta stripe_price_id)' },
+      { status: 400 },
+    );
   }
 
   let stripeCustomerId: string | undefined;

@@ -7,6 +7,10 @@ import {
   applyI18nToPlans,
   LOCAL_PAID_PLANS,
   LOCAL_FREE_PLAN,
+  normalizeSubscriptionPlanFromDb,
+  normalizeSubscriptionPlansFromDb,
+  inferSubscriptionPlanNameKey,
+  isSubscriptionPlanI18nKey,
   type Plan,
 } from '../subscription-plans'
 
@@ -108,6 +112,103 @@ describe('applyI18nToPlans', () => {
 })
 
 // ─── LOCAL_PAID_PLANS ─────────────────────────────────────────────────────────
+
+describe('normalizeSubscriptionPlanFromDb', () => {
+  it('maps human-readable name and infers nameKey from days', () => {
+    const plan = normalizeSubscriptionPlanFromDb({
+      id: 'uuid-1',
+      name: 'Plan comercial anual',
+      days: 365,
+      amount_cents: 300,
+      currency: 'eur',
+      active: true,
+      free: false,
+    })
+    expect(plan.nameKey).toBe('plan_anual')
+    expect(plan.name).toBe('Plan comercial anual')
+  })
+
+  it('uses name column when it is an i18n key', () => {
+    const plan = normalizeSubscriptionPlanFromDb({
+      id: 'uuid-2',
+      name: 'plan_trianual',
+      days: 1095,
+      amount_cents: 750,
+      currency: 'EUR',
+      active: true,
+      free: false,
+    })
+    expect(plan.nameKey).toBe('plan_trianual')
+    expect(plan.name).toBeUndefined()
+  })
+
+  it('reads name_key from metadata', () => {
+    const plan = normalizeSubscriptionPlanFromDb({
+      id: 'uuid-3',
+      name: '',
+      days: 400,
+      amount_cents: 300,
+      active: true,
+      free: false,
+      metadata: { name_key: 'plan_anual' },
+    })
+    expect(plan.nameKey).toBe('plan_anual')
+  })
+
+  it('filters inactive and free in normalizeSubscriptionPlansFromDb', () => {
+    const rows = normalizeSubscriptionPlansFromDb([
+      {
+        id: 'a',
+        name: 'plan_anual',
+        days: 365,
+        amount_cents: 300,
+        active: true,
+        free: false,
+      },
+      {
+        id: 'b',
+        name: 'free',
+        days: 15,
+        amount_cents: 0,
+        active: true,
+        free: true,
+      },
+    ])
+    expect(rows).toHaveLength(1)
+    expect(rows[0].id).toBe('a')
+  })
+})
+
+describe('planNameForT with DB-shaped rows', () => {
+  const t = (key: string) => ({ plan_anual: '1 Año', plan_trianual: '3 Años' }[key] ?? '')
+
+  it('translates when only nameKey is set after normalize', () => {
+    const normalized = normalizeSubscriptionPlanFromDb({
+      id: 'x',
+      name: 'plan_anual',
+      days: 365,
+      amount_cents: 300,
+      active: true,
+      free: false,
+    })
+    expect(planNameForT(normalized, t)).toBe('1 Año')
+  })
+})
+
+describe('inferSubscriptionPlanNameKey', () => {
+  it('detects known durations', () => {
+    expect(inferSubscriptionPlanNameKey(365)).toBe('plan_anual')
+    expect(inferSubscriptionPlanNameKey(1095)).toBe('plan_trianual')
+    expect(inferSubscriptionPlanNameKey(100000)).toBe('plan_siempre')
+  })
+})
+
+describe('isSubscriptionPlanI18nKey', () => {
+  it('distinguishes keys from human titles', () => {
+    expect(isSubscriptionPlanI18nKey('plan_anual')).toBe(true)
+    expect(isSubscriptionPlanI18nKey('Plan Anual')).toBe(false)
+  })
+})
 
 describe('LOCAL_PAID_PLANS', () => {
   it('only contains active plans', () => {
