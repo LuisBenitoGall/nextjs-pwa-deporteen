@@ -4,7 +4,11 @@ import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { tServer } from '@/i18n/server';
 import TitleH1 from '@/components/TitleH1';
-import { applyI18nToPlans, type Plan } from '@/lib/subscription-plans';
+import {
+  applyI18nToPlans,
+  normalizeSubscriptionPlansFromDb,
+  type SubscriptionPlanDbRow,
+} from '@/lib/subscription-plans';
 import { isSubscriptionActive } from '@/lib/subscriptions/shared';
 import { RenewMultiCheckoutForm, RenewSinglePlanCard } from '@/components/subscription/RenewCheckoutForms';
 
@@ -76,7 +80,7 @@ export default async function RenewPage() {
 
   const { data: plansData, error: plansErr } = await supabase
     .from('subscription_plans')
-    .select('id, name, days, amount_cents, currency, active, free')
+    .select('id, name, days, amount_cents, currency, active, free, metadata, stripe_price_id')
     .eq('active', true)
     .eq('free', false)
     .order('days', { ascending: true });
@@ -93,7 +97,10 @@ export default async function RenewPage() {
     );
   }
 
-  const plans = applyI18nToPlans(plansData as Plan[], t);
+  const plans = applyI18nToPlans(
+    normalizeSubscriptionPlansFromDb((plansData || []) as SubscriptionPlanDbRow[]),
+    t,
+  );
   const singleSeat = renewableSeats === 1;
 
   return (
