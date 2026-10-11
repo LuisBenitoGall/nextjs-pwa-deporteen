@@ -3,7 +3,7 @@
 // =============================================
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { LiveMatchInitialPayload } from '@/lib/matches/loadLiveMatchInitialData';
 import { getSportIconPath } from '@/lib/sports';
 import { useWakeLock } from '@/lib/useWakeLock';
@@ -33,6 +33,11 @@ import Submit from '@/components/Submit';
 import Textarea from '@/components/Textarea';
 import TitleH1 from '@/components/TitleH1';
 import { MatchMediaCaptureInputs } from '@/components/MatchMediaCaptureInputs';
+import {
+  getAvailableUploadDestinations,
+  shouldPromptUploadBatchDestination,
+  type UploadBatchDestination,
+} from '@/lib/media/getAvailableUploadDestinations';
 
 type MatchRow = LiveMatchInitialPayload['match'];
 type Competition = NonNullable<LiveMatchInitialPayload['competition']>;
@@ -47,7 +52,15 @@ type LiveMatchViewProps = {
 
 export default function LiveMatchView({ matchId, initial }: LiveMatchViewProps) {
     const t = useT();
-    const { provider, storedProvider, loading: storageLoading, applyDriveReconnectFallback } = useStorageProvider();
+    const {
+        provider,
+        storedProvider,
+        loading: storageLoading,
+        driveAvailable,
+        driveStatus,
+        r2Active,
+        applyDriveReconnectFallback,
+    } = useStorageProvider();
 
     const { active: wakeActive, requesting: wakeRequesting, request: wakeRequest, release: wakeRelease } = useWakeLock();
 
@@ -84,11 +97,17 @@ export default function LiveMatchView({ matchId, initial }: LiveMatchViewProps) 
         setPlatformReady(true);
     }, []);
 
-    const showExistingFiles =
-        !storageLoading &&
-        platformReady &&
-        !iosDevice &&
-        (storedProvider === 'local' || storedProvider === 'drive');
+    const batchUploadDestinations = useMemo(
+        () =>
+            getAvailableUploadDestinations({
+                driveAvailable,
+                driveStatus,
+                r2Active,
+            }),
+        [driveAvailable, driveStatus, r2Active]
+    );
+
+    const showExistingFiles = !storageLoading && platformReady && !iosDevice;
     const [busyMsg] = useState<string | undefined>(undefined);
     //const [uploadStep, setUploadStep] = useState<string | null>(null);
 
@@ -273,7 +292,7 @@ export default function LiveMatchView({ matchId, initial }: LiveMatchViewProps) 
         if (existingInputRef.current) existingInputRef.current.value = '';
     }, []);
 
-    const saveExistingBatch = useCallback(async (files: File[], destination: 'local' | 'drive') => {
+    const saveExistingBatch = useCallback(async (files: File[], destination: UploadBatchDestination) => {
         if (!match || files.length === 0) return;
 
         setBusyMedia(true);
@@ -290,6 +309,11 @@ export default function LiveMatchView({ matchId, initial }: LiveMatchViewProps) 
                         kind,
                         provider: 'local',
                     });
+                    continue;
+                }
+
+                if (destination === 'r2') {
+                    await uploadMatchMediaToR2(file, match);
                     continue;
                 }
 
@@ -343,14 +367,28 @@ export default function LiveMatchView({ matchId, initial }: LiveMatchViewProps) 
             clearExistingInput();
             setBusyMedia(false);
         }
-    }, [match, applyDriveReconnectFallback, t, clearExistingInput]);
+    }, [match, applyDriveReconnectFallback, uploadMatchMediaToR2, t, clearExistingInput]);
+
+    const handleExistingFilesSelected = useCallback(
+        (fileList: FileList | null) => {
+            if (!fileList || fileList.length === 0) return;
+            const files = Array.from(fileList);
+            if (shouldPromptUploadBatchDestination(batchUploadDestinations)) {
+                setPendingExisting(files);
+                return;
+            }
+            const sole = batchUploadDestinations[0] ?? 'local';
+            void saveExistingBatch(files, sole);
+        },
+        [batchUploadDestinations, saveExistingBatch]
+    );
 
     const cancelExistingDestination = useCallback(() => {
         setPendingExisting(null);
         clearExistingInput();
     }, [clearExistingInput]);
 
-    const confirmExistingDestination = useCallback((destination: 'local' | 'drive') => {
+    const confirmExistingDestination = useCallback((destination: UploadBatchDestination) => {
         const files = pendingExisting;
         setPendingExisting(null);
         if (!files?.length) return;
@@ -806,11 +844,7 @@ export default function LiveMatchView({ matchId, initial }: LiveMatchViewProps) 
                                 multiple
                                 className="hidden"
                                 disabled={busyMedia}
-                                onChange={(e) => {
-                                    const list = e.currentTarget.files;
-                                    if (!list || list.length === 0) return;
-                                    setPendingExisting(Array.from(list));
-                                }}
+                                onChange={(e) => handleExistingFilesSelected(e.currentTarget.files)}
                             />
                             <span
                                 className={`grid place-content-center gap-1 border rounded-lg text-xs border-gray-300 ${
@@ -843,7 +877,9 @@ export default function LiveMatchView({ matchId, initial }: LiveMatchViewProps) 
                 subtitle={t('no_cierres_app') || 'No cierres la aplicación ni bloquees la pantalla.'}
             />
 
-            {pendingExisting && pendingExisting.length > 0 && (
+            {pendingExisting &&
+                pendingExisting.length > 0 &&
+                shouldPromptUploadBatchDestination(batchUploadDestinations) && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="destino-lote-titulo">
                     <div className="absolute inset-0 bg-black/40" onClick={() => !busyMedia && cancelExistingDestination()} aria-hidden="true"></div>
                     <div className="relative z-10 w-full max-w-sm rounded-lg bg-white p-4 shadow-lg">
@@ -851,9 +887,10 @@ export default function LiveMatchView({ matchId, initial }: LiveMatchViewProps) 
                             {t('destino_lote_titulo') || 'Dónde guardar este lote'}
                         </h2>
                         <p className="mt-2 text-sm text-gray-700">
-                            {t('destino_lote_texto') || 'Elige si este lote se queda en este dispositivo o se sube a Google Drive.'}
+                            {t('destino_lote_texto') || 'Elige dónde guardar este lote de archivos.'}
                         </p>
                         <div className="mt-4 flex flex-col gap-2">
+                            {batchUploadDestinations.includes('local') && (
                             <button
                                 type="button"
                                 className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50"
@@ -861,6 +898,8 @@ export default function LiveMatchView({ matchId, initial }: LiveMatchViewProps) 
                             >
                                 {t('destino_local') || 'En este dispositivo'}
                             </button>
+                            )}
+                            {batchUploadDestinations.includes('drive') && (
                             <button
                                 type="button"
                                 className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50"
@@ -868,6 +907,16 @@ export default function LiveMatchView({ matchId, initial }: LiveMatchViewProps) 
                             >
                                 {t('destino_drive') || 'Google Drive'}
                             </button>
+                            )}
+                            {batchUploadDestinations.includes('r2') && (
+                            <button
+                                type="button"
+                                className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                                onClick={() => confirmExistingDestination('r2')}
+                            >
+                                {t('destino_r2') || t('storage_settings_r2_title') || 'Nube DeporTeen'}
+                            </button>
+                            )}
                             <button
                                 type="button"
                                 className="rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"
