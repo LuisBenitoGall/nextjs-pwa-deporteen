@@ -3,6 +3,17 @@ import Stripe from 'stripe';
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { LIMITS } from '@/config/constants';
+import { resolveStripeCustomerId } from '@/lib/stripe-customer';
+
+function stripeCheckoutErrorMessage(err: unknown): string {
+  if (err instanceof Stripe.errors.StripeError) {
+    return err.message;
+  }
+  if (err instanceof Error && err.message) {
+    return err.message;
+  }
+  return 'No se pudo iniciar el pago con Stripe.';
+}
 
 export const runtime = 'nodejs';
 
@@ -29,6 +40,7 @@ async function parseCheckoutBody(req: NextRequest): Promise<{ planId?: string; u
 }
 
 export async function POST(req: NextRequest) {
+  try {
   const secret = process.env.STRIPE_SECRET_KEY;
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL;
   if (!secret) return NextResponse.json({ error: 'Missing STRIPE_SECRET_KEY' }, { status: 500 });
@@ -73,30 +85,17 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let stripeCustomerId: string | undefined;
-  const { data: existingCustomer } = await supabase
-    .from('subscriptions')
-    .select('stripe_customer_id')
-    .eq('user_id', user.id)
-    .not('stripe_customer_id', 'is', null)
-    .order('updated_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (existingCustomer?.stripe_customer_id) {
-    stripeCustomerId = existingCustomer.stripe_customer_id;
-  } else {
-    const customers = await stripe.customers.list({ email: user.email || undefined, limit: 1 });
-    const customer =
-      customers.data.find(
-        (c) => !('deleted' in c) && (c.metadata as Record<string, string>)?.supabase_user_id === user.id,
-      ) ||
-      customers.data.find((c) => !('deleted' in c)) ||
-      (await stripe.customers.create({
-        email: user.email || undefined,
-        metadata: { supabase_user_id: user.id },
-      }));
-    stripeCustomerId = customer.id;
+  const stripeCustomerId = await resolveStripeCustomerId({
+    supabase,
+    stripe,
+    userId: user.id,
+    userEmail: user.email,
+  });
+  if (!stripeCustomerId) {
+    return NextResponse.json(
+      { error: 'No se pudo vincular tu cuenta con Stripe. Inténtalo de nuevo más tarde.' },
+      { status: 502 },
+    );
   }
 
   const session = await stripe.checkout.sessions.create({
@@ -124,4 +123,8 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ url: session.url });
+  } catch (err) {
+    console.error('[create-checkout-session]', err);
+    return NextResponse.json({ error: stripeCheckoutErrorMessage(err) }, { status: 502 });
+  }
 }

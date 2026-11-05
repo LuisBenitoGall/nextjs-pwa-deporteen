@@ -220,16 +220,17 @@ export default function SubscriptionPageClient({
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ planId, units }),
         });
-        const { url, error: checkoutError } = await res.json();
-        if (checkoutError) {
-            setError(checkoutError);
+        const payload = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
+        const checkoutError = payload.error;
+        if (!res.ok || checkoutError) {
+            setError(checkoutError || t('checkout_error') || 'No se pudo iniciar el pago.');
             return;
         }
-        if (url) {
-            window.location.href = url;
-        } else {
-            router.replace(`/players/new?units=${units}`);
+        if (payload.url) {
+            window.location.href = payload.url;
+            return;
         }
+        setError(t('checkout_sin_url') || 'No se recibió la URL de pago de Stripe.');
         } catch (e: unknown) {
         setError(e instanceof Error ? e.message : 'No se pudo iniciar el checkout.');
         }
