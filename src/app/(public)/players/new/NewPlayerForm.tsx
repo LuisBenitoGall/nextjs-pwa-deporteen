@@ -7,6 +7,7 @@ import { LIMITS } from '@/config/constants';
 import { useT } from '@/i18n/I18nProvider';
 import { isSportActive } from '@/lib/sports';
 import { uploadAvatar } from '@/lib/uploadAvatar';
+import { withAuthLockRetry } from '@/lib/supabase/authClientErrors';
 
 import Input from '@/components/Input';
 import Select from '@/components/Select';
@@ -54,7 +55,6 @@ export default function NewPlayerForm({
 
     const [pendingCode, setPendingCode] = useState(initialCode);
     const [seatsRemaining, setSeatsRemaining] = useState<number | null>(initialSeats ?? null);
-    const [checkingSeats, setCheckingSeats] = useState(false);
     const [seasonTitle, setSeasonTitle] = useState('');
 
     const MAX_BLOCKS = LIMITS.COMPETITION_NUM_MAX_BY_SEASON;
@@ -82,32 +82,41 @@ export default function NewPlayerForm({
     }
 
     useEffect(() => {
+        let mounted = true;
         (async () => {
-        const { data: sportsRaw, error: e1 } = await supabase
-            .from('sports')
-            .select('id, name, slug, active')
-            .order('name', { ascending: true });
-        if (!e1) {
-            setSports((sportsRaw || []).filter(isSportActive) as Sport[]);
-        } else {
-            setErr(e1.message);
-        }
+        try {
+            await withAuthLockRetry(async () => {
+            const { data: sportsRaw, error: e1 } = await supabase
+                .from('sports')
+                .select('id, name, slug, active')
+                .order('name', { ascending: true });
+            if (!mounted) return;
+            if (!e1) {
+                setSports((sportsRaw || []).filter(isSportActive) as Sport[]);
+            } else {
+                setErr(e1.message);
+            }
 
-        const { data: cats, error: e2 } = await supabase
-            .from('sport_categories')
-            .select('id, name, gender, sport_id')
-            .order('name', { ascending: true })
-            .order('gender', { ascending: true });
+            const { data: cats, error: e2 } = await supabase
+                .from('sport_categories')
+                .select('id, name, gender, sport_id')
+                .order('name', { ascending: true })
+                .order('gender', { ascending: true });
 
-        if (!e2) {
-            const group: Record<string, Category[]> = {};
-            (cats || []).forEach((c: any) => {
-            group[c.sport_id] = group[c.sport_id] || [];
-            group[c.sport_id].push(c as Category);
+            if (!mounted) return;
+            if (!e2) {
+                const group: Record<string, Category[]> = {};
+                (cats || []).forEach((c: any) => {
+                group[c.sport_id] = group[c.sport_id] || [];
+                group[c.sport_id].push(c as Category);
+                });
+                setCategoriesBySport(group);
+            } else {
+                setErr(e2.message);
+            }
             });
-            setCategoriesBySport(group);
-        } else {
-            setErr(e2.message);
+        } catch (e: unknown) {
+            if (mounted) setErr(e instanceof Error ? e.message : String(e));
         }
 
         const code =
@@ -117,19 +126,22 @@ export default function NewPlayerForm({
             '';
         if (code) setPendingCode(code);
         })();
+        return () => { mounted = false; };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    // Plazas ya validadas en servidor (page.tsx); refresco en cliente sin bloquear el formulario.
     useEffect(() => {
         let mounted = true;
         (async () => {
-        setCheckingSeats(true);
         try {
+            await withAuthLockRetry(async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!mounted || !user) return;
             await refreshSeats(user.id);
-        } finally {
-            if (mounted) setCheckingSeats(false);
+            });
+        } catch {
+            /* initialSeats del SSR sigue siendo la verdad hasta el submit */
         }
         })();
         return () => { mounted = false; };
@@ -324,10 +336,6 @@ export default function NewPlayerForm({
     const GENDER_ORDER: Record<NonNullable<Category['gender']>, number> = {
         masculino: 0, femenino: 1, mixto: 2,
     };
-
-    if (checkingSeats) {
-        return <div className="p-6">{t('cargando')}</div>;
-    }
 
     return (
         <div className="max-w-xl mx-auto relative">

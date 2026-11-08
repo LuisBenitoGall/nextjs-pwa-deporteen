@@ -123,6 +123,24 @@ describe('NewPlayerForm', () => {
   });
 
   describe('Detección de errores de RPC', () => {
+    it('muestra el formulario de inmediato sin esperar refresh client de plazas (SSR initialSeats)', async () => {
+      let resolveGetUser: (v: unknown) => void;
+      const getUserPromise = new Promise((resolve) => {
+        resolveGetUser = resolve;
+      });
+      (supabase.auth.getUser as ReturnType<typeof vi.fn>).mockReturnValue(getUserPromise);
+
+      render(<NewPlayerForm initialSeats={1} />);
+
+      expect(screen.getByText('Nuevo deportista')).toBeInTheDocument();
+      expect(screen.queryByText('Cargando...')).not.toBeInTheDocument();
+
+      resolveGetUser!({ data: { user: { id: 'user-123' } }, error: null });
+      await waitFor(() => {
+        expect(mockRpc).toHaveBeenCalledWith('seats_remaining', { p_user_id: 'user-123' });
+      });
+    });
+
     it('should detect COALESCE type mismatch error from create_player_link_subscription', async () => {
       // Simular el error específico de COALESCE
       mockRpc.mockImplementation((funcName: string, _params: unknown) => {

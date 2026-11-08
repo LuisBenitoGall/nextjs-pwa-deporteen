@@ -82,13 +82,17 @@ async function uploadQueuedToRemote(it: PendingItem, blob: Blob): Promise<boolea
 }
 
 export async function trySyncAll(): Promise<MediaSyncResult> {
+  const items = readQueue();
+  if (items.length === 0) {
+    return { uploaded: 0, failed: 0, remaining: 0 };
+  }
+
   const supabase = supabaseBrowser();
   const { data: authData } = await supabase.auth.getUser();
   const uid = authData?.user?.id;
-  if (!uid) return { uploaded: 0, failed: 0, remaining: readQueue().length };
+  if (!uid) return { uploaded: 0, failed: 0, remaining: items.length };
 
   const provider = await resolveStorageProvider();
-  const items = readQueue();
   let uploaded = 0;
   let failed = 0;
 
