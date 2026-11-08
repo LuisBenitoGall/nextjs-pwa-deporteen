@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { useT } from '@/i18n/I18nProvider';
+import { resolveSportStatFieldLabel } from '@/lib/sports/statFieldLabel';
 import {
   ResponsiveContainer,
   CartesianGrid,
@@ -67,8 +68,9 @@ export default function CompetitionMatchesChartsPanel({ matches, sport }: Props)
           : (field?.key as string) ?? (field?.name as string) ?? (field?.id as string);
       if (!key || seen.has(key)) return;
       seen.add(key);
-      const label =
+      const dbLabel =
         typeof field?.label === 'string' && field.label.trim().length > 0 ? field.label : key;
+      const label = resolveSportStatFieldLabel(key, dbLabel, t);
       const type = normalizeType(field?.type);
       defs.push({ key, label, type });
     };
@@ -100,7 +102,7 @@ export default function CompetitionMatchesChartsPanel({ matches, sport }: Props)
     }
 
     return defs;
-  }, [matches, sport?.stats]);
+  }, [matches, sport?.stats, t]);
 
   const numericStatDefs = statDefs.filter((def) => def.type === 'number');
   const statKeys = numericStatDefs.map((def) => def.key);

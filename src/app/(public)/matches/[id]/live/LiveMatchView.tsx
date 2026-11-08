@@ -28,6 +28,7 @@ import Link from 'next/link';
 
 //Components
 import BlockingLoader from '@/components/BlockingLoader';
+import { resolveSportStatFieldLabel } from '@/lib/sports/statFieldLabel';
 import Input from '@/components/Input';
 import Submit from '@/components/Submit';
 import Textarea from '@/components/Textarea';
@@ -549,7 +550,8 @@ export default function LiveMatchView({ matchId, initial }: LiveMatchViewProps) 
         const pushField = (f: any) => {
             const key = f?.key ?? f?.name ?? f?.id;
             if (!key) return;
-            const label = f?.label && String(f.label).trim().length ? f.label : key;
+            const dbLabel = f?.label && String(f.label).trim().length ? String(f.label) : key;
+            const label = resolveSportStatFieldLabel(key, dbLabel, t);
             fields.push({ key, label, type: normalizeType(f?.type) });
         };
         if (Array.isArray((raw as any)?.fields)) (raw as any).fields.forEach(pushField);
