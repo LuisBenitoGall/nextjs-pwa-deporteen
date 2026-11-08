@@ -912,5 +912,20 @@
   "volver_atras": "Volver atrás",
   "volver_inicio": "Volver al inicio",
   "volver_panel": "Volver al panel",
-  "waterpolo": "Waterpolo"
+  "waterpolo": "Waterpolo",
+  "interfaz_bloqueada_sr": "La interfaz está bloqueada mientras se completa la operación.",
+  "stat_aces": "Aces",
+  "stat_blocks": "Tapones",
+  "stat_conversions": "Transformaciones",
+  "stat_digs": "Defensas",
+  "stat_exclusions": "Exclusiones",
+  "stat_green_cards": "Tarjetas verdes",
+  "stat_penalties": "Penaltis",
+  "stat_rebounds": "Rebotes",
+  "stat_red_cards": "Tarjetas rojas",
+  "stat_saves": "Paradas",
+  "stat_steals": "Robos",
+  "stat_tackles": "Placajes",
+  "stat_tries": "Ensayos",
+  "stat_yellow_cards": "Tarjetas amarillas"
 }
