@@ -15,5 +15,6 @@ El contenido normativo está en archivos **`.mdc`** (no duplicar aquí):
 | `20-implementation.mdc` | Implementación según tasks |
 | `30-testing.mdc` | Calidad y tests |
 | `40-install-settings.mdc` | Instalación, tooling, documentación de mapa |
+| `50-stripe.mdc` | Stripe: productos, entornos, cobros y suscripciones |
 
 Visión general del código: `docs/PROJECT-OVERVIEW.md`.

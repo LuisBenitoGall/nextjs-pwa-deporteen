@@ -1,0 +1,98 @@
+---
+description: Rol Stripe para DeporTeen (productos, entornos, cobros y suscripciones)
+alwaysApply: false
+globs:
+  - src/lib/stripe/**
+  - src/lib/stripe-*.ts
+  - src/app/api/stripe/**
+  - src/app/api/admin/stripe/**
+  - src/app/admin/stripe/**
+  - src/components/subscription/**
+  - scripts/stripe-*.ts
+  - scripts/migrate-stripe-*.ts
+---
+
+# 50-stripe.mdc (Manual or Agent Requested)
+# Rol: Stripe (pasarela de pago, productos y cobros)
+
+## Misión
+- Habilitar cobros y suscripciones vía Stripe en DeporTeen: productos/precios, variables de entorno, checkout, Customer Portal, webhooks y sincronización con Supabase.
+- Guiar setup de **test** vs **live** sin mezclar claves ni IDs entre modos.
+- Preferir el panel admin (`/admin/stripe/*`) y los scripts del repo antes de inventar flujos nuevos.
+
+## Mapa del código (fuente de verdad operativa)
+| Área | Ubicación |
+|------|-----------|
+| Cliente server Stripe | `src/lib/stripe/server.ts` (`getStripe`) |
+| Cumplimiento checkout | `src/lib/stripe/fulfill-checkout-session.ts` |
+| Customer / pagos | `src/lib/stripe-customer.ts`, `src/lib/stripe-payments.ts` |
+| Checkout / portal / confirm | `src/app/api/stripe/create-checkout-session`, `create-storage-checkout-session`, `create-portal-session`, `confirm-session`, `confirm-storage-session` |
+| Webhook | `src/app/api/stripe/webhook` |
+| Admin API/UI | `src/app/api/admin/stripe/*`, `src/app/admin/stripe/*` |
+| CTA checkout | `src/components/subscription/StripeCheckoutButton.tsx` |
+| Scripts setup | `scripts/stripe-create-recurring-prices.ts`, `scripts/stripe-setup-onetime-payments.ts`, `scripts/migrate-stripe-subscriptions.ts` |
+
+## Variables de entorno (obligatorias para cobros)
+Nunca commitear secretos. Orientar en `.env` / `.env.local` / proveedor de deploy:
+
+| Variable | Uso |
+|----------|-----|
+| `STRIPE_SECRET_KEY` | Solo servidor (`sk_test_…` / `sk_live_…`) |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Cliente (`pk_test_…` / `pk_live_…`) |
+| `STRIPE_WEBHOOK_SECRET` | Firma del webhook (`whsec_…`) |
+| `NEXT_PUBLIC_ADMIN_EMAILS` | Acceso a `/admin/stripe/*` |
+
+Reglas:
+- Par test o par live coherente (secret + publishable del mismo modo).
+- Webhook local: Stripe CLI → `localhost` y `STRIPE_WEBHOOK_SECRET` del endpoint de forwarding.
+- Producción: endpoint real `/api/stripe/webhook` con secret del Dashboard.
+
+## Productos, precios y planes
+1. Crear/actualizar **Products** y **Prices** en Stripe (Dashboard, admin UI o scripts).
+2. Sincronizar IDs con Supabase (`plans.stripe_price_id`, `storage_plans.stripe_price_id`, tablas relacionadas en `database.types.ts`).
+3. Distinguir planes de **producto** (`subscriptions`) vs **almacenamiento** (`storage_subscriptions` / metadata `type=storage` en checkout).
+4. Precios en **céntimos** y moneda `eur` salvo contrato OpenSpec distinto.
+5. Precios son inmutables en Stripe: cambiar importe = nuevo Price + actualizar referencias en BD/app.
+
+## Flujos que debe conocer y validar
+- **Alta / renovación**: checkout session → webhook `checkout.session.completed` → `fulfillCheckoutSession` (o rama storage).
+- **Gestión**: Customer Portal (`create-portal-session`).
+- **Confirmación UI**: rutas `confirm-session` / `confirm-storage-session` como refuerzo, no sustituyen el webhook.
+- **Admin**: productos, precios, cupones, payment links, invoices, subscriptions bajo `/admin/stripe/*` (sesión + admin email).
+
+## Qué SÍ hacer
+- Checklist de entorno (claves, webhook, admin emails, price IDs en BD).
+- Crear/actualizar productos y precios alineados al catálogo DeporTeen.
+- Revisar/ajustar handlers de webhook con firma, idempotencia y pertenencia `user_id`.
+- Usar API version del repo (`2025-08-27.basil` donde ya esté fijada) de forma consistente.
+- Documentar pasos de setup en la respuesta al usuario (sin pegar secretos).
+- Si el cambio altera reglas de negocio de facturación: escalar a Architecture (OpenSpec) antes de ampliar alcance.
+
+## Qué NO hacer
+- No mezclar `sk_test` con `pk_live` (ni IDs de producto/precio entre modos).
+- No loguear secretos, tokens, PaymentIntent completos ni datos de tarjeta.
+- No saltarse verificación de sesión/admin en rutas que mutan Stripe o BD.
+- No inventar planes, precios o seats sin spec/design o decisión explícita del usuario.
+- No sustituir el webhook por solo confirmación client-side.
+- No introducir otra pasarela ni SDK de pagos sin OpenSpec.
+
+## Checklist de “listo para cobrar”
+- [ ] Claves test o live coherentes en env
+- [ ] `STRIPE_WEBHOOK_SECRET` apunta al endpoint correcto
+- [ ] Productos + Prices existen en el modo activo
+- [ ] `stripe_price_id` (y metadatos) sincronizados en Supabase
+- [ ] Checkout / portal responden 200 en happy path
+- [ ] Webhook procesa `checkout.session.completed` (producto y, si aplica, storage)
+- [ ] Solo admins llegan a `/admin/stripe/*`
+- [ ] Prueba en modo test con tarjeta `4242…` antes de live
+
+## Límites con otros roles
+- **Architecture**: contratos de planes, seats, renovación, garantías.
+- **Implementation**: código de producto según tasks OpenSpec.
+- **Testing**: tests de webhook/fulfillment (`src/app/api/stripe/webhook/__tests__`, `src/lib/stripe/__tests__`).
+- **Install & Settings**: tooling general; este rol es dueño del detalle Stripe.
+
+## Definición de "Done"
+- Entorno y catálogo Stripe alineados con la app.
+- Cobro de prueba (o live acordado) completado de punta a punta.
+- Sin secretos en git; riesgos y pendientes de sync BD documentados al usuario.

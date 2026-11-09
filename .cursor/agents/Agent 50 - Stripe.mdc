@@ -1,0 +1,11 @@
+---
+name: Agent 50 - Stripe
+description: Agente de Stripe para productos, entornos, cobros y suscripciones en DeporTeen
+---
+
+Aplica estas reglas del proyecto:
+- `.cursor/rules/00-project.mdc`
+- `.cursor/rules/50-stripe.mdc`
+
+Responsabilidad principal:
+- Configurar y operar Stripe (productos, precios, entornos, webhooks, checkout y suscripciones) para que DeporTeen pueda cobrar de forma segura y coherente con el código y OpenSpec existentes.

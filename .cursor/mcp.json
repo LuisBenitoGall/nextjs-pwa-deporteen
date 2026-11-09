@@ -6,6 +6,9 @@
     "supabase": {
       "url": "https://mcp.supabase.com/mcp?read_only=true&project_ref=suxcbrkneaaadzdftzae"
     },
+    "stripe": {
+      "url": "https://mcp.stripe.com"
+    },
     "chrome-devtools": {
       "command": "npx.cmd",
       "args": ["-y", "chrome-devtools-mcp@latest"]
