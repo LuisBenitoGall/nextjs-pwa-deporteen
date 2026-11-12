@@ -1,12 +1,17 @@
 import { NextResponse } from 'next/server';
 import { requireSuperadmin } from '@/lib/auth/adminGuard';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
-import { parseIsoDateStrict } from '@/lib/admin/storageSubscriptions';
 import { validateSeatReduction } from '@/lib/admin/seatReduction';
 import { writeAdminAuditLog } from '@/lib/admin/adminAuditLog';
 import { isLegacySubscriptionStatus } from '@/lib/admin/legacySubscriptionStatuses';
+import {
+  validateAdminSubscriptionPeriodEnd,
+  validateAdminSubscriptionPlanId,
+} from '@/lib/admin/adminSubscriptionValidation';
 
 type RouteContext = { params: Promise<{ id: string }> };
+
+/** Regla admin: current_period_end obligatorio, ISO válido y >= inicio del día UTC actual. */
 
 function jsonError(status: number, code: string, message: string) {
   return NextResponse.json({ error: message, code, message }, { status });
@@ -33,13 +38,23 @@ export async function POST(req: Request, context: RouteContext) {
     return jsonError(400, 'invalid_status', 'Estado de suscripción inválido');
   }
 
-  const periodEndRaw = (body as any).current_period_end;
-  const periodEnd = periodEndRaw ? parseIsoDateStrict(periodEndRaw) : null;
-  if (periodEndRaw && !periodEnd) {
+  const periodValidation = validateAdminSubscriptionPeriodEnd((body as any).current_period_end);
+  if (!periodValidation.ok) {
+    if (periodValidation.code === 'missing') {
+      return jsonError(400, 'missing_current_period_end', 'Fecha de fin requerida');
+    }
+    if (periodValidation.code === 'before_today') {
+      return jsonError(400, 'current_period_end_before_today', 'La fecha de fin no puede ser anterior a hoy');
+    }
     return jsonError(400, 'invalid_current_period_end', 'Fecha de fin inválida');
   }
+  const periodEnd = periodValidation.iso;
 
   const planId = (body as any).plan_id;
+  if (!validateAdminSubscriptionPlanId(planId)) {
+    return jsonError(400, 'missing_plan_id', 'plan_id requerido');
+  }
+
   const supabase = getSupabaseAdmin();
 
   if (planId) {
@@ -55,7 +70,7 @@ export async function POST(req: Request, context: RouteContext) {
     user_id: userId,
     seats: Math.floor(seats),
     status,
-    plan_id: planId ?? null,
+    plan_id: planId,
     current_period_end: periodEnd,
     currency: 'EUR',
     created_at: new Date().toISOString(),
@@ -136,10 +151,18 @@ export async function PATCH(req: Request, context: RouteContext) {
   }
 
   if ((body as any).current_period_end !== undefined) {
-    const parsed = parseIsoDateStrict((body as any).current_period_end);
-    if (!parsed) return jsonError(400, 'invalid_current_period_end', 'Fecha de fin inválida');
-    update.current_period_end = parsed;
-    auditPayload.current_period_end = { from: sub.current_period_end, to: parsed };
+    const periodValidation = validateAdminSubscriptionPeriodEnd((body as any).current_period_end);
+    if (!periodValidation.ok) {
+      if (periodValidation.code === 'missing') {
+        return jsonError(400, 'missing_current_period_end', 'Fecha de fin requerida');
+      }
+      if (periodValidation.code === 'before_today') {
+        return jsonError(400, 'current_period_end_before_today', 'La fecha de fin no puede ser anterior a hoy');
+      }
+      return jsonError(400, 'invalid_current_period_end', 'Fecha de fin inválida');
+    }
+    update.current_period_end = periodValidation.iso;
+    auditPayload.current_period_end = { from: sub.current_period_end, to: periodValidation.iso };
   }
 
   if ((body as any).status !== undefined) {
@@ -152,10 +175,11 @@ export async function PATCH(req: Request, context: RouteContext) {
 
   if ((body as any).plan_id !== undefined) {
     const planId = (body as any).plan_id;
-    if (planId !== null) {
-      const { data: plan } = await supabase.from('subscription_plans').select('id').eq('id', planId).maybeSingle();
-      if (!plan) return jsonError(400, 'plan_not_found', 'Plan no encontrado');
+    if (!validateAdminSubscriptionPlanId(planId)) {
+      return jsonError(400, 'missing_plan_id', 'plan_id requerido');
     }
+    const { data: plan } = await supabase.from('subscription_plans').select('id').eq('id', planId).maybeSingle();
+    if (!plan) return jsonError(400, 'plan_not_found', 'Plan no encontrado');
     update.plan_id = planId;
     auditPayload.plan_id = { from: sub.plan_id, to: planId };
   }

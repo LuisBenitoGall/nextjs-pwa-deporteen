@@ -11,6 +11,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import ConfirmDialog from '@/components/admin/ConfirmDialog';
 import { isSubscriptionActive } from '@/lib/subscriptions/shared';
+import { LEGACY_SUBSCRIPTION_STATUS_OPTIONS } from '@/lib/admin/legacySubscriptionStatuses';
+import { validateAdminSubscriptionPeriodEnd, validateAdminSubscriptionPlanId } from '@/lib/admin/adminSubscriptionValidation';
 
 export type UserDetailPayload = {
   can_mutate: boolean;
@@ -58,7 +60,15 @@ export type UserDetailPayload = {
     birthday: string | null;
     created_at: string;
   }>;
-  plans: Array<{ id: string; name: string; amount_cents: number; currency: string; active: boolean }>;
+  plans: Array<{
+    id: string;
+    name: string;
+    amount_cents: number;
+    currency: string;
+    active: boolean;
+    free: boolean;
+  }>;
+  default_free_plan_id: string | null;
 };
 
 type TabId = 'general' | 'subscriptions' | 'players';
@@ -301,6 +311,40 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
+function periodEndToastKey(
+  code: 'missing' | 'invalid' | 'before_today',
+): 'admin_user_subs_validate_end_required' | 'admin_user_subs_validate_end_invalid' | 'admin_user_subs_validate_end_past' {
+  if (code === 'missing') return 'admin_user_subs_validate_end_required';
+  if (code === 'before_today') return 'admin_user_subs_validate_end_past';
+  return 'admin_user_subs_validate_end_invalid';
+}
+
+function validatePeriodEndLocal(
+  periodEndLocal: string,
+  t: (key: string) => string,
+  showToast: (args: { title: string; variant: 'destructive' }) => void,
+): string | null {
+  const iso = periodEndLocal.trim() ? new Date(periodEndLocal).toISOString() : null;
+  const validation = validateAdminSubscriptionPeriodEnd(iso);
+  if (!validation.ok) {
+    showToast({ title: t(periodEndToastKey(validation.code)), variant: 'destructive' });
+    return null;
+  }
+  return validation.iso;
+}
+
+function validatePlanRequired(
+  planId: string,
+  t: (key: string) => string,
+  showToast: (args: { title: string; variant: 'destructive' }) => void,
+): boolean {
+  if (!validateAdminSubscriptionPlanId(planId)) {
+    showToast({ title: t('admin_user_subs_validate_plan_required'), variant: 'destructive' });
+    return false;
+  }
+  return true;
+}
+
 function SubscriptionsTab({
   data,
   canMutate,
@@ -316,7 +360,12 @@ function SubscriptionsTab({
   const [creating, setCreating] = useState(false);
   const [newSeats, setNewSeats] = useState('1');
   const [newEnd, setNewEnd] = useState('');
-  const [newPlan, setNewPlan] = useState('');
+  const defaultPlanId =
+    data.default_free_plan_id ??
+    data.plans.find((p) => p.free)?.id ??
+    data.plans[0]?.id ??
+    '';
+  const [newPlan, setNewPlan] = useState(defaultPlanId);
 
   const activeSubs = data.subscriptions.filter((s) => isSubscriptionActive(s));
 
@@ -328,7 +377,16 @@ function SubscriptionsTab({
           <p className="text-sm text-slate-400">{t('admin_user_subs_none')}</p>
         ) : (
           activeSubs.map((sub) => (
-            <SubscriptionEditor key={sub.id} sub={sub} plans={data.plans} canMutate={canMutate} userId={data.user.id} t={t} onRefresh={onRefresh} />
+            <SubscriptionEditor
+              key={sub.id}
+              sub={sub}
+              plans={data.plans}
+              defaultFreePlanId={defaultPlanId}
+              canMutate={canMutate}
+              userId={data.user.id}
+              t={t}
+              onRefresh={onRefresh}
+            />
           ))
         )}
 
@@ -348,25 +406,33 @@ function SubscriptionsTab({
                 type="datetime-local"
                 value={newEnd}
                 onChange={(e) => setNewEnd(e.target.value)}
+                required
                 className="border-slate-700 bg-slate-950/70"
               />
               <select
                 value={newPlan}
                 onChange={(e) => setNewPlan(e.target.value)}
+                required
                 className="rounded-md border border-slate-700 bg-slate-950/70 px-3 py-2 text-sm text-slate-100"
               >
-                <option value="">{t('admin_user_subs_plan_optional')}</option>
-                {data.plans.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
+                {data.plans.length === 0 ? (
+                  <option value="">{t('admin_user_subs_no_plans')}</option>
+                ) : (
+                  data.plans.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))
+                )}
               </select>
             </div>
             <Button
               type="button"
               disabled={creating}
               onClick={async () => {
+                const periodEndIso = validatePeriodEndLocal(newEnd, t, showToast);
+                if (!periodEndIso) return;
+                if (!validatePlanRequired(newPlan, t, showToast)) return;
                 setCreating(true);
                 try {
                   const res = await fetch(`/api/admin/usuarios/${data.user.id}/subscriptions`, {
@@ -375,8 +441,8 @@ function SubscriptionsTab({
                     body: JSON.stringify({
                       seats: Number(newSeats),
                       status: 'active',
-                      plan_id: newPlan || null,
-                      current_period_end: newEnd ? new Date(newEnd).toISOString() : null,
+                      plan_id: newPlan,
+                      current_period_end: periodEndIso,
                     }),
                   });
                   if (!res.ok) throw new Error(await res.text());
@@ -435,6 +501,7 @@ function SubscriptionsTab({
 function SubscriptionEditor({
   sub,
   plans,
+  defaultFreePlanId,
   canMutate,
   userId,
   t,
@@ -442,6 +509,7 @@ function SubscriptionEditor({
 }: {
   sub: UserDetailPayload['subscriptions'][0];
   plans: UserDetailPayload['plans'];
+  defaultFreePlanId: string;
   canMutate: boolean;
   userId: string;
   t: (key: string, vars?: Record<string, unknown>) => string;
@@ -453,7 +521,7 @@ function SubscriptionEditor({
     sub.current_period_end ? sub.current_period_end.slice(0, 16) : '',
   );
   const [status, setStatus] = useState(sub.status ?? 'active');
-  const [planId, setPlanId] = useState(sub.plan_id ?? '');
+  const [planId, setPlanId] = useState(sub.plan_id ?? defaultFreePlanId);
   const [unlinkIds, setUnlinkIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
@@ -489,32 +557,47 @@ function SubscriptionEditor({
             value={periodEnd}
             onChange={(e) => setPeriodEnd(e.target.value)}
             disabled={!canMutate}
+            required
             className="mt-1 border-slate-700 bg-slate-950/70"
           />
         </label>
         <label className="text-sm text-slate-300">
           {t('admin_user_hist_status')}
-          <Input
+          <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
             disabled={!canMutate}
-            className="mt-1 border-slate-700 bg-slate-950/70"
-          />
+            className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950/70 px-3 py-2 text-sm text-slate-100"
+          >
+            {LEGACY_SUBSCRIPTION_STATUS_OPTIONS.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+            {!LEGACY_SUBSCRIPTION_STATUS_OPTIONS.includes(status as (typeof LEGACY_SUBSCRIPTION_STATUS_OPTIONS)[number]) &&
+            status ? (
+              <option value={status}>{status}</option>
+            ) : null}
+          </select>
         </label>
         <label className="text-sm text-slate-300">
-          Plan
+          {t('admin_user_subs_plan')}
           <select
             value={planId}
             onChange={(e) => setPlanId(e.target.value)}
             disabled={!canMutate}
+            required
             className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950/70 px-3 py-2 text-sm"
           >
-            <option value="">—</option>
-            {plans.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
+            {plans.length === 0 ? (
+              <option value="">{t('admin_user_subs_no_plans')}</option>
+            ) : (
+              plans.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))
+            )}
           </select>
         </label>
       </div>
@@ -552,6 +635,9 @@ function SubscriptionEditor({
           size="sm"
           disabled={saving}
           onClick={async () => {
+            const periodEndIso = validatePeriodEndLocal(periodEnd, t, showToast);
+            if (!periodEndIso) return;
+            if (!validatePlanRequired(planId, t, showToast)) return;
             setSaving(true);
             try {
               const res = await fetch(`/api/admin/usuarios/${userId}/subscriptions`, {
@@ -561,8 +647,8 @@ function SubscriptionEditor({
                   subscription_id: sub.id,
                   seats: Number(seats),
                   status,
-                  plan_id: planId || null,
-                  current_period_end: periodEnd ? new Date(periodEnd).toISOString() : null,
+                  plan_id: planId,
+                  current_period_end: periodEndIso,
                   unlink_player_ids: unlinkIds,
                 }),
               });
