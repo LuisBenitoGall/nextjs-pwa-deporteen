@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/toast';
 import type { ColumnDefinition } from 'tabulator-tables';
 import ConfirmDialog from '@/components/admin/ConfirmDialog';
-import EditUserDialog from './EditUserDialog';
 import AdminTabulatorTable from '@/components/admin/shared/AdminTabulatorTable';
 import {
   makeEditBtn,
@@ -45,26 +44,30 @@ function statusBadge(u: AdminUser): HTMLElement {
   return span;
 }
 
-export default function UsersTable({ users }: { users: AdminUser[] }) {
+export default function UsersTable({
+  users,
+  canMutate = false,
+}: {
+  users: AdminUser[];
+  canMutate?: boolean;
+}) {
   const router = useRouter();
   const { showToast } = useToast();
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmUser, setConfirmUser] = useState<AdminUser | null>(null);
-  const [editUser, setEditUser] = useState<AdminUser | null>(null);
 
-  // Bridge: listen for Tabulator action events
   useEffect(() => {
     const el = wrapperRef.current;
     if (!el) return;
     const handler = (e: Event) => {
       const { action, row } = (e as CustomEvent<{ action: string; row: AdminUser }>).detail;
-      if (action === 'edit') setEditUser(row);
+      if (action === 'edit') router.push(`/admin/usuarios/${row.id}`);
       if (action === 'delete') setConfirmUser(row);
     };
     el.addEventListener('tabulator-action', handler);
     return () => el.removeEventListener('tabulator-action', handler);
-  }, []);
+  }, [router]);
 
   async function handleDelete(id: string) {
     setDeletingId(id);
@@ -86,6 +89,7 @@ export default function UsersTable({ users }: { users: AdminUser[] }) {
   }
 
   async function handleBulkDelete(rows: AdminUser[]) {
+    if (!canMutate) return;
     for (const row of rows) {
       await fetch('/api/admin/usuarios', {
         method: 'DELETE',
@@ -183,16 +187,21 @@ export default function UsersTable({ users }: { users: AdminUser[] }) {
       formatter: (cell) => {
         const u = cell.getData() as AdminUser;
         const editBtn = makeEditBtn();
+        editBtn.title = 'Ver detalle';
         const delBtn = makeDeleteBtn();
+        if (!canMutate) {
+          delBtn.disabled = true;
+          delBtn.classList.add('opacity-40', 'cursor-not-allowed');
+        }
         editBtn.addEventListener('click', (e) => {
           e.stopPropagation();
           dispatchAction(cell.getElement(), 'edit', u);
         });
         delBtn.addEventListener('click', (e) => {
           e.stopPropagation();
-          dispatchAction(cell.getElement(), 'delete', u);
+          if (canMutate) dispatchAction(cell.getElement(), 'delete', u);
         });
-        return makeActionsContainer(editBtn, delBtn);
+        return makeActionsContainer(editBtn, ...(canMutate ? [delBtn] : []));
       },
     },
   ];
@@ -203,8 +212,8 @@ export default function UsersTable({ users }: { users: AdminUser[] }) {
         data={users}
         columns={columns}
         exportFileName="usuarios"
-        selectable
-        onBulkAction={handleBulkDelete}
+        selectable={canMutate}
+        onBulkAction={canMutate ? handleBulkDelete : undefined}
         bulkActionLabel="Eliminar seleccionados"
       />
 
@@ -216,17 +225,6 @@ export default function UsersTable({ users }: { users: AdminUser[] }) {
         loading={deletingId !== null}
         onConfirm={() => confirmUser && handleDelete(confirmUser.id)}
       />
-
-      {editUser && (
-        <EditUserDialog
-          user={editUser}
-          onClose={() => setEditUser(null)}
-          onSaved={() => {
-            setEditUser(null);
-            router.refresh();
-          }}
-        />
-      )}
     </div>
   );
 }

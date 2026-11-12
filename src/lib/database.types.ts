@@ -44,6 +44,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_log: {
+        Row: {
+          action: string
+          actor_user_id: string
+          created_at: string
+          id: string
+          payload: Json
+          target_user_id: string
+        }
+        Insert: {
+          action: string
+          actor_user_id: string
+          created_at?: string
+          id?: string
+          payload?: Json
+          target_user_id: string
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string
+          created_at?: string
+          id?: string
+          payload?: Json
+          target_user_id?: string
+        }
+        Relationships: []
+      }
       access_code_redemptions: {
         Row: {
           access_code_id: string
@@ -1359,6 +1386,7 @@ export type Database = {
         Row: {
           accepted_marketing: boolean
           accepted_terms: boolean
+          admin_notes: string | null
           created_at: string
           email: string | null
           id: string
@@ -1373,6 +1401,7 @@ export type Database = {
         Insert: {
           accepted_marketing?: boolean
           accepted_terms?: boolean
+          admin_notes?: string | null
           created_at?: string
           email?: string | null
           id: string
@@ -1387,6 +1416,7 @@ export type Database = {
         Update: {
           accepted_marketing?: boolean
           accepted_terms?: boolean
+          admin_notes?: string | null
           created_at?: string
           email?: string | null
           id?: string
