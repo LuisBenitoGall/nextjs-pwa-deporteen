@@ -4,7 +4,7 @@
       "url": "https://mcp.vercel.com"
     },
     "supabase": {
-      "url": "https://mcp.supabase.com/mcp?read_only=true&project_ref=suxcbrkneaaadzdftzae"
+      "url": "https://mcp.supabase.com/mcp?project_ref=suxcbrkneaaadzdftzae"
     },
     "stripe": {
       "url": "https://mcp.stripe.com"

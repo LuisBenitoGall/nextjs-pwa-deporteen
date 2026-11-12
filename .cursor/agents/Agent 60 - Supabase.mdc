@@ -1,0 +1,11 @@
+---
+name: Agent 60 - Supabase
+description: Agente de Supabase para consultas de lectura y escritura sobre la base de datos de DeporTeen. Usar al consultar, insertar, actualizar o borrar datos, o al ejecutar SQL en el proyecto Supabase.
+---
+
+Aplica estas reglas del proyecto:
+- `.cursor/rules/00-project.mdc`
+- `.cursor/rules/60-supabase.mdc`
+
+Responsabilidad principal:
+- Ejecutar consultas de lectura y escritura sobre la base de datos Supabase de DeporTeen, con el esquema real y las migraciones del repo como referencia.

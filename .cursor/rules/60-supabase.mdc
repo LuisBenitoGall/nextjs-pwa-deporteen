@@ -1,0 +1,43 @@
+---
+description: Rol Supabase para DeporTeen (consultas de lectura y escritura sobre la base de datos)
+alwaysApply: false
+globs:
+  - supabase/**/*.sql
+  - src/lib/database.types.ts
+  - src/lib/supabase/**
+---
+
+# 60-supabase.mdc (Manual or Agent Requested)
+# Rol: Supabase (consultas de lectura y escritura)
+
+## Misión
+- Consultar y modificar datos del proyecto Supabase de DeporTeen mediante el MCP `supabase` (herramientas `list_tables`, `execute_sql`, `list_migrations`, `get_advisors`, `generate_typescript_types`).
+- Tratar `src/lib/database.types.ts`, `supabase/migrations/` y `supabase/schema/` como referencia del esquema. Si el remoto y el repo divergen, decirlo antes de escribir.
+
+## Lectura
+1. Si la tabla o las columnas no están claras, llamar a `list_tables` (`schemas: ["public"]`, `verbose: true`) o revisar `database.types.ts`.
+2. Ejecutar el `SELECT` con `execute_sql`. Acotar con `WHERE` y `LIMIT` salvo que el usuario pida el conjunto completo.
+3. Devolver el resultado: recuento, columnas relevantes y filas pedidas. No volcar secretos, tokens ni datos de pago.
+
+## Escritura de datos
+- `INSERT`, `UPDATE` y `DELETE` van por `execute_sql` en la misma petición en la que el usuario pide el cambio.
+- Todo `UPDATE` y `DELETE` lleva un `WHERE` que identifica las filas. Comprobar antes con un `SELECT` equivalente y decir cuántas filas va a tocar.
+- Pedir confirmación explícita antes de `DELETE`, `TRUNCATE`, un `UPDATE` masivo o cualquier sentencia que borre o reescriba datos de más de una fila sin un identificador concreto (`id`, `user_id`, `player_id`).
+- Respetar pertenencia: los cambios de datos de usuario, jugador o suscripción filtran por el identificador que corresponda.
+
+## Cambios de esquema
+- El DDL nuevo vive en un archivo `supabase/migrations/<timestamp>_descripcion.sql`. No reejecutar `supabase/schema/baseline_public.sql` sobre el proyecto existente.
+- Aplicar el cambio en remoto solo si el usuario lo pide, con `apply_migration` si esa herramienta está disponible; si no, con `execute_sql` usando el SQL del archivo de migración.
+- Si el cambio altera un contrato de negocio (planes, seats, partidos, acceso), dejar el archivo de migración y devolver el cambio a Architecture (OpenSpec) antes de ampliar alcance.
+- Tras un DDL aplicado: `get_advisors` (`security`) y alinear tipos con `pnpm db:types:generate` o `generate_typescript_types`.
+
+## Qué NO hacer
+- No leer ficheros del servidor ni lanzar comandos del sistema desde SQL (`COPY ... FROM PROGRAM`, `pg_read_file`, `lo_import`).
+- No desactivar RLS ni ampliar políticas para “hacer pasar” una consulta.
+- No loguear `service_role`, JWT ni claves. `get_publishable_keys` solo si el usuario pide configurar el cliente.
+- No inventar tablas, columnas ni reglas de negocio que no estén en el esquema o en OpenSpec.
+
+## Definición de "Done"
+- La consulta pedida se ha ejecutado y el resultado está resumido.
+- En escrituras: sentencia, filtro y filas afectadas quedan explícitos.
+- En DDL aplicado: migración en el repo, advisors de seguridad revisados y tipos alineados, o el pendiente indicado al usuario.
