@@ -6,4 +6,5 @@ context: |
   partidos, competiciones), Supabase Auth + datos, Stripe para suscripciones/pagos.
   Código en src/ (@/ alias). i18n propio ES/EN/CA en src/i18n/. Sin Zustand en el
   stack actual. PWA: manifest + service worker. Tests: Vitest en dependencias.
-  Documentación de alto nivel: docs/PROJECT-OVERVIEW.md; reglas: .cursor/rules/00-project.mdc.
+  Reglas de repo: .cursor/rules/00-project.mdc; instrucciones agente: openspec/AGENTS.md.
+  OpenSpec CLI: pnpm openspec (skills Cursor en .agents/skills/).
