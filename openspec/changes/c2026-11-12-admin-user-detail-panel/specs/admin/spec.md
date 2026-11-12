@@ -22,3 +22,11 @@ When reducing `subscriptions.seats`, the admin UI SHALL require unlinking linked
 
 ### Requirement: Admin audit log
 Subscription seat or period changes via admin PATCH SHALL insert a row in `admin_audit_log` with actor, target user, action, and JSON payload.
+
+### Requirement: Player subscriptions only on user detail
+The user detail subscriptions tab MUST read and mutate only `public.subscriptions` (player seats). It MUST NOT surface `storage_subscriptions` or remote storage (R2) plans.
+
+#### Scenario: No storage tab on user detail
+- **WHEN** an admin opens `/admin/usuarios/[userId]` on the Suscripciones tab
+- **THEN** the UI shows player `subscriptions` and history only
+- **AND** there is no storage/R2 subscription UI or API call from this route

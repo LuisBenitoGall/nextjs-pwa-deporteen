@@ -10,6 +10,11 @@ El listado de usuarios en Admin editaba perfiles mediante un modal sin contexto 
 - Columnas `users.admin_notes` y tabla `admin_audit_log` para notas internas y auditoría de PATCH de asientos/fechas.
 - APIs bajo `/api/admin/usuarios/[id]` y subrutas.
 
+## Out of scope (confirmación Luis 12/11/2026)
+
+- **No** incluir `storage_subscriptions` (almacenamiento R2) en la ficha de usuario: sin pestaña, listado ni edición de planes/GB de storage en esta entrega.
+- Solo `public.subscriptions` (asientos de jugadores) en la pestaña Suscripciones.
+
 ## Capabilities
 
 ### Modified Capabilities
