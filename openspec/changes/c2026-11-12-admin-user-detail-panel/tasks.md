@@ -1,0 +1,8 @@
+- [x] OpenSpec proposal + spec delta
+- [x] Migración `admin_notes` + `admin_audit_log`
+- [x] `requireSuperadmin` + tests
+- [x] APIs detalle / perfil / suscripciones / jugadores
+- [x] UI detalle con pestañas; quitar modal listado
+- [x] Validación reducción asientos + test vitest
+- [x] i18n es/en/ca
+- [x] `pnpm lint`, `pnpm types`, `pnpm test:run`

@@ -31,6 +31,21 @@ export function isSuperadminDbRole(role: string | null | undefined): boolean {
  *
  * No usar metadatos JWT para conceder admin (evita suplantación vía cliente).
  */
+/** Superadmin en BD (no incluye lista ADMIN_EMAILS). */
+export async function userIsSuperadminInDb(
+  supabase: AppSupabaseClient,
+  userId: string,
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', userId)
+    .maybeSingle();
+  if (error || !data) return false;
+  const row = data as { role?: string | null };
+  return isSuperadminDbRole(row.role ?? null);
+}
+
 export async function userCanAccessAdminPanel(
   supabase: AppSupabaseClient,
   user: User,

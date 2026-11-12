@@ -2,12 +2,18 @@ import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import UsersTable from '@/components/admin/usuarios/UsersTable';
 import type { AdminUser } from '@/components/admin/usuarios/UsersTable';
 import { fetchAllLegacyProfiles, legacyProfileMap } from '@/lib/admin/appUsers';
+import { createSupabaseServerClientReadOnly, getServerUser } from '@/lib/supabase/server';
+import { userIsSuperadminInDb } from '@/lib/auth/adminAccess';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata = { title: 'Usuarios — Admin' };
 
 export default async function AdminUsuariosPage() {
+  const { user } = await getServerUser();
+  const sessionClient = await createSupabaseServerClientReadOnly();
+  const canMutate = user ? await userIsSuperadminInDb(sessionClient, user.id) : false;
+
   const supabase = getSupabaseAdmin();
 
   const { data: authData } = await supabase.auth.admin.listUsers({ perPage: 1000 });
@@ -37,7 +43,7 @@ export default async function AdminUsuariosPage() {
           {users.length} usuarios registrados en la plataforma
         </p>
       </div>
-      <UsersTable users={users} />
+      <UsersTable users={users} canMutate={canMutate} />
     </div>
   );
 }
