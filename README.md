@@ -8,6 +8,9 @@
 		- npx -y pnpm@8.15.4 install
 		- npx -y pnpm@8.15.4 dev
 
+	- Comando arrancar local host:
+		- npx.cmd pnpm@8.15.4 dev
+
 ## CODEX OPEN AI:
 	- Ctrl+Shift+P
 
