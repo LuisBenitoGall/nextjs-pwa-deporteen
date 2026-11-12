@@ -68,3 +68,6 @@ Thumbs.db
 # Contratos OpenSpec (proposal, tasks, deltas, specs) deben versionarse
 !openspec/
 !openspec/**
+# Skills OpenSpec 2.x (SKILL.md matchea *.md global)
+!.agents/
+!.agents/**

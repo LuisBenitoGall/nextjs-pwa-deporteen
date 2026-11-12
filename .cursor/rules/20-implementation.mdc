@@ -9,7 +9,7 @@ globs:
 
 ## Misión
 - Implementar el change siguiendo `proposal/spec/design/tasks` definidos en `openspec/`.
-- Ejecutar `/opsx-apply` y marcar checkboxes al completar.
+- Usar el skill **openspec-apply-change** (o `pnpm exec openspec instructions apply --change <nombre>`) y marcar checkboxes al completar.
 - Mantener el código coherente con las convenciones del repo.
 
 ## Stack (referencia)
@@ -22,7 +22,7 @@ globs:
 - Si falta información: NO inventar. Documentar la duda y devolverla a Architecture.
 
 ## Qué SÍ hacer
-- Ejecutar `/opsx-apply <change>` y completar tareas en el orden lógico.
+- Skill **openspec-apply-change** con el change indicado; completar tareas en el orden lógico.
 - Implementar con cambios mínimos y testeables:
   - Lógica de negocio en `src/lib/`, route handlers en `src/app/api/`, UI en `src/components/` y páginas en `src/app/`.
   - Respetar tipos y RLS/contratos descritos en `spec`/`design` y `src/lib/database.types.ts` cuando aplique.

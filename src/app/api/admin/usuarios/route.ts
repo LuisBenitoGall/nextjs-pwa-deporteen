@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/auth/adminGuard';
+import { requireAdmin, requireSuperadmin } from '@/lib/auth/adminGuard';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import { fetchAllLegacyProfiles, legacyProfileMap } from '@/lib/admin/appUsers';
 
@@ -40,7 +40,7 @@ export async function GET() {
 
 // PATCH — actualizar perfil de un usuario
 export async function PATCH(req: Request) {
-  const guard = await requireAdmin();
+  const guard = await requireSuperadmin();
   if (!guard.ok) return guard.response;
 
   const body = await req.json();
@@ -81,7 +81,7 @@ export async function PATCH(req: Request) {
 
 // DELETE — eliminar usuario permanentemente
 export async function DELETE(req: Request) {
-  const guard = await requireAdmin();
+  const guard = await requireSuperadmin();
   if (!guard.ok) return guard.response;
 
   const { id } = await req.json();

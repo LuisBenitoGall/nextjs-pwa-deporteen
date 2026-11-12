@@ -2,6 +2,20 @@
 
 Este directorio contiene la documentación de especificaciones del proyecto DeporTeen siguiendo la metodología OpenSpec.
 
+## CLI y Cursor (OpenSpec 2.x)
+
+| Qué | Cómo |
+|-----|------|
+| Instalar CLI | Incluido en el repo: `pnpm install` → `@fission-ai/openspec` |
+| Listar changes | `pnpm openspec:list` o `pnpm exec openspec list` |
+| Salud del proyecto | `pnpm openspec:doctor` |
+| Validar changes | `pnpm openspec:validate` |
+| Inicializar / actualizar skills | `pnpm exec openspec init --tools cursor --force` y `pnpm exec openspec update` |
+
+**Por qué no ves `/opsx-*`:** en OpenSpec 2.0 el perfil por defecto entrega **skills** en `.agents/skills/`, no comandos en `.cursor/commands/`. En Cursor usa skills como `openspec-propose`, `openspec-apply-change` (invocación `/openspec-propose` si el IDE los registra). Las reglas antiguas que citan `/opsx-apply` equivalen al skill **`openspec-apply-change`**. Tras actualizar, reinicia Cursor.
+
+Instrucciones depuradas: `openspec/AGENTS.md`.
+
 ## Estructura
 
 ```

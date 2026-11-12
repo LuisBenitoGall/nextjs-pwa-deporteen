@@ -40,5 +40,5 @@ globs:
 - Decisiones discutibles resueltas en `design.md`.
 
 ## Hand-off hacia Implementation
-- `tasks.md` es la fuente de verdad para `/opsx-apply`.
+- `tasks.md` es la fuente de verdad para **openspec-apply-change**.
 - Incertidumbres como tareas explícitas (p. ej. límites de competición, renovación, comportamiento offline de medios).
