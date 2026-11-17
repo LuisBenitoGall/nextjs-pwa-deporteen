@@ -72,8 +72,10 @@ export async function loadUserAdminDetail(
 
   const { data: plans } = await supabase
     .from('subscription_plans')
-    .select('id, name, amount_cents, currency, active')
+    .select('id, name, amount_cents, currency, active, free')
     .order('amount_cents');
+
+  const defaultFreePlanId = (plans ?? []).find((p) => p.free === true)?.id ?? null;
 
   const u = authUser.user;
 
@@ -112,5 +114,6 @@ export async function loadUserAdminDetail(
       created_at: p.created_at,
     })),
     plans: plans ?? [],
+    default_free_plan_id: defaultFreePlanId,
   };
 }
