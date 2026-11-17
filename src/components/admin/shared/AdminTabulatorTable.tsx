@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import type { Options, ColumnDefinition, TabulatorFull } from 'tabulator-tables';
 import './tabulator-theme.css';
 import { exportToXls, exportToPdf } from './tableExports';
+import { activeHeaderCheckboxState, indexesOutsideActive } from './adminTabulatorSelection';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export interface AdminTabulatorTableProps<
@@ -30,6 +31,44 @@ export interface AdminTabulatorTableProps<
 
 const ICON_XLS = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`;
 const ICON_PDF = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15v-4"/><path d="M12 15v-6"/><path d="M15 15v-2"/></svg>`;
+
+type IndexedRow = { getIndex: () => unknown; isSelected: () => boolean };
+
+/** Cabecera checked / indeterminate según las filas activas, no todas las cargadas. */
+function alignActiveHeaderCheckbox(table: TabulatorFull) {
+  const input = table
+    .getColumn('_select')
+    ?.getElement()
+    ?.querySelector('input[type="checkbox"]');
+  if (!(input instanceof HTMLInputElement)) return;
+
+  const active = table.getRows('active') as IndexedRow[];
+  const selectedCount = active.filter((row) => row.isSelected()).length;
+  const state = activeHeaderCheckboxState(selectedCount, active.length);
+  input.checked = state.checked;
+  input.indeterminate = state.indeterminate;
+}
+
+function scheduleActiveHeaderCheckbox(table: TabulatorFull, isCancelled: () => boolean) {
+  alignActiveHeaderCheckbox(table);
+  queueMicrotask(() => {
+    if (!isCancelled()) alignActiveHeaderCheckbox(table);
+  });
+}
+
+/** Un filtro saca de la selección las filas que deja de mostrar. */
+function dropHiddenSelection(table: TabulatorFull, activeRows: IndexedRow[]) {
+  const hiddenIndexes = new Set(
+    indexesOutsideActive(
+      table.getSelectedRows().map((row) => row.getIndex()),
+      activeRows.map((row) => row.getIndex()),
+    ),
+  );
+  const hidden = table.getSelectedRows().filter((row) => hiddenIndexes.has(row.getIndex()));
+  if (hidden.length > 0) {
+    table.deselectRow(hidden);
+  }
+}
 
 export default function AdminTabulatorTable<
   TRow extends object = Record<string, unknown>,
@@ -65,6 +104,7 @@ export default function AdminTabulatorTable<
         title: '',
         formatter: 'rowSelection',
         titleFormatter: 'rowSelection',
+        titleFormatterParams: { rowRange: 'active' },
         field: '_select',
         width: 40,
         minWidth: 40,
@@ -86,7 +126,6 @@ export default function AdminTabulatorTable<
         paginationSizeSelector: [10, 25, 50, 100],
         paginationCounter: 'rows',
         selectableRows: selectable ? true : false,
-        selectableRowsRangeMode: 'click',
         placeholder: 'Sin resultados',
         locale: 'es',
         langs: {
@@ -126,8 +165,18 @@ export default function AdminTabulatorTable<
       });
 
       if (selectable) {
-        table.on('rowSelectionChanged', (data: unknown[]) => {
-          if (!cancelled) setSelectedRows(data as TRow[]);
+        const isCancelled = () => cancelled;
+
+        table.on('rowSelectionChanged', (rows: unknown[]) => {
+          if (cancelled) return;
+          setSelectedRows(rows as TRow[]);
+          scheduleActiveHeaderCheckbox(table, isCancelled);
+        });
+
+        table.on('dataFiltered', (_filters: unknown, rows: IndexedRow[]) => {
+          if (cancelled) return;
+          dropHiddenSelection(table, rows);
+          scheduleActiveHeaderCheckbox(table, isCancelled);
         });
       }
 
