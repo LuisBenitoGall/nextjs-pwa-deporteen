@@ -1,5 +1,7 @@
 import { headers } from 'next/headers';
 import Script from 'next/script';
+import { Suspense } from 'react';
+import PasswordRecoveryRedirect from '@/components/auth/PasswordRecoveryRedirect';
 import { createSupabaseServerClientReadOnly, getServerUser } from '@/lib/supabase/server';
 import { userCanAccessAdminPanel } from '@/lib/auth/adminAccess';
 import { getSubscriptionState } from '@/lib/subscriptions';
@@ -48,6 +50,9 @@ export default async function PublicLayout({ children }: { children: React.React
 
     return (
         <>
+            <Suspense fallback={null}>
+                <PasswordRecoveryRedirect />
+            </Suspense>
             {showSubscriptionExpiredBanner ? (
                 <SubscriptionExpiredBanner
                     message={subscriptionBannerMessage}

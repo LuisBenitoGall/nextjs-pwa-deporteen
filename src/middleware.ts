@@ -4,6 +4,7 @@ import { createServerClient } from '@supabase/ssr';
 import type { AppSupabaseClient } from '@/lib/supabase/types';
 import { userCanAccessAdminPanel } from '@/lib/auth/adminAccess';
 import { isProtectedAppPath } from '@/lib/auth/protectedRoutes';
+import { shouldMiddlewareRedirectRootRecovery } from '@/lib/auth/passwordRecoveryRedirect';
 
 function applySecurityHeaders(res: NextResponse, nonce: string) {
   const isDev = process.env.NODE_ENV !== 'production';
@@ -56,6 +57,14 @@ export async function middleware(req: NextRequest) {
 
   const res = NextResponse.next({ request: { headers: requestHeaders } });
   const p = req.nextUrl.pathname;
+
+  if (shouldMiddlewareRedirectRootRecovery(p, req.nextUrl.searchParams.has('code'))) {
+    const url = req.nextUrl.clone();
+    url.pathname = '/auth/reset-password';
+    const redirect = NextResponse.redirect(url);
+    applySecurityHeaders(redirect, nonce);
+    return redirect;
+  }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
