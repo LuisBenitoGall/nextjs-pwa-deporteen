@@ -9,6 +9,7 @@ import { presentationFromAuthMessage } from '@/lib/auth/authErrorPresentation';
 import Input from '@/components/Input';
 import Submit from '@/components/Submit';
 import TitleH1 from '@/components/TitleH1';
+import { getPasswordResetRedirectUrl } from '@/lib/auth/siteUrl';
 
 export default function ForgotPasswordPage() {
   const t = useT();
@@ -23,8 +24,11 @@ export default function ForgotPasswordPage() {
     setErr(null);
     setOk(null);
     try {
+      const redirectTo = getPasswordResetRedirectUrl(
+        typeof window !== 'undefined' ? window.location.origin : undefined
+      );
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${location.origin}/auth/reset-password`,
+        redirectTo,
       });
       if (error) throw error;
       setOk(t('recuperacion_enviada') || 'Si el email existe, te hemos enviado un enlace para restablecer la contraseña.');

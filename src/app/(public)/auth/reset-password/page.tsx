@@ -26,15 +26,51 @@ function ResetPasswordInner() {
 
   useEffect(() => {
     setMounted(true);
-    (async () => {
-      // Si viene con ?code=..., intentamos intercambio explícito por si el SDK no lo hace solo
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function establishRecoverySession() {
+      setErr(null);
       const code = search.get('code');
       if (code) {
-        try {
-          await supabase.auth.exchangeCodeForSession(code);
-        } catch { /* si ya hay sesión o no aplica, no pasa nada */ }
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error && !cancelled) {
+          setErr(error.message);
+        }
       }
-    })();
+
+      const hash = typeof window !== 'undefined' ? window.location.hash : '';
+      if (hash && hash.length > 1) {
+        const hashParams = new URLSearchParams(hash.startsWith('#') ? hash.slice(1) : hash);
+        const access_token = hashParams.get('access_token');
+        const refresh_token = hashParams.get('refresh_token');
+        if (access_token && refresh_token) {
+          const { error } = await supabase.auth.setSession({ access_token, refresh_token });
+          if (error && !cancelled) {
+            setErr(error.message);
+          }
+        }
+      }
+
+      await supabase.auth.getSession();
+    }
+
+    void establishRecoverySession();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY' && !cancelled) {
+        setErr(null);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, [search]);
 
   async function handleSubmit(e: React.FormEvent) {
