@@ -61,32 +61,31 @@ export default function AdminTabulatorTable<
     import('tabulator-tables').then(({ TabulatorFull }) => {
       if (cancelled || !containerRef.current) return;
 
-      const selectCol: ColumnDefinition = {
-        title: '',
-        formatter: 'rowSelection',
-        titleFormatter: 'rowSelection',
-        field: '_select',
-        width: 40,
-        minWidth: 40,
-        hozAlign: 'center',
-        vertAlign: 'middle',
-        headerSort: false,
-        resizable: false,
-      };
-
-      const allColumns = selectable ? [selectCol, ...columns] : columns;
-
       const options: Options = {
         data: dataRef.current,
-        columns: allColumns,
+        columns,
         layout: 'fitColumns',
         pagination: true,
         paginationMode: 'local',
         paginationSize: 25,
         paginationSizeSelector: [10, 25, 50, 100],
         paginationCounter: 'rows',
-        selectableRows: selectable ? true : false,
-        selectableRowsRangeMode: 'click',
+        selectableRows: selectable,
+        // Do not use selectableRowsRangeMode: 'click' — checkbox clicks then behave like
+        // single-select unless Ctrl is held (Tabulator 6.4 default drag/shift is correct).
+        ...(selectable
+          ? {
+              rowHeader: {
+                formatter: 'rowSelection',
+                titleFormatter: 'rowSelection',
+                headerSort: false,
+                hozAlign: 'center',
+                resizable: false,
+                width: 40,
+                minWidth: 40,
+              },
+            }
+          : {}),
         placeholder: 'Sin resultados',
         locale: 'es',
         langs: {
